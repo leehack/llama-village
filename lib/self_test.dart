@@ -23,6 +23,9 @@ import 'settings.dart';
 /// * `VILLAGE_SAVE_DIR=dir` keeps saves and the gallery out of the real
 ///   profile.
 /// * `VILLAGE_QUIT_AT=menu|cutscene|generation|story` quits at that moment.
+/// * `VILLAGE_MEMLOG=10` logs memory and collection sizes every 10 s
+///   (see `game/mem_probe.dart`); `VILLAGE_REPLAY=<seconds>` adds two short
+///   games after the week script, each left by "Save and quit to menu".
 /// * `VILLAGE_LANG=en|ko|fr` sets the language for the run; like
 ///   `VILLAGE_FPS`, it makes the run's settings unsaved defaults.
 class SelfTest {
@@ -44,6 +47,13 @@ class SelfTest {
   String? get bot => _env['VILLAGE_BOT'];
   String? get saveDir => _env['VILLAGE_SAVE_DIR'];
   String? get quitAt => _env['VILLAGE_QUIT_AT'];
+
+  /// `VILLAGE_REPLAY=<seconds>`: the week script then plays two more games
+  /// that long each, leaving each through "Save and quit to menu".
+  double? get replaySeconds => double.tryParse(_env['VILLAGE_REPLAY'] ?? '');
+
+  /// Seconds between `VILLAGE MEM` lines, or null for none.
+  double? get memLogSeconds => double.tryParse(_env['VILLAGE_MEMLOG'] ?? '');
 
   bool get exitWhenDone => _env['VILLAGE_EXIT'] == '1';
   int? get msPerMinute => int.tryParse(_env['VILLAGE_MS_PER_MINUTE'] ?? '');
@@ -154,7 +164,7 @@ class SelfTest {
   }
 
   void log(String message) {
-    if (capture || autoplay || weekScript || quitAt != null) debugPrint('VILLAGE $message');
+    if (capture || autoplay || weekScript || quitAt != null || memLogSeconds != null) debugPrint('VILLAGE $message');
   }
 
   /// Saves the app as `<name>.png` once.

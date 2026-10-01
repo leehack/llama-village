@@ -30,6 +30,13 @@ class SoloudOut implements SoundOut {
 
   bool get ready => _ready;
 
+  /// Voices playing in the mixer, plus handles the Dart side still tracks.
+  int get voices {
+    final soloud = SoLoud.instance;
+    if (!_ready || !soloud.isInitialized) return 0;
+    return soloud.getActiveVoiceCount() + _sources.values.fold<int>(0, (a, s) => a + s.handles.length);
+  }
+
   /// Starts the engine, loads every clip and starts the loops silent.
   /// Returns false (and stays silent) when there is no audio device.
   Future<bool> init() async {

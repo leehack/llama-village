@@ -494,9 +494,10 @@ are inert unless their environment variables are set (`VILLAGE_CAPTURE`,
 `VILLAGE_AUTOPLAY=week` runs the Festival Week script instead
 (`lib/game/week_autoplay.dart`): the title screen, gallery, credits and
 settings, a new game, the pause menu and a manual save, the first night
-skip (later ones are skipped), the festival, the ending, the epilogue,
-the results, the storybook (the cover, a page turning, two pages and
-the ending) and the gallery again, with a PNG at each stop. Pair it with
+skip (later ones are skipped), the inspector, the festival, the ending,
+the epilogue, the results, the storybook (the cover, a page turning, two
+pages and the ending) and the gallery again, with a PNG at each stop.
+Pair it with
 `VILLAGE_BOT=harmony|drama|quiet` (the bot plays Dash toward that
 ending), `VILLAGE_LANG=en|ko|fr` (the language for the run, without
 touching the saved settings), `VILLAGE_TIME_SCALE=32` (a compressed week) and
@@ -510,6 +511,17 @@ screen's Quit button or the system exit request.
 tool/run_selftest.sh /tmp/week 400 VILLAGE_AUTOPLAY=week VILLAGE_CANNED=1 \
   VILLAGE_BOT=drama VILLAGE_TIME_SCALE=32 VILLAGE_MS_PER_MINUTE=500 VILLAGE_SAVE_DIR=/tmp/week_saves
 ```
+
+For a memory soak, `VILLAGE_MEMLOG=10` logs a `VILLAGE MEM` line every
+10 s: the resident set size, the villages still alive, and the size of
+every collection a long session could grow (the journal, the storybook
+pictures and their bytes, the gallery, diaries and thoughts, facts,
+conversations, lines, the log, events, model call records, the
+embedding cache, bubbles, scene nodes, Flutter's image cache, audio
+voices and whether the models are loaded); see `lib/game/mem_probe.dart`.
+`VILLAGE_REPLAY=90` makes the week script then play two more games of
+90 s each, each left through "Save and quit to menu", to check that
+memory returns to its baseline on the title screen.
 
 `VILLAGE_TOUR=shots` (with `VILLAGE_CAPTURE=1`) starts a new game and
 follows one day without the week's cutscenes, capturing the looks and

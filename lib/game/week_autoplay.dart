@@ -9,8 +9,9 @@ import '../sim/village.dart';
 /// The env-gated Festival Week script (`VILLAGE_AUTOPLAY=week`): the title
 /// screen and gallery, a new game, the pause menu and a manual save, the
 /// first night skip watched to the day card (later ones skipped), the
-/// festival, the ending, the epilogue and results, the storybook (cover,
-/// a page turning, two pages and the ending), then the gallery again.
+/// inspector, the festival, the ending, the epilogue and results, the
+/// storybook (cover, a page turning, two pages and the ending), then the
+/// gallery again.
 /// It takes a PNG at each stop; a bot (`VILLAGE_BOT`) plays Dash meanwhile.
 class WeekAutoplay {
   WeekAutoplay(this.home);
@@ -172,11 +173,41 @@ class WeekAutoplay {
         }
       case 23:
         if (_since > 0.5) {
+          if (home.test.replaySeconds != null && !_replay(dt)) return;
           home.test.log('WEEK autoplay done in ${_t.toStringAsFixed(0)} s');
           _next();
           if (home.test.exitWhenDone) unawaited(home.quit());
         }
     }
+  }
+
+  int _replays = 0;
+  double _replayFor = 0;
+
+  /// `VILLAGE_REPLAY=<seconds>`: after the week, twice starts a new game,
+  /// plays it that long and leaves through "Save and quit to menu", with a
+  /// rest on the title screen each time, to see memory return to baseline.
+  /// Returns true once the last game has been left and the title screen
+  /// has rested.
+  bool _replay(double dt) {
+    if (home.phase == Phase.menu && home.busy == null && home.village == null) {
+      _replayFor += dt;
+      if (_replayFor < 20) return false;
+      if (_replays == 2) return true;
+      home.test.log('WEEK replay ${_replays + 1} new game');
+      if (home.page != MenuPage.none) home.closePage();
+      _replayFor = 0;
+      unawaited(home.newGame());
+      return false;
+    }
+    if (home.phase != Phase.playing || home.busy != null) return false;
+    _replayFor += dt;
+    if (_replayFor < home.test.replaySeconds!) return false;
+    _replayFor = 0;
+    _replays++;
+    home.test.log('WEEK replay $_replays save and quit to menu');
+    unawaited(home.toMenu(save: true));
+    return false;
   }
 
   void _play(double dt) {
@@ -202,6 +233,21 @@ class WeekAutoplay {
       return;
     }
     if (v.now.day == 2 && v.now.minute >= 11 * 60) _shot('10_day2_play');
+    _inspect(v, dt);
+  }
+
+  double _inspectFor = 0;
+
+  /// Once, on day 2 after the day-2 picture: opens the inspector on Pip.
+  void _inspect(Village v, double dt) {
+    if (!_taken('10_day2_play') || _taken('10b_inspector') || v.dash.visit != null) return;
+    if (home.stage.selected != 'Pip') home.select('Pip');
+    _inspectFor += dt;
+    if (_inspectFor < 1.2) return;
+    _shooting = home.test.shot('10b_inspector').whenComplete(() {
+      _shooting = null;
+      home.select(null);
+    });
   }
 
   /// Once, after the pause menu: follows a llama mid-conversation and

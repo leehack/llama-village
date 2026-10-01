@@ -20,6 +20,7 @@ import 'cutscene/overlay.dart';
 import 'frame_throttle.dart';
 import 'game/bot.dart';
 import 'game/director.dart';
+import 'game/mem_probe.dart';
 import 'game/save_store.dart';
 import 'game/story_camera.dart';
 import 'game/week_autoplay.dart';
@@ -184,6 +185,10 @@ class VillageHomeState extends State<VillageHome> with SingleTickerProviderState
   Future<VillageModels>? _loading;
   Autoplay? _autoplay;
   WeekAutoplay? _week;
+  late final MemProbe? _mem = test.memLogSeconds == null ? null : MemProbe(this, test.memLogSeconds!);
+
+  /// Audio voices alive, for the memory log.
+  int get audioVoices => _audio.voices;
 
   /// Seconds since the phase last changed.
   double phaseTime = 0;
@@ -771,6 +776,7 @@ class VillageHomeState extends State<VillageHome> with SingleTickerProviderState
     test.frame();
     _autoplay?.tick(dt);
     _week?.tick(dt);
+    _mem?.tick(dt);
     _quitTest();
     _tour?.tick(dt);
     frame.value++;
