@@ -44,7 +44,10 @@ class CannedChat implements ChatModel {
       ].join('\n');
     }
     if (user.contains('Write four things Dash could say')) {
-      final intents = RegExp(r'^(compliment|gossip|tell|gift|help|tease): <', multiLine: true).allMatches(user).map((m) => m.group(1)!);
+      final intents = RegExp(
+        r'^(compliment|gossip|praise|tell|gift|help|tease): <',
+        multiLine: true,
+      ).allMatches(user).map((m) => m.group(1)!);
       return [for (final i in intents) '$i: ${_option(i)}'].join('\n');
     }
     if (user.contains('private thought')) return 'I wonder what everyone is up to today.';
@@ -54,6 +57,7 @@ class CannedChat implements ChatModel {
   static String _option(String intent) => switch (intent) {
     'compliment' => 'Your wool looks extra fluffy today, truly.',
     'gossip' => 'Someone told me they saw a fox near the bakery.',
+    'praise' => 'Everyone says your neighbour has a heart of gold.',
     'tell' => 'Did you hear the latest news from the hilltop?',
     'gift' => 'I brought you a little present from my travels.',
     'help' => 'Can I lend you a wing with your work today?',

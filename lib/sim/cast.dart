@@ -363,7 +363,7 @@ void seedFacts(KnowledgeBase kb) {
   );
   add(
     'storm_forecast',
-    'Bramble predicts a big storm will hit the village on the afternoon of day 1.',
+    'Bramble predicts a big storm will hit the village on the afternoon of day $stormDay.',
     "Bramble's storm warning",
     origin: 'Bramble',
     kind: FactKind.news,

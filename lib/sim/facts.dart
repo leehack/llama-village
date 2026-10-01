@@ -87,9 +87,11 @@ class KnowledgeBase {
   final Map<String, Fact> facts = {};
   final List<Transfer> transfers = [];
   void Function(Transfer)? onLearn;
-  int _next = 0;
 
-  String newId(String prefix) => '$prefix${++_next}';
+  /// The counter behind [newId]; saves carry it.
+  int idCounter = 0;
+
+  String newId(String prefix) => '$prefix${++idCounter}';
 
   Fact add(Fact fact) => facts[fact.id] = fact;
   Fact operator [](String id) => facts[id]!;

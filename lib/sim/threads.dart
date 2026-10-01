@@ -41,7 +41,24 @@ abstract class StoryThread {
   void finish(Village v);
 
   Map<String, Object?> toJson() => {'id': id, 'title': title, 'state': state, 'resolution': resolution, 'history': history};
+
+  /// Everything a save needs to resume this thread; subclasses add their own fields.
+  Map<String, Object?> save() => {
+    'state': state,
+    'resolution': resolution,
+    'history': [...history],
+  };
+
+  void load(Map<String, Object?> j) {
+    state = j['state'] as String;
+    resolution = j['resolution'] as String?;
+    history
+      ..clear()
+      ..addAll((j['history'] as List).cast<String>());
+  }
 }
+
+List<String> _strings(Object? list) => (list as List).cast<String>();
 
 class ScarfThread extends StoryThread {
   ScarfThread() : super('scarf', 'The lost red scarf', 'unnoticed');
@@ -229,6 +246,25 @@ class ScarfThread extends StoryThread {
   }
 
   @override
+  Map<String, Object?> save() => {
+    ...super.save(),
+    'holder': holder,
+    'finder': finder,
+    'confession': confession,
+    'missingAt': missingAt?.absolute,
+  };
+
+  @override
+  void load(Map<String, Object?> j) {
+    super.load(j);
+    holder = j['holder'] as String?;
+    finder = j['finder'] as String?;
+    confession = j['confession'] as String?;
+    final at = j['missingAt'] as int?;
+    missingAt = at == null ? null : GameTime.fromAbsolute(at);
+  }
+
+  @override
   void finish(Village v) {
     resolution = switch (state) {
       'returned' =>
@@ -246,13 +282,16 @@ class FestivalThread extends StoryThread {
   String? winner;
   final Map<String, double> scores = {};
 
+  /// (singer, what happened) in stage order, for the festival cutscene.
+  final List<(String, String)> performances = [];
+
   @override
   void onMinute(Village v) {
     final t = v.now;
     if (t.day == 1 && t.minute == 7 * 60 && state == 'unannounced') {
       final f = v.newFact(
         'festival',
-        'Clover announced the Berry Festival for day 2 at 16:00 on the hilltop; the best singer wins the Golden Bell.',
+        'Clover announced the Berry Festival for day $festivalDay at 16:00 on the hilltop; the best singer wins the Golden Bell.',
         'the Berry Festival',
         kind: FactKind.news,
         keywords: [
@@ -261,7 +300,7 @@ class FestivalThread extends StoryThread {
       );
       v.announce(
         'Berry Festival announced',
-        'Clover rings her bell from the hilltop: the Berry Festival is tomorrow (day 2) at 16:00, and the best singer wins the Golden Bell.',
+        'Clover rings her bell: the Berry Festival is on day $festivalDay at 16:00 on the hilltop, and the best singer wins the Golden Bell.',
         f.id,
       );
       contestants.add('Pip');
@@ -269,8 +308,8 @@ class FestivalThread extends StoryThread {
       v.announce('Pip signs up', 'Pip shouts her name before Clover finishes the sentence.', s.id, quiet: true);
       advance(v, 'announced', 'Clover announced it; Pip signed up at once');
     }
-    if (t.day == 2 && t.minute == 16 * 60 && state != 'judged') _perform(v);
-    if (t.day == 2 && t.minute == 16 * 60 + 25 && state == 'performed') _judge(v);
+    if (t.day == festivalDay && t.minute == festivalMinute && state != 'judged') _perform(v);
+    if (t.day == festivalDay && t.minute == festivalMinute + 25 && state == 'performed') _judge(v);
   }
 
   void signUp(Village v, Llama l, String how) {
@@ -325,7 +364,9 @@ class FestivalThread extends StoryThread {
     for (final n in singers) {
       final l = v.byName(n);
       if (n == 'Pip') {
-        v.worldEvent('Pip sings', 'Pip sings with enormous feeling and almost no tune.', at: 'hilltop');
+        const text = 'Pip sings with enormous feeling and almost no tune.';
+        performances.add((n, text));
+        v.worldEvent('Pip sings', text, at: 'hilltop');
         v.witness('pip_tune', 'hilltop');
       } else if (n == 'Mo' && l.courage < 0.45) {
         final f = v.newFact(
@@ -334,14 +375,16 @@ class FestivalThread extends StoryThread {
           'Mo fainting',
           kind: FactKind.deed,
         );
-        v.worldEvent('Mo faints', 'Mo opens his mouth, sways, and faints into the berry tarts.', at: 'hilltop', fact: f.id);
+        const text = 'Mo opens his mouth, sways, and faints into the berry tarts.';
+        performances.add((n, text));
+        v.worldEvent('Mo faints', text, at: 'hilltop', fact: f.id);
         scores[n] = -1;
       } else {
-        v.worldEvent(
-          '$n sings',
-          n == 'Mo' ? 'Mo sings, and the hilltop goes completely silent, then roars.' : '$n sings a cheerful berry-picking song.',
-          at: 'hilltop',
-        );
+        final text = n == 'Mo'
+            ? 'Mo sings, and the hilltop goes completely silent, then roars.'
+            : '$n sings a cheerful berry-picking song.';
+        performances.add((n, text));
+        v.worldEvent('$n sings', text, at: 'hilltop');
       }
     }
     advance(v, 'performed', singers.isEmpty ? 'no singers' : '${singers.join(', ')} sang');
@@ -395,11 +438,11 @@ class FestivalThread extends StoryThread {
     final goals = <Goal>[];
     if (!v.kb.knows(l.name, 'festival') || state == 'judged') return goals;
     final t = v.now;
-    if (t.day == 2 && t.minute >= 15 * 60 + 20 && t.minute < 16 * 60 + 40) {
+    if (t.day == festivalDay && t.minute >= 15 * 60 + 20 && t.minute < 16 * 60 + 40) {
       goals.add(Goal(id, 'be at the hilltop for the Berry Festival at 16:00', place: 'hilltop', action: 'festival', weight: 1.4));
     }
     if (l.name == 'Clover' && state != 'performed') {
-      if (t.day == 2 && t.minute >= 14 * 60) {
+      if (t.day == festivalDay && t.minute >= 14 * 60) {
         goals.add(Goal(id, 'set up the festival stage on the hilltop', place: 'hilltop', weight: 0.9));
       }
       final lastAsked = l.lastTalk['Mo'];
@@ -431,6 +474,32 @@ class FestivalThread extends StoryThread {
   void finish(Village v) {
     resolution ??= 'Not held (state $state).';
   }
+
+  @override
+  Map<String, Object?> save() => {
+    ...super.save(),
+    'contestants': [...contestants],
+    'winner': winner,
+    'scores': {...scores},
+    'performances': [
+      for (final (n, t) in performances) [n, t],
+    ],
+  };
+
+  @override
+  void load(Map<String, Object?> j) {
+    super.load(j);
+    contestants
+      ..clear()
+      ..addAll(_strings(j['contestants']));
+    winner = j['winner'] as String?;
+    scores
+      ..clear()
+      ..addAll({for (final e in (j['scores'] as Map).entries) e.key as String: (e.value as num).toDouble()});
+    performances
+      ..clear()
+      ..addAll([for (final p in j['performances'] as List) ((p as List)[0] as String, p[1] as String)]);
+  }
 }
 
 class CrushThread extends StoryThread {
@@ -454,8 +523,8 @@ class CrushThread extends StoryThread {
         ],
       );
     }
-    // June finds the poem the first time she is at the berry bushes on day 2.
-    if (v.now.day == 2 && !v.kb.knows('June', 'anon_poem') && v.byName('June').place == 'berry bushes' && v.kb.maybe('anon_poem') != null) {
+    // June finds the poem the first time she is at the berry bushes from day 2 on.
+    if (v.now.day >= 2 && !v.kb.knows('June', 'anon_poem') && v.byName('June').place == 'berry bushes' && v.kb.maybe('anon_poem') != null) {
       v.kb.learn('June', 'anon_poem', 'saw', v.now);
       v.log.note('June finds an unsigned love poem tucked into the wildflowers. She reads it twice.');
       v.byName('June').addMood(1);
@@ -530,13 +599,13 @@ class CrushThread extends StoryThread {
         ),
       );
     }
-    if (l.name == 'Bramble' && revealedBy == null && (t.day == 2 || l.mood >= 3)) {
+    if (l.name == 'Bramble' && revealedBy == null && (t.day >= festivalDay - 1 || l.mood >= 3)) {
       goals.add(
         Goal(
           id,
           'work up the courage to tell June that you are the one writing her love poems',
           seek: 'June',
-          weight: t.day == 2 ? 0.55 : 0.3,
+          weight: t.day >= festivalDay - 1 ? 0.55 : 0.3,
           topic: 'bramble_poems',
         ),
       );
@@ -554,6 +623,22 @@ class CrushThread extends StoryThread {
       goals.add(Goal(id, 'face June about the poems', seek: 'June', weight: 0.5, topic: 'bramble_poems'));
     }
     return goals;
+  }
+
+  @override
+  Map<String, Object?> save() => {
+    ...super.save(),
+    'flowersToday': flowersToday,
+    'revealedBy': revealedBy,
+    'pendingReaction': pendingReaction,
+  };
+
+  @override
+  void load(Map<String, Object?> j) {
+    super.load(j);
+    flowersToday = j['flowersToday'] as bool;
+    revealedBy = j['revealedBy'] as String?;
+    pendingReaction = j['pendingReaction'] as String?;
   }
 
   @override
@@ -581,7 +666,7 @@ class RumourThread extends StoryThread {
   void onLearn(Transfer t, Village v) {
     if (t.fact.id == 'bread_rumour') {
       hops.add('${t.knowing.from} → ${t.llama}${t.knowing.believes ? '' : ' (not believed)'}');
-      if (t.knowing.believes) v.byName(t.llama).addFriendship('Mo', -1);
+      if (t.knowing.believes) v.maybeByName(t.llama)?.addFriendship('Mo', -1);
     }
     if (t.fact.id == 'bread_truth' && t.knowing.believes) {
       debunks.add('${t.knowing.from ?? t.knowing.how} → ${t.llama}');
@@ -596,7 +681,7 @@ class RumourThread extends StoryThread {
   @override
   List<Goal> goalsFor(Llama l, Village v) {
     final goals = <Goal>[];
-    if (l.name == 'June' && v.now.day == 1) {
+    if (l.name == 'June' && v.now.day <= 2) {
       goals.add(Goal(id, "spread the juicy story about Mo's bread", weight: 0.15, topic: 'bread_rumour'));
     }
     if (l.name == 'Mo') {
@@ -606,6 +691,24 @@ class RumourThread extends StoryThread {
       goals.add(Goal(id, "set the record straight: Mo's bread never made you sick", weight: 0.35, topic: 'bread_truth'));
     }
     return goals;
+  }
+
+  @override
+  Map<String, Object?> save() => {
+    ...super.save(),
+    'hops': [...hops],
+    'debunks': [...debunks],
+  };
+
+  @override
+  void load(Map<String, Object?> j) {
+    super.load(j);
+    hops
+      ..clear()
+      ..addAll(_strings(j['hops']));
+    debunks
+      ..clear()
+      ..addAll(_strings(j['debunks']));
   }
 
   @override
@@ -625,14 +728,14 @@ class StormThread extends StoryThread {
   @override
   void onMinute(Village v) {
     final t = v.now;
-    if (t.day == 1 && t.minute == 15 * 60 && state == 'forecast') {
+    if (t.day == stormDay && t.minute == 15 * 60 && state == 'forecast') {
       v.storm = true;
       for (final e in v.kb['storm_forecast'].knownBy.entries) {
         if (e.key != 'Bramble' && e.key != 'Dash' && e.value.believes) warnedBeforeStorm.add(e.key);
       }
       final f = v.newFact(
         'storm_hit',
-        'A storm hit the village on day 1 at 15:00: thunder, sideways rain, the festival bunting blew away.',
+        'A storm hit the village on day $stormDay at 15:00: thunder, sideways rain, the festival bunting blew away.',
         'the storm',
         kind: FactKind.event,
       );
@@ -658,11 +761,11 @@ class StormThread extends StoryThread {
       v.byName('Clover').addMood(-2);
       advance(v, 'storm', 'it arrived on time; ${warnedBeforeStorm.length} llamas had been warned');
     }
-    if (t.day == 1 && t.minute == 17 * 60 + 30 && state == 'storm') {
+    if (t.day == stormDay && t.minute == 17 * 60 + 30 && state == 'storm') {
       v.storm = false;
       final f = v.newFact(
         'storm_passed',
-        'The storm passed in the evening of day 1, leaving puddles and a rainbow over the pond.',
+        'The storm passed in the evening of day $stormDay, leaving puddles and a rainbow over the pond.',
         'the rainbow',
         kind: FactKind.event,
       );
@@ -674,16 +777,35 @@ class StormThread extends StoryThread {
   @override
   List<Goal> goalsFor(Llama l, Village v) {
     if (l.name == 'Bramble' && state == 'forecast') {
-      return [Goal(id, 'warn everyone that a storm will hit this afternoon; be taken seriously', weight: 0.5, topic: 'storm_forecast')];
+      final when = v.now.day == stormDay ? 'this afternoon' : 'on the afternoon of day $stormDay';
+      return [Goal(id, 'warn everyone that a storm will hit $when; be taken seriously', weight: 0.5, topic: 'storm_forecast')];
     }
     return const [];
+  }
+
+  @override
+  Map<String, Object?> save() => {
+    ...super.save(),
+    'warned': [...warnedBeforeStorm],
+    'soaked': [...soaked],
+  };
+
+  @override
+  void load(Map<String, Object?> j) {
+    super.load(j);
+    warnedBeforeStorm
+      ..clear()
+      ..addAll(_strings(j['warned']));
+    soaked
+      ..clear()
+      ..addAll(_strings(j['soaked']));
   }
 
   @override
   void finish(Village v) {
     resolution = state == 'forecast'
         ? 'The storm never came.'
-        : 'Storm hit at 15:00 as Bramble predicted. Warned beforehand: ${warnedBeforeStorm.isEmpty ? 'nobody' : warnedBeforeStorm.join(', ')}. '
+        : 'Storm hit on day $stormDay at 15:00 as Bramble predicted. Warned beforehand: ${warnedBeforeStorm.isEmpty ? 'nobody' : warnedBeforeStorm.join(', ')}. '
               'Caught outdoors: ${soaked.isEmpty ? 'nobody' : soaked.join(', ')}.';
   }
 }

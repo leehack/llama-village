@@ -154,6 +154,7 @@ int ruleReaction(ReactionCase c) {
           ? 1
           : (has('kind') ? 1 : 2),
     'tell' => has('nosy') ? 4 : 3,
+    'praise' => (c.subjectFriendship ?? 0) <= -3 ? 1 : (has('grumpy') ? 2 : 3),
     'tease' =>
       has('playful')
           ? 3

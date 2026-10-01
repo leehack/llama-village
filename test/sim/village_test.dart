@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:llama_village/sim/cast.dart';
+import 'package:llama_village/sim/clock.dart';
 import 'package:llama_village/sim/canned.dart';
 import 'package:llama_village/sim/dash.dart';
 import 'package:llama_village/sim/log.dart';
@@ -17,7 +18,7 @@ void main() {
     expect(v.done, isNotEmpty);
     expect(v.festival.state, isNot('unannounced'));
     expect(v.kb.maybe('scarf_missing'), isNotNull);
-    expect(v.storm_.state, 'passed');
+    expect(v.storm_.state, 'forecast', reason: 'the storm is due on day $stormDay');
     expect(v.log.entries.where((e) => e.kind == LogKind.line), isNotEmpty);
     await runMinutes(v, 30);
     expect(v.cast.where((l) => l.place == l.home && l.asleep).length, greaterThanOrEqualTo(4));

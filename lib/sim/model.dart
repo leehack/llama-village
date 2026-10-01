@@ -270,6 +270,9 @@ class Embedder {
   final ModelQueue queue;
   final Map<String, List<double>> _cache = {};
 
+  /// Text -> vector for everything embedded so far; saves carry it.
+  Map<String, List<double>> get cache => _cache;
+
   Future<List<List<double>>> embed(List<String> texts, {String type = 'embed'}) async {
     final missing = texts.where((t) => !_cache.containsKey(t)).toSet().toList();
     for (var i = 0; i < missing.length; i += 32) {
