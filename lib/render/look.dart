@@ -102,7 +102,7 @@ class FilmSky {
 
   /// Sets the sky for [hour] (0-24, fractional); [storm] greys it out.
   void update(double hour, {required bool storm, required double dt}) {
-    _storm += ((storm ? 1.0 : 0.0) - _storm) * math.min(1.0, dt * 0.8);
+    _storm += ((storm ? 1.0 : 0.0) - _storm) * math.min(1.0, dt * 1.5);
     var i = 0;
     while (i < _keys.length - 2 && _keys[i + 1].hour <= hour) {
       i++;
@@ -127,16 +127,17 @@ class FilmSky {
     final dir = sunUp ? (_c(math.cos(theta), math.sin(theta) * 0.9 + 0.08, 0.42)..normalize()) : (_c(-0.35, 0.8, 0.45)..normalize());
     sky.sunDirection = dir;
     final light = _mix3(a.light, b.light, s);
-    var intensity = lerp(a.intensity, b.intensity) * (1 - 0.72 * _storm);
+    var intensity = lerp(a.intensity, b.intensity) * (1 - 0.8 * _storm);
     if (sunUp) intensity *= math.min(1.0, math.sin(theta) * 6);
     sky.sunColor = light * (sunUp ? 6.5 * math.min(1.0, intensity / 2.5) : 0.9);
     sun
       ..color = light
       ..intensity = intensity;
-    final env = scene.environmentSettings;
-    env
-      ..environmentIntensity = lerp(a.env, b.env) * (1 - 0.25 * _storm)
-      ..exposure = lerp(a.exposure, b.exposure);
+    // The live look fields; Scene.environmentSettings only returns a copy.
+    scene
+      ..environmentIntensity = lerp(a.env, b.env) * (1 - 0.5 * _storm)
+      ..exposure = lerp(a.exposure, b.exposure) * (1 - 0.3 * _storm);
+    scene.postProcess.colorGrading.saturation = 1.3 - 0.5 * _storm;
     darkness = (1 - (lerp(a.intensity, b.intensity) - 0.45) / 1.6).clamp(0.0, 1.0);
     if (_storm > 0.3) darkness = math.max(darkness, 0.45 * _storm);
     fill.intensity = 0.7 * (1 - darkness * 0.6);

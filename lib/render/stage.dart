@@ -22,6 +22,10 @@ class CameraRig {
   vm.Vector3 Function()? follow;
   String? followName;
 
+  /// Metres to shift a followed subject up the screen, clear of the
+  /// options panel at the bottom.
+  double lift = 0;
+
   vm.Vector3 _target = vm.Vector3(1, 0, -5);
   double _yaw = 0, _pitch = 0.74, _distance = 64;
 
@@ -54,7 +58,7 @@ class CameraRig {
 
   void update(double dt) {
     final f = follow;
-    if (f != null) target = f();
+    if (f != null) target = f() + vm.Vector3(math.sin(yaw), 0, math.cos(yaw)) * lift;
     final k = math.min(1.0, dt * 6);
     _target += (target - _target) * k;
     _yaw += (yaw - _yaw) * k;
@@ -135,6 +139,8 @@ class VillageStage {
     }
     dash.update(v, dt, _wall);
     _updateRain(v, dt);
+    final talking = v.dash.visit != null && rig.follow != null;
+    rig.lift += ((talking ? rig.distance * 0.16 : 0) - rig.lift) * math.min(1.0, dt * 3);
     final sel = selected == null ? null : llamas[selected];
     _ring.visible = sel != null && sel.visible;
     if (sel != null) {

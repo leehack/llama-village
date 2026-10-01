@@ -15,6 +15,7 @@ class Autoplay {
   double _t = 0;
   double _since = 0;
   String? _talked;
+  double _stormFor = 0;
 
   void start() => home.test.log('AUTOPLAY start');
 
@@ -72,10 +73,10 @@ class Autoplay {
           test.log('AUTOPLAY talk to ${l.name} (${l.activity.kind} at ${l.place})');
           home.talkTo(l.name);
           stage.rig
-            ..followName = 'Dash'
-            ..follow = (() => stage.dash.position.clone())
-            ..distance = 24
-            ..pitch = 0.45;
+            ..followName = l.name
+            ..follow = (() => stage.llamas[l.name]!.position.clone())
+            ..distance = 26
+            ..pitch = 0.5;
           _next();
         }
       case 4:
@@ -118,9 +119,12 @@ class Autoplay {
           _next();
         }
       case 8:
-        if (v.storm && !home.test.taken.contains('4b_storm') && _since > 2) {
-          _shot('4b_storm');
-          return;
+        if (v.storm) {
+          _stormFor += dt;
+          if (_stormFor > 5 && !home.test.taken.contains('4b_storm')) {
+            _shot('4b_storm');
+            return;
+          }
         }
         final hour = v.now.minute / 60;
         if (hour >= 21.6 || hour < 5) {
