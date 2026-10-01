@@ -150,14 +150,17 @@ class LlamaActor {
     yaw += turn;
     _turnRate = approach(_turnRate, dt > 0 ? turn / dt : 0, 6, dt);
 
-    final mix = gaitMix(spec, walking ? _speed : 0);
+    // Fast-forward (and the night boost) plays the gait faster instead of
+    // turning a walk into a gallop.
+    final pace = spot == null && v.minutesPerSecond > 0 ? v.timeScale * (v.fastNight ? Village.nightBoost : 1) : 1.0;
+    final mix = gaitMix(spec, walking ? _speed / pace : 0);
     _idle?.weight = mix.idle;
     _walk
       ?..weight = mix.walk
-      ..playbackTimeScale = mix.walkRate;
+      ..playbackTimeScale = mix.walkRate * pace;
     _gallop
       ?..weight = mix.gallop
-      ..playbackTimeScale = mix.gallopRate;
+      ..playbackTimeScale = mix.gallopRate * pace;
     _runHeat = approach(_runHeat, mix.gallop, mix.gallop > _runHeat ? 0.8 : 0.12, dt);
 
     final atHome = l.place == l.home;

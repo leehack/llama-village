@@ -127,6 +127,12 @@ a honey loaf (day 2), Bramble's storm arrives (day 3), Clover holds a
 rehearsal (day 4) and strings up lanterns (day 5). A day runs from 06:00
 to about 22:00, eight minutes at 1×.
 
+The llamas walk the paths at their own pace (Pip quickest, Mo slowest,
+about 1.5 m/s at 1×), so crossing the village takes up to an hour and a
+half of game time and they set off early for the rehearsal and the
+festival. They gallop only when they hurry: in the storm, or when walking
+would make them late.
+
 When every llama is asleep (or at 22:00) a night cutscene plays: the sun
 sets, hut lights go out one by one, the moon crosses, each llama's evening
 reflection appears as a dream bubble over its hut, then dawn and a "Day N"

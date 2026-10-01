@@ -112,16 +112,28 @@ class WeekThread extends StoryThread {
   @override
   List<Goal> goalsFor(Llama l, Village v) {
     final t = v.now;
-    final rehearsal = t.day == 4 && t.minute >= 10 * 60 && t.minute < 11 * 60 + 10;
+    final rehearsal = t.day == 4 && t.minute >= 9 * 60 && t.minute < 11 * 60 + 10;
     if (!rehearsal || !v.kb.knows(l.name, 'festival')) return const [];
     if (l.name == 'Clover') {
       return [
-        Goal(id, const Said(SaidKey.goalRunRehearsal, 'run the festival rehearsal on the hilltop at 11:00'), place: 'hilltop', weight: 0.8),
+        Goal(
+          id,
+          const Said(SaidKey.goalRunRehearsal, 'run the festival rehearsal on the hilltop at 11:00'),
+          place: 'hilltop',
+          weight: 0.8,
+          by: 11 * 60,
+        ),
       ];
     }
     if (v.festival.contestants.contains(l.name)) {
       return [
-        Goal(id, const Said(SaidKey.goalGoRehearsal, "go to Clover's rehearsal on the hilltop at 11:00"), place: 'hilltop', weight: 0.7),
+        Goal(
+          id,
+          const Said(SaidKey.goalGoRehearsal, "go to Clover's rehearsal on the hilltop at 11:00"),
+          place: 'hilltop',
+          weight: 0.7,
+          by: 11 * 60,
+        ),
       ];
     }
     return const [];

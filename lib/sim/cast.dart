@@ -5,7 +5,7 @@ import 'said.dart';
 
 /// What a llama is doing right now; the 3D scene animates from this.
 class Activity {
-  Activity(this.kind, this.until, {this.dest, this.with_, this.label, GameTime? start}) : start = start ?? until;
+  Activity(this.kind, this.until, {this.dest, this.with_, this.label, this.hurry = false, GameTime? start}) : start = start ?? until;
 
   /// idle, walk, work, eat, nap, sleep, talk, search, watch, wait, practise.
   final String kind;
@@ -15,12 +15,17 @@ class Activity {
   final String? with_;
   final String? label;
 
+  /// A walk taken at a gallop (storm, late for something) rather than at
+  /// the llama's own walking pace.
+  final bool hurry;
+
   Map<String, Object?> toJson() => {
     'kind': kind,
     'until': until.label,
     if (dest != null) 'dest': dest,
     if (with_ != null) 'with': with_,
     if (label != null) 'label': label,
+    if (hurry) 'hurry': true,
   };
 }
 
@@ -37,6 +42,7 @@ class Llama {
     required this.singing,
     this.courage = 0.5,
     required this.slot,
+    required this.walkPace,
   }) : place = hutOf(name);
 
   /// Standing spot index at every place, so llamas never overlap.
@@ -50,6 +56,11 @@ class Llama {
   final String likes;
   final String lifeGoal;
   final Map<String, int> friendship;
+
+  /// Walking speed in m/s on screen at 1x; it sets how many game minutes a
+  /// walk takes. Each must stay below the llama's gallop threshold
+  /// (`LlamaSpec.runFrom`).
+  final double walkPace;
 
   /// Singing skill, 0-1, for the festival.
   final double singing;
@@ -151,6 +162,7 @@ String feelingWord(int f) => switch (f) {
 List<Llama> buildCast() => [
   Llama(
     name: 'Pip',
+    walkPace: 1.7,
     slot: 0,
     traits: 'vain, dramatic, fashionable, secretly insecure',
     job: 'scarf knitter',
@@ -164,6 +176,7 @@ List<Llama> buildCast() => [
   ),
   Llama(
     name: 'Mo',
+    walkPace: 1.3,
     slot: 1,
     traits: 'shy, kind, anxious, has a golden singing voice',
     job: 'baker',
@@ -177,6 +190,7 @@ List<Llama> buildCast() => [
   ),
   Llama(
     name: 'June',
+    walkPace: 1.6,
     slot: 2,
     traits: 'nosy, chatty, cheerful, loves a scandal',
     job: 'berry farmer',
@@ -190,6 +204,7 @@ List<Llama> buildCast() => [
   ),
   Llama(
     name: 'Bramble',
+    walkPace: 1.4,
     slot: 3,
     traits: 'grumpy, old, proud, secretly romantic',
     job: 'weather watcher',
@@ -203,6 +218,7 @@ List<Llama> buildCast() => [
   ),
   Llama(
     name: 'Clover',
+    walkPace: 1.5,
     slot: 4,
     traits: 'bossy, ambitious, playful, impatient',
     job: 'festival organiser',

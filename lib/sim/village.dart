@@ -286,15 +286,32 @@ class Village {
     }
   }
 
-  /// Twenty-five minutes before the festival, everyone still chatting
-  /// elsewhere breaks off and heads for the hilltop.
+  /// At [festivalCall], everyone still chatting elsewhere breaks off and
+  /// heads for the hilltop, at a gallop if walking would be late.
   void _callToFestival() {
     abandonConversations(where: (c) => c.place != 'hilltop', rush: true);
+    for (final l in cast) {
+      if (l.activity.dest == 'hilltop' && l.activity.until.compareTo(GameTime(now.day, festivalMinute)) > 0) hurryAlong(l);
+    }
     final visit = dash.visit;
     if (visit != null && visit.target.place != 'hilltop') {
       dash.leave();
       dash.say('hurriesOff', visit.target.name);
     }
+  }
+
+  /// Turns [l]'s walk into a gallop for the rest of the way, from the spot
+  /// it has reached.
+  void hurryAlong(Llama l) {
+    final a = l.activity;
+    if (a.kind != 'walk' || a.hurry) return;
+    final total = math.max(1, a.until.minutesSince(a.start));
+    final done = (now.minutesSince(a.start) / total).clamp(0.0, 0.99);
+    final left = travelMinutes((1 - done) * walkMetres(l.place, a.dest!, l.slot), hurryPace);
+    if (left >= a.until.minutesSince(now)) return;
+    // Back-date the start so the pose's fraction of the path is unchanged.
+    final elapsed = (done * left / (1 - done)).round();
+    l.activity = Activity('walk', now.plus(left), dest: a.dest, label: a.label, hurry: true, start: now.plus(-elapsed));
   }
 
   /// The festival has been judged: the week is over.
@@ -386,7 +403,7 @@ class Village {
   void _minute() {
     if (now.minute == 6 * 60 && now.day > 1) _morning();
     if (now.minute == 22 * 60) _evening();
-    if (now.day == festivalDay && now.minute == festivalMinute - 25) _callToFestival();
+    if (now.day == festivalDay && now.minute == festivalCall) _callToFestival();
     if (now.minute == 4 * 60 + 30 && !_plannedTomorrow) {
       _plannedTomorrow = true;
       planning = true;
@@ -486,7 +503,7 @@ class Village {
       if (l.activity.kind != 'idle') continue;
       final c = decide(this, l);
       if (c.kind == 'walk') {
-        l.activity = Activity('walk', now.plus(math.max(1, c.minutes)), dest: c.dest, label: c.why.english, start: now);
+        l.activity = Activity('walk', now.plus(math.max(1, c.minutes)), dest: c.dest, label: c.why.english, hurry: c.hurry, start: now);
         events.emit('move', {'who': l.name, 'from': l.place, 'to': c.dest, 'eta': l.activity.until.label, 'why': c.why.english});
       } else {
         l.activity = Activity(c.kind, now.plus(c.minutes), label: c.why.english, start: now);

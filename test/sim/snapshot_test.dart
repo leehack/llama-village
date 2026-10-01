@@ -58,6 +58,9 @@ void main() {
     await v.begin();
     while (v.now.compareTo(const GameTime(1, 23 * 60)) < 0 || v.active.isNotEmpty || !v.chat.queue.idle) {
       await runMinutes(v, 1);
+      // At 10 ms a game minute a chat can outlast the night; the night skip
+      // ends it the same way.
+      if (v.now.compareTo(const GameTime(1, 23 * 60)) >= 0) v.abandonConversations();
     }
     expect(v.active, isEmpty);
     final copy = _reload(v);

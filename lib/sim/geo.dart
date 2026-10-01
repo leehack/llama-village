@@ -125,6 +125,19 @@ double polylineLength(List<P2> pts) {
   return total;
 }
 
+/// Real seconds a game minute lasts at 1x (`Village.msPerMinute`).
+const double secondsPerMinuteAt1x = 0.5;
+
+/// A hurried walk's speed in m/s at 1x: the Gallop clip's own pace.
+const double hurryPace = 4.5;
+
+/// Length of [walkPath], in metres.
+double walkMetres(String from, String to, int slot) => from == to ? 0 : polylineLength(walkPath(from, to, slot));
+
+/// Game minutes to cover [metres] at [pace] m/s on screen at 1x. Walks are
+/// timed from the path so the llama on screen moves at that pace.
+int travelMinutes(double metres, double pace) => metres <= 0 ? 0 : math.max(1, (metres / (pace * secondsPerMinuteAt1x)).ceil());
+
 /// The point a fraction [t] (0-1) of the way along [pts], and the heading
 /// there as a unit vector.
 (P2, P2) along(List<P2> pts, double t) {

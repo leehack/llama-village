@@ -1,19 +1,21 @@
 import 'dart:math' as math;
 
 import 'cast.dart';
+import 'geo.dart';
 import 'places.dart';
 import 'said.dart';
 import 'threads.dart';
 import 'village.dart';
 
 class Choice {
-  Choice(this.kind, this.utility, this.why, {this.dest, this.minutes = 10, this.goal});
+  Choice(this.kind, this.utility, this.why, {this.dest, this.minutes = 10, this.goal, this.hurry = false});
   final String kind;
   double utility;
   final Said why;
   final String? dest;
   final int minutes;
   final Goal? goal;
+  final bool hurry;
 }
 
 /// Utility-based action selection: needs, storm safety, plan adherence and
@@ -63,6 +65,11 @@ Choice decide(Village v, Llama l) {
       add(Choice(g.action!, g.weight + 0.25, g.said, minutes: g.action == 'flowers' ? 8 : 20, goal: g));
     }
     if (g.action == 'festival' && l.place == 'hilltop') add(Choice('watch', g.weight + 0.3, g.said, minutes: 15, goal: g));
+    // Early for an appointment: wait there rather than wander off again.
+    final by = g.by;
+    if (by != null && g.action == null && g.place == l.place && minute < by) {
+      add(Choice('linger', g.weight + 0.2, g.said, minutes: math.min(15, by - minute), goal: g));
+    }
     if (g.seek != null) {
       final target = v.byName(g.seek!);
       if (target.place == l.place && target.busyTalking) {
@@ -92,12 +99,16 @@ Choice decide(Village v, Llama l) {
   // Moving.
   for (final dest in [...publicPlaces, l.home]) {
     if (dest == l.place) continue;
+    final metres = walkMetres(l.place, dest, l.slot);
+    final walking = travelMinutes(metres, l.walkPace);
     var u = 0.0;
     var why = const Said.raw('');
-    void consider(double value, Said reason) {
+    int? by;
+    void consider(double value, Said reason, {int? deadline}) {
       if (value > u) {
         u = value;
         why = reason;
+        by = deadline;
       }
     }
 
@@ -106,7 +117,7 @@ Choice decide(Village v, Llama l) {
     if (l.energy < 0.3 && dest == l.home) consider(1 - l.energy, const Said(SaidKey.whyRest, 'rest'));
     if (dest == l.workplace && !night) consider(0.3, const Said(SaidKey.whyWork, 'work'));
     for (final g in goals) {
-      if (g.place == dest) consider(g.weight + 0.15, g.said);
+      if (g.place == dest) consider(g.weight + 0.15, g.said, deadline: g.by);
       if (g.seek != null) {
         final t = v.byName(g.seek!);
         final where = t.activity.kind == 'walk' ? t.activity.dest : t.place;
@@ -126,8 +137,11 @@ Choice decide(Village v, Llama l) {
         consider(1.6, const Said(SaidKey.whyShelter, 'shelter from the storm'));
       }
     }
-    u -= travelMinutes(l.place, dest) * 0.008;
-    if (u > 0.05) add(Choice('walk', u, why, dest: dest, minutes: travelMinutes(l.place, dest)));
+    final deadline = by;
+    final hurry = v.storm || (deadline != null && minute + walking > deadline);
+    // Walks take up to ~100 game minutes, so a long one needs a real reason.
+    u -= metres * 0.007;
+    if (u > 0.05) add(Choice('walk', u, why, dest: dest, minutes: hurry ? travelMinutes(metres, hurryPace) : walking, hurry: hurry));
   }
 
   add(Choice('linger', 0.06, const Said(SaidKey.whyNothing, 'nothing better'), minutes: 10));

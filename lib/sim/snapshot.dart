@@ -118,6 +118,7 @@ Map<String, Object?> _activity(Activity a) => {
   'dest': a.dest,
   'with': a.with_,
   'label': a.label,
+  'hurry': a.hurry,
 };
 
 Activity _unactivity(Map<String, Object?> m) => Activity(
@@ -127,6 +128,7 @@ Activity _unactivity(Map<String, Object?> m) => Activity(
   dest: m['dest'] as String?,
   with_: m['with'] as String?,
   label: m['label'] as String?,
+  hurry: m['hurry'] as bool? ?? false,
 );
 
 Map<String, Object?> _llama(Llama l, GameTime now) {

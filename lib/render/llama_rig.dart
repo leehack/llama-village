@@ -62,7 +62,7 @@ final Map<String, LlamaSpec> llamaSpecs = {
     head: vm.Vector3(0, 1.40, -0.56),
     walkSeconds: 32 / 30,
     strideMetres: 0.47,
-    runFrom: 1.8,
+    runFrom: 2.2,
     blinkEvery: 4.5,
     lookRate: 3.5,
   ),
@@ -130,7 +130,7 @@ double _smooth(double e0, double e1, double x) {
 GaitMix gaitMix(LlamaSpec spec, double speed) {
   final moving = _smooth(0.08, 0.45, speed);
   final run = _smooth(spec.runFrom - 0.5, spec.runFrom + 0.5, speed);
-  final walkRate = (speed / spec.strideMetres * spec.walkSeconds).clamp(0.45, 2.4);
+  final walkRate = (speed / spec.strideMetres * spec.walkSeconds).clamp(0.45, 3.2);
   final gallopRate = (speed / 4.5).clamp(0.7, 2.6);
   return GaitMix(1 - moving, moving * (1 - run), moving * run, walkRate, gallopRate);
 }

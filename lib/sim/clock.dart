@@ -57,6 +57,15 @@ class GameTime implements Comparable<GameTime> {
 const int weekDays = 5;
 const int festivalDay = 5;
 const int festivalMinute = 16 * 60;
+
+/// When everyone still chatting elsewhere breaks off for the festival:
+/// time for the longest gallop up the hill (about 30 minutes).
+const int festivalCall = festivalMinute - 40;
+
+/// When festival day's walk to the hilltop begins. Walks take up to about
+/// 100 game minutes, so even a llama that has just set off the other way
+/// gets back in time.
+const int festivalSetOff = 13 * 60 + 30;
 const int stormDay = 3;
 
 /// Backstory facts are stamped before day 1.

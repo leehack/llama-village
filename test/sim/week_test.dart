@@ -104,7 +104,7 @@ void main() {
     // A chat away from the hilltop, caught as it starts: no line is written
     // yet, and none can be during the synchronous skip, so it cannot end by
     // itself before the call.
-    const call = GameTime(festivalDay, festivalMinute - 25);
+    const call = GameTime(festivalDay, festivalCall);
     var away = <Conversation>[];
     for (var i = 0; i < 4000 && away.isEmpty && v.now.compareTo(call) < 0; i++) {
       v.advance(500);

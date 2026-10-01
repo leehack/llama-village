@@ -9,20 +9,6 @@ String theP(String place) => isHut(place) ? place : 'the $place';
 bool isIndoor(String place) => !outdoorPlaces.contains(place);
 bool hasFood(String place, String home) => place == 'bakery' || place == 'berry bushes' || place == home;
 
-/// Walking time in game minutes. Huts sit around the village green; the
-/// hilltop is a climb.
-int travelMinutes(String from, String to) {
-  if (from == to) return 0;
-  int leg(String p) => switch (p) {
-    'hilltop' => 9,
-    'pond' => 5,
-    'berry bushes' => 5,
-    'bakery' => 4,
-    _ => 4,
-  };
-  return leg(from) + leg(to) - 2;
-}
-
 /// Where each place sits in the 3D village, in metres on the ground plane
 /// (x east, z south). The bakery is the village square.
 const Map<String, (double, double)> placeCoordinates = {

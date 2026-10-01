@@ -10,13 +10,17 @@ import 'village.dart';
 /// A want that a thread hands to one llama: it steers the utility choice
 /// (place, seek, action) and the dialogue prompt (text, topic).
 class Goal {
-  Goal(this.thread, this.said, {this.place, this.seek, this.action, this.weight = 0.5, this.topic});
+  Goal(this.thread, this.said, {this.place, this.seek, this.action, this.weight = 0.5, this.topic, this.by});
   final String thread;
 
   /// What the llama wants, in the player's language; [text] is its English.
   final Said said;
   String get text => said.english;
   final String? place;
+
+  /// Minute of the day to be at [place] by; a llama that would walk in
+  /// late hurries instead.
+  final int? by;
   final String? seek;
   final String? action;
   final double weight;
@@ -541,7 +545,7 @@ class FestivalThread extends StoryThread {
     final goals = <Goal>[];
     if (!v.kb.knows(l.name, 'festival') || state == 'judged') return goals;
     final t = v.now;
-    if (t.day == festivalDay && t.minute >= 15 * 60 + 20 && t.minute < 16 * 60 + 40) {
+    if (t.day == festivalDay && t.minute >= festivalSetOff && t.minute < festivalMinute + 40) {
       goals.add(
         Goal(
           id,
@@ -549,6 +553,7 @@ class FestivalThread extends StoryThread {
           place: 'hilltop',
           action: 'festival',
           weight: 1.4,
+          by: festivalMinute,
         ),
       );
     }
@@ -748,6 +753,7 @@ class CrushThread extends StoryThread {
           place: 'berry bushes',
           action: 'flowers',
           weight: 1.0,
+          by: 6 * 60 + 50,
         ),
       );
     }
@@ -917,6 +923,9 @@ class StormThread extends StoryThread {
     final t = v.now;
     if (t.day == stormDay && t.minute == 15 * 60 && state == 'forecast') {
       v.storm = true;
+      for (final l in v.cast) {
+        v.hurryAlong(l);
+      }
       for (final e in v.kb['storm_forecast'].knownBy.entries) {
         if (e.key != 'Bramble' && e.key != 'Dash' && e.value.believes) warnedBeforeStorm.add(e.key);
       }
