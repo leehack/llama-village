@@ -813,6 +813,21 @@ class L10nEn extends L10n {
       'tool/audio/gen_audio.py: additive synthesis, shaped noise and an FFT reverb. Nothing is sampled or downloaded.';
 
   @override
+  String get creditsFonts => 'Fonts';
+
+  @override
+  String get creditsGowunDodum =>
+      'SIL Open Font License 1.1, © 2021 The Gowun Dodum Project Authors (github.com/yangheeryu/Gowun-Dodum). The Korean menus, HUD, inspector, log and settings.';
+
+  @override
+  String get creditsJua =>
+      'SIL Open Font License 1.1, © 2018 The Jua Project Authors. Korean titles, speech and thought bubbles and Dash\'s options.';
+
+  @override
+  String get creditsGowunBatang =>
+      'SIL Open Font License 1.1, © 2021 The Gowun Batang Project Authors (github.com/yangheeryu/Gowun-Batang). The Korean storybook.';
+
+  @override
   String get afterTheFestival => 'After the festival…';
 
   @override

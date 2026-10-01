@@ -812,6 +812,20 @@ class L10nKo extends L10n {
   String get creditsSynthNote => 'tool/audio/gen_audio.py: 가산 합성, 다듬은 잡음, FFT 리버브. 샘플도, 내려받은 것도 없어요.';
 
   @override
+  String get creditsFonts => '글꼴';
+
+  @override
+  String get creditsGowunDodum =>
+      'SIL Open Font License 1.1, © 2021 The Gowun Dodum Project Authors (github.com/yangheeryu/Gowun-Dodum). 한국어 메뉴, HUD, 살펴보기 창, 마을 일지, 설정.';
+
+  @override
+  String get creditsJua => 'SIL Open Font License 1.1, © 2018 The Jua Project Authors. 한국어 제목, 말풍선과 생각 풍선, Dash의 선택지.';
+
+  @override
+  String get creditsGowunBatang =>
+      'SIL Open Font License 1.1, © 2021 The Gowun Batang Project Authors (github.com/yangheeryu/Gowun-Batang). 한국어 그림책.';
+
+  @override
   String get afterTheFestival => '축제가 끝나고…';
 
   @override

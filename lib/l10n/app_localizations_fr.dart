@@ -816,6 +816,21 @@ class L10nFr extends L10n {
       'tool/audio/gen_audio.py : synthèse additive, bruit filtré et réverbération FFT. Rien n\'est échantillonné ni téléchargé.';
 
   @override
+  String get creditsFonts => 'Polices';
+
+  @override
+  String get creditsGowunDodum =>
+      'SIL Open Font License 1.1, © 2021 The Gowun Dodum Project Authors (github.com/yangheeryu/Gowun-Dodum). Les menus, le HUD, l\'inspecteur, le journal et les réglages en coréen.';
+
+  @override
+  String get creditsJua =>
+      'SIL Open Font License 1.1, © 2018 The Jua Project Authors. Les titres, les bulles de paroles et de pensées et les choix de Dash en coréen.';
+
+  @override
+  String get creditsGowunBatang =>
+      'SIL Open Font License 1.1, © 2021 The Gowun Batang Project Authors (github.com/yangheeryu/Gowun-Batang). Le livre d\'images en coréen.';
+
+  @override
   String get afterTheFestival => 'Après la fête…';
 
   @override

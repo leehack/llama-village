@@ -877,6 +877,14 @@
   "@creditsSynth": {},
   "creditsSynthNote": "tool/audio/gen_audio.py: additive synthesis, shaped noise and an FFT reverb. Nothing is sampled or downloaded.",
   "@creditsSynthNote": {},
+  "creditsFonts": "Fonts",
+  "@creditsFonts": {},
+  "creditsGowunDodum": "SIL Open Font License 1.1, © 2021 The Gowun Dodum Project Authors (github.com/yangheeryu/Gowun-Dodum). The Korean menus, HUD, inspector, log and settings.",
+  "@creditsGowunDodum": {},
+  "creditsJua": "SIL Open Font License 1.1, © 2018 The Jua Project Authors. Korean titles, speech and thought bubbles and Dash's options.",
+  "@creditsJua": {},
+  "creditsGowunBatang": "SIL Open Font License 1.1, © 2021 The Gowun Batang Project Authors (github.com/yangheeryu/Gowun-Batang). The Korean storybook.",
+  "@creditsGowunBatang": {},
   "afterTheFestival": "After the festival…",
   "@afterTheFestival": {
     "description": "Epilogue heading."

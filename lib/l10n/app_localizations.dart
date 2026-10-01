@@ -1137,6 +1137,30 @@ abstract class L10n {
   /// **'tool/audio/gen_audio.py: additive synthesis, shaped noise and an FFT reverb. Nothing is sampled or downloaded.'**
   String get creditsSynthNote;
 
+  /// No description provided for @creditsFonts.
+  ///
+  /// In en, this message translates to:
+  /// **'Fonts'**
+  String get creditsFonts;
+
+  /// No description provided for @creditsGowunDodum.
+  ///
+  /// In en, this message translates to:
+  /// **'SIL Open Font License 1.1, © 2021 The Gowun Dodum Project Authors (github.com/yangheeryu/Gowun-Dodum). The Korean menus, HUD, inspector, log and settings.'**
+  String get creditsGowunDodum;
+
+  /// No description provided for @creditsJua.
+  ///
+  /// In en, this message translates to:
+  /// **'SIL Open Font License 1.1, © 2018 The Jua Project Authors. Korean titles, speech and thought bubbles and Dash\'s options.'**
+  String get creditsJua;
+
+  /// No description provided for @creditsGowunBatang.
+  ///
+  /// In en, this message translates to:
+  /// **'SIL Open Font License 1.1, © 2021 The Gowun Batang Project Authors (github.com/yangheeryu/Gowun-Batang). The Korean storybook.'**
+  String get creditsGowunBatang;
+
   /// Epilogue heading.
   ///
   /// In en, this message translates to:

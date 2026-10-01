@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../l10n/app_localizations.dart';
 import '../palette.dart';
 import 'menu_kit.dart';
+import '../fonts.dart';
 
 /// (what, who and licence) rows of the credits, by section.
 List<(String, List<(String, String)>)> creditSections(L10n l) => [
@@ -23,6 +24,7 @@ List<(String, List<(String, String)>)> creditSections(L10n l) => [
       ('Flutter, shared_preferences, path_provider, intl', l.creditsFlutter),
     ],
   ),
+  (l.creditsFonts, [('Gowun Dodum', l.creditsGowunDodum), ('Jua', l.creditsJua), ('Gowun Batang', l.creditsGowunBatang)]),
   (l.creditsSound, [(l.creditsSynth, l.creditsSynthNote)]),
 ];
 
@@ -52,7 +54,7 @@ class CreditsView extends StatelessWidget {
                       const SizedBox(height: 12),
                       Text(
                         section.toUpperCase(),
-                        style: menuText(11, weight: FontWeight.w900, color: gold).copyWith(letterSpacing: 1.2),
+                        style: Face.display.of(context, menuText(11, weight: FontWeight.w900, color: gold).copyWith(letterSpacing: 1.2)),
                       ),
                       for (final (what, who) in rows)
                         Padding(

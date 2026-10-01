@@ -290,9 +290,19 @@ the rule-made line.
 Korean and French take more tokens than English, so each call gets a
 larger budget and runs longer: on a quiet M4 Max, a dialogue line takes
 about 0.26 s in English against 0.37 s in French and 0.44 s in Korean,
-and a storybook page about 1.2 s against 1.9 s and 1.7 s. Korean text uses the
-system fonts (Apple SD Gothic Neo in the UI, AppleMyungjo for the
-storybook's serif), so nothing is downloaded.
+and a storybook page about 1.2 s against 1.9 s and 1.7 s.
+
+Korean is set in three bundled faces (`assets/fonts/`, SIL Open Font
+License 1.1): Gowun Dodum for the menus, HUD, inspector, log and
+settings; Jua for titles, headings, speech and thought bubbles and
+Dash's options; and Gowun Batang (Regular and Bold) for the storybook's
+text, titles and drop cap. They apply when the language is Korean, or to
+a line with Hangul in it, so a mixed line such as "Pip이" is set in one
+face; English and French keep the system faces, with the Korean ones as
+fallbacks. The files are subsets (Latin, punctuation, jamo, CJK symbols,
+fullwidth forms and the 2,350 common Hangul syllables of KS X 1001, 6 MB
+for the four), so a rarer syllable falls back to Apple SD Gothic Neo or
+AppleMyungjo.
 
 ## The look and the village's animals
 
@@ -385,6 +395,30 @@ python3 tool/audio/gen_audio.py [--preview /tmp/village_audio.m4a] [--only meow,
 
 Loop lengths are whole Opus frames minus the encoder pre-skip, so they
 decode sample-exact.
+
+## Credits
+
+The game's Credits page lists these too.
+
+- Models: Gemma 4 E2B and EmbeddingGemma 300M by Google DeepMind (Gemma
+  4 licence, Apache License 2.0, and the Gemma Terms of Use), and the
+  optional Laya decision model.
+- [llamadart](https://pub.dev/packages/llamadart) (MIT, © 2024 Jhin Lee)
+  with llama.cpp (MIT, © the ggml authors);
+  [flutter_scene](https://pub.dev/packages/flutter_scene) (MIT, © 2023
+  Brandon DeRosier); [flutter_soloud](https://pub.dev/packages/flutter_soloud)
+  (MIT, © 2024 the flutter_soloud authors) with SoLoud (zlib/libpng, ©
+  Jari Komppa); Flutter, shared_preferences, path_provider and intl (BSD
+  3-Clause, © the Flutter authors).
+- Fonts, all under the SIL Open Font License 1.1 (each `OFL.txt` sits
+  next to its font in `assets/fonts/`):
+  [Gowun Dodum](https://github.com/yangheeryu/Gowun-Dodum) (© 2021 The
+  Gowun Dodum Project Authors), Jua (© 2018 The Jua Project Authors) and
+  [Gowun Batang](https://github.com/yangheeryu/Gowun-Batang) (© 2021 The
+  Gowun Batang Project Authors), from
+  [google/fonts](https://github.com/google/fonts); subset with
+  fontTools, names unchanged (none declares a Reserved Font Name).
+- Music and sounds are synthesized in code (`tool/audio/gen_audio.py`).
 
 ## Dev-only: the macOS sandbox is off
 
