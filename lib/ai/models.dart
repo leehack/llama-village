@@ -208,6 +208,13 @@ class VillageModels implements ChatModel, EmbedModel, TopicChooser {
     return r.choices['topic']!.choice;
   }
 
+  /// Stops whatever the engines are generating, so a game being left can
+  /// release them quickly; the engines stay loaded.
+  void cancel() {
+    _chat.cancelGeneration();
+    _embed.cancelGeneration();
+  }
+
   /// Cancels generation and frees every engine. Safe to call twice.
   Future<void> dispose() => _disposing ??= _dispose();
 

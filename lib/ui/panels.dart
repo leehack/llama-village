@@ -6,6 +6,7 @@ import '../sim/laya_roles.dart';
 import '../sim/log.dart';
 import '../sim/places.dart';
 import '../sim/village.dart';
+import '../sim/week.dart';
 import 'palette.dart';
 
 TextStyle _t(double size, {FontWeight weight = FontWeight.w600, Color color = Colors.white, FontStyle? style}) =>
@@ -63,11 +64,6 @@ class TopBar extends StatelessWidget {
         : village.isNight
         ? Icons.nightlight_round
         : Icons.wb_sunny;
-    final dayLabel = switch (now.day) {
-      1 => 'the day before the festival',
-      2 => 'Berry Festival day',
-      _ => now.partOfDay,
-    };
     return _Card(
       padding: const EdgeInsets.fromLTRB(14, 8, 10, 8),
       child: Row(
@@ -80,7 +76,7 @@ class TopBar extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text('Day ${now.day}  ${now.hhmm}', style: _t(18, weight: FontWeight.w900)),
-              Text(village.planning ? 'the llamas are planning tomorrow…' : dayLabel, style: _t(11, color: Colors.white70)),
+              Text(village.planning ? 'the llamas are planning tomorrow…' : dayLabel(now.day), style: _t(11, color: Colors.white70)),
             ],
           ),
           const SizedBox(width: 14),

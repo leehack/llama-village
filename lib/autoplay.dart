@@ -30,11 +30,18 @@ class Autoplay {
     _shooting = home.test.shot(name).whenComplete(() => _shooting = null);
   }
 
+  bool _started = false;
+
   void tick(double dt) {
+    if (!_started && home.phase == Phase.menu && home.busy == null) {
+      _started = true;
+      home.newGame();
+    }
+    final v = home.village;
+    if (v == null || home.phase != Phase.playing) return;
     _t += dt;
     if (_shooting != null) return;
     _since += dt;
-    final v = home.village!;
     final stage = home.stage;
     final test = home.test;
     switch (_step) {
