@@ -69,6 +69,7 @@ class Autoplay {
         if (free.isNotEmpty || _since > 30) {
           final l = free.isNotEmpty ? free.first : v.cast.first;
           _talked = l.name;
+          test.log('AUTOPLAY talk to ${l.name} (${l.activity.kind} at ${l.place})');
           home.talkTo(l.name);
           stage.rig
             ..followName = 'Dash'
@@ -87,7 +88,7 @@ class Autoplay {
           home.choose(0);
           _next();
         } else if (visit == null && _since > 2 || _since > 90) {
-          test.log('AUTOPLAY visit failed (${visit?.stage})');
+          test.log('AUTOPLAY visit to $_talked failed (${visit?.stage}; notice: ${v.dash.notice}; ${v.byName(_talked!).activity.kind})');
           _step = 6;
           _since = 0;
         }

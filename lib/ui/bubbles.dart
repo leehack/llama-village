@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 
@@ -124,7 +122,6 @@ class _Bubble extends StatelessWidget {
             ),
           );
     final accent = accentOf(speech.who);
-    final fresh = speech.shownAtMs == null ? 0.0 : 1.0;
     return ConstrainedBox(
       constraints: const BoxConstraints(maxWidth: 250),
       child: Column(
@@ -143,7 +140,7 @@ class _Bubble extends StatelessWidget {
           if (thought)
             Padding(
               padding: const EdgeInsets.only(top: 2),
-              child: Column(children: [_dot(9, fresh), const SizedBox(height: 2), _dot(6, fresh)]),
+              child: Column(children: [_dot(9), const SizedBox(height: 2), _dot(6)]),
             )
           else
             CustomPaint(size: const Size(16, 8), painter: _Tail(accent)),
@@ -152,7 +149,7 @@ class _Bubble extends StatelessWidget {
     );
   }
 
-  Widget _dot(double d, double _) => Container(
+  Widget _dot(double d) => Container(
     width: d,
     height: d,
     decoration: BoxDecoration(
@@ -186,6 +183,3 @@ class _Tail extends CustomPainter {
   @override
   bool shouldRepaint(_Tail old) => old.color != color;
 }
-
-/// Keeps [v] within [lo, hi].
-double clampTo(double v, double lo, double hi) => math.max(lo, math.min(hi, v));

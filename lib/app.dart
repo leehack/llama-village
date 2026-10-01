@@ -65,6 +65,7 @@ class VillageHomeState extends State<VillageHome> {
   double _fpsTime = 0;
   Size _size = Size.zero;
   Future<void>? _shutdown;
+  Future<VillageModels>? _loading;
   Autoplay? _autoplay;
 
   // Pointer state.
@@ -125,7 +126,7 @@ class VillageHomeState extends State<VillageHome> {
     }
     try {
       final watch = Stopwatch()..start();
-      final m = await VillageModels.load(
+      final m = await (_loading = VillageModels.load(
         cfg,
         onProgress: (l, f) {
           if (mounted) {
@@ -135,7 +136,7 @@ class VillageHomeState extends State<VillageHome> {
             });
           }
         },
-      );
+      ));
       if (_shutdown != null) {
         await m.dispose();
         return;
@@ -207,6 +208,15 @@ class VillageHomeState extends State<VillageHome> {
   Future<void> _doShutdown() async {
     final watch = Stopwatch()..start();
     village?.close();
+    // A quit during loading waits for the engines, then frees them too.
+    final loading = _loading;
+    if (models == null && loading != null) {
+      try {
+        models = await loading.timeout(const Duration(seconds: 60));
+      } catch (_) {
+        // Loading failed, so nothing is left to free.
+      }
+    }
     await models?.dispose();
     models = null;
     test.log('SHUTDOWN models disposed in ${watch.elapsedMilliseconds} ms');
