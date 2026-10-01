@@ -33,17 +33,19 @@ class SavePicker extends StatelessWidget {
         children: [
           MenuHeader(title: l.continueGame, subtitle: l.pickSave, onClose: onClose),
           const SizedBox(height: 18),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              for (final slot in SaveStore.allSlots)
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 6),
-                    child: _SlotTile(slot: slot, info: slots[slot], autofocus: slot == first, onPick: onPick),
+          IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                for (final slot in SaveStore.allSlots)
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 6),
+                      child: _SlotTile(slot: slot, info: slots[slot], autofocus: slot == first, onPick: onPick),
+                    ),
                   ),
-                ),
-            ],
+              ],
+            ),
           ),
         ],
       ),
