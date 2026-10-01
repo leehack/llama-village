@@ -26,6 +26,10 @@ class CameraRig {
   /// options panel at the bottom.
   double lift = 0;
 
+  /// A scripted camera (cutscenes, the menu's drone orbit) shown instead
+  /// of the orbit view while set.
+  PerspectiveCamera? override;
+
   vm.Vector3 _target = vm.Vector3(1, 0, -5);
   double _yaw = 0, _pitch = 0.74, _distance = 64;
 
@@ -66,11 +70,16 @@ class CameraRig {
     _distance += (distance - _distance) * k;
   }
 
-  vm.Vector3 get eye =>
+  vm.Vector3 get eye => override?.position ?? orbitEye;
+
+  vm.Vector3 get orbitEye =>
       _target + vm.Vector3(math.sin(_yaw) * math.cos(_pitch), math.sin(_pitch), math.cos(_yaw) * math.cos(_pitch)) * _distance;
 
+  /// Where the orbit view looks.
+  vm.Vector3 get orbitTarget => _target + vm.Vector3(0, 1.2, 0);
+
   PerspectiveCamera camera() =>
-      PerspectiveCamera(position: eye, target: _target + vm.Vector3(0, 1.2, 0), fovRadiansY: fov, fovNear: 0.5, fovFar: 400);
+      override ?? PerspectiveCamera(position: orbitEye, target: orbitTarget, fovRadiansY: fov, fovNear: 0.5, fovFar: 400);
 }
 
 /// Owns the flutter_scene graph: the static world, the sky, the actors and
@@ -87,6 +96,10 @@ class VillageStage {
   double _rainY = 0;
   String? selected;
   double _wall = 0;
+
+  /// Cutscene overrides: the hour the sky shows, and huts whose lights are out.
+  double? hourOverride;
+  final Set<String> lightsOut = {};
 
   Future<void> load(List<String> names) async {
     await Scene.initializeStaticResources();
@@ -129,7 +142,7 @@ class VillageStage {
 
   void update(Village v, double dt) {
     _wall += dt;
-    final hour = (v.now.minute + v.minuteFrac) / 60;
+    final hour = hourOverride ?? (v.now.minute + v.minuteFrac) / 60;
     sky.update(hour, storm: v.storm, dt: dt);
     _nightLights(v, hour);
     for (final l in v.cast) {
@@ -161,7 +174,7 @@ class VillageStage {
         final l = v.byName(owner);
         final home = l.place == l.home && l.activity.kind != 'walk' || l.activity.dest == l.home;
         final lateNight = hour >= 23.5 || hour < 5;
-        on = home && !lateNight ? dark : 0;
+        on = home && !lateNight && !lightsOut.contains(owner) ? dark : 0;
       } else if (hour >= 23 || hour < 4.5) {
         on = 0;
       }
