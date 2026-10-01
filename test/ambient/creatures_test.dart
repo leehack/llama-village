@@ -147,6 +147,20 @@ void main() {
     });
   });
 
+  test('a cat on a roof sits clear of the slope, off it along the normal', () {
+    final slope = math.atan2(2.3, 3.05);
+    for (final hut in AmbientLayout.roofHuts) {
+      final (hx, hz) = placeAnchor(hut);
+      for (final side in [0, 1]) {
+        final (on, height, _) = AmbientLayout.roofPerch(hut, side);
+        final r = dist(on, (hx, hz));
+        final y = groundHeight(on.$1, on.$2) + height - groundHeight(hx, hz);
+        final roof = 2.35 + 2.3 * (1 - r / 3.05);
+        expect((y - roof) * math.cos(slope), closeTo(AmbientLayout.perchClearance, 1e-9), reason: '$hut side $side');
+      }
+    }
+  });
+
   test('a standing llama does not startle the chickens', () {
     final life = AmbientLife(seed: 4, cats: 0, ducks: 0, dog: false, butterflies: 0);
     run(life, 2, (_) => at(10));

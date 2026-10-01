@@ -100,14 +100,23 @@ abstract final class AmbientLayout {
   /// Huts whose eaves the cats climb onto.
   static const List<String> roofHuts = ["Pip's hut", "Mo's hut", "June's hut"];
 
-  /// Where a cat sits on [hut]'s eave (height from the hut's base), and the
-  /// ground spot it jumps from.
+  /// How far a perched cat sits off the roof along its normal: a cat is
+  /// posed level, so without it the uphill half sinks into the slope.
+  static const double perchClearance = 0.15;
+
+  /// Where a cat sits on [hut]'s eave, its height above the ground there,
+  /// and the ground spot it jumps from.
   static (P2, double, P2) roofPerch(String hut, int side) {
-    final a = side.isEven ? 1.9 : -2.1;
-    final on = placeLocal(hut, math.sin(a) * 2.75, math.cos(a) * 2.75);
-    final from = placeLocal(hut, math.sin(a) * 3.7, math.cos(a) * 3.7);
     // The roof cone: eaves at 2.35 m and radius 3.05, apex at 4.65 m.
-    return (on, 2.35 + 2.3 * (1 - 2.75 / 3.05), from);
+    const eave = 2.35, radius = 3.05, rise = 2.3, seat = 2.75;
+    final slope = math.atan2(rise, radius);
+    final a = side.isEven ? 1.9 : -2.1;
+    final out = seat + perchClearance * math.sin(slope);
+    final on = placeLocal(hut, math.sin(a) * out, math.cos(a) * out);
+    final from = placeLocal(hut, math.sin(a) * 3.7, math.cos(a) * 3.7);
+    final (hx, hz) = placeAnchor(hut);
+    final roof = groundHeight(hx, hz) + eave + rise * (1 - seat / radius) + perchClearance * math.cos(slope);
+    return (on, roof - groundHeight(on.$1, on.$2), from);
   }
 
   /// Round no-go areas for walking creatures: buildings, bushes, the pond
