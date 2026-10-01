@@ -25,11 +25,12 @@ class _Key {
     required this.fogDensity,
     this.temperature = 0.03,
     this.saturation = 1.3,
+    this.contrast = 1.08,
     this.inScatter = 0.3,
   });
   final double hour;
   final _Rgb zenith, horizon, ground, light, fog;
-  final double intensity, env, exposure, fogDensity, temperature, saturation, inScatter;
+  final double intensity, env, exposure, fogDensity, temperature, saturation, contrast, inScatter;
 
   _Key at(double h) => _Key(
     h,
@@ -44,6 +45,7 @@ class _Key {
     fogDensity: fogDensity,
     temperature: temperature,
     saturation: saturation,
+    contrast: contrast,
     inScatter: inScatter,
   );
 }
@@ -94,34 +96,38 @@ final List<_Key> _keys = [
     fogDensity: 0.007,
     temperature: -0.06,
   ),
-  // Sunrise, with a warm morning haze.
+  // Sunrise: clear, fresh air with a pink horizon and a thin haze low down.
   const _Key(
     6.3,
-    zenith: (0.2, 0.32, 0.64),
-    horizon: (1.0, 0.58, 0.4),
-    ground: (0.3, 0.3, 0.22),
-    light: (1.0, 0.62, 0.38),
-    intensity: 1.7,
-    env: 0.5,
-    exposure: 1.08,
-    fog: (0.86, 0.62, 0.48),
-    fogDensity: 0.004,
-    temperature: 0.12,
-    inScatter: 0.6,
+    zenith: (0.22, 0.36, 0.7),
+    horizon: (1.0, 0.62, 0.48),
+    ground: (0.3, 0.32, 0.22),
+    light: (1.0, 0.68, 0.44),
+    intensity: 1.9,
+    env: 0.52,
+    exposure: 1.04,
+    fog: (0.8, 0.7, 0.68),
+    fogDensity: 0.0016,
+    temperature: 0.06,
+    saturation: 1.42,
+    contrast: 1.12,
+    inScatter: 0.3,
   ),
   const _Key(
     7.6,
-    zenith: (0.26, 0.46, 0.88),
-    horizon: (0.95, 0.84, 0.72),
+    zenith: (0.26, 0.47, 0.9),
+    horizon: (0.9, 0.86, 0.8),
     ground: (0.4, 0.46, 0.3),
-    light: (1.0, 0.86, 0.68),
-    intensity: 3.3,
+    light: (1.0, 0.88, 0.72),
+    intensity: 3.4,
     env: 0.64,
     exposure: 1.0,
-    fog: (0.82, 0.8, 0.8),
-    fogDensity: 0.0035,
-    temperature: 0.06,
-    inScatter: 0.4,
+    fog: (0.76, 0.82, 0.9),
+    fogDensity: 0.0019,
+    temperature: 0.04,
+    saturation: 1.36,
+    contrast: 1.1,
+    inScatter: 0.25,
   ),
   _midday,
   _midday.at(16.2),
@@ -134,41 +140,46 @@ final List<_Key> _keys = [
     intensity: 3.6,
     env: 0.66,
     exposure: 1.0,
-    fog: (0.86, 0.78, 0.68),
-    fogDensity: 0.0026,
-    temperature: 0.08,
-    inScatter: 0.4,
+    fog: (0.86, 0.76, 0.64),
+    fogDensity: 0.002,
+    temperature: 0.09,
+    saturation: 1.36,
+    contrast: 1.1,
+    inScatter: 0.3,
   ),
-  // Golden hour.
+  // Golden hour: low warm sun, long shadows, rich colour; little haze, so
+  // the light rakes across the village instead of veiling it.
   const _Key(
     19.0,
-    zenith: (0.3, 0.4, 0.74),
-    horizon: (1.0, 0.64, 0.36),
-    ground: (0.4, 0.36, 0.24),
-    light: (1.0, 0.66, 0.34),
-    intensity: 3.1,
-    env: 0.58,
-    exposure: 1.02,
-    fog: (0.96, 0.66, 0.42),
-    fogDensity: 0.004,
-    temperature: 0.2,
-    saturation: 1.38,
-    inScatter: 0.8,
+    zenith: (0.28, 0.4, 0.78),
+    horizon: (1.0, 0.6, 0.32),
+    ground: (0.4, 0.34, 0.22),
+    light: (1.0, 0.62, 0.3),
+    intensity: 3.4,
+    env: 0.5,
+    exposure: 0.98,
+    fog: (0.88, 0.54, 0.32),
+    fogDensity: 0.0013,
+    temperature: 0.18,
+    saturation: 1.46,
+    contrast: 1.15,
+    inScatter: 0.35,
   ),
   const _Key(
     19.9,
-    zenith: (0.18, 0.2, 0.46),
-    horizon: (1.0, 0.42, 0.24),
+    zenith: (0.18, 0.2, 0.48),
+    horizon: (1.0, 0.42, 0.22),
     ground: (0.28, 0.22, 0.18),
-    light: (1.0, 0.46, 0.24),
-    intensity: 1.4,
-    env: 0.46,
-    exposure: 1.1,
-    fog: (0.72, 0.38, 0.3),
-    fogDensity: 0.005,
+    light: (1.0, 0.46, 0.22),
+    intensity: 1.5,
+    env: 0.44,
+    exposure: 1.08,
+    fog: (0.66, 0.36, 0.3),
+    fogDensity: 0.0024,
     temperature: 0.16,
-    saturation: 1.35,
-    inScatter: 0.7,
+    saturation: 1.46,
+    contrast: 1.12,
+    inScatter: 0.4,
   ),
   // Blue hour after sunset: the lamps come on.
   const _Key(
@@ -361,6 +372,7 @@ class FilmSky {
       ..exposure = lerp(a.exposure, b.exposure) * (1 - 0.12 * st);
     scene.postProcess.colorGrading
       ..saturation = lerp(a.saturation, b.saturation) - 0.5 * st
+      ..contrast = lerp(a.contrast, b.contrast)
       ..temperature = lerp(a.temperature, b.temperature) * (1 - st) - 0.05 * st;
 
     darkness = dark;
@@ -379,7 +391,7 @@ class FilmSky {
     final lowSun = sunUp ? _bump(hour, 6.4, 1.0) * (1 - st) : 0.0;
     scene.godRays
       ..enabled = _quality.godRays && lowSun > 0.02
-      ..intensity = 0.28 * lowSun
+      ..intensity = 0.2 * lowSun
       ..color = light;
   }
 
