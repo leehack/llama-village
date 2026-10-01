@@ -526,7 +526,7 @@ class Inspector extends StatelessWidget {
     child: Row(
       children: [
         SizedBox(
-          width: 118,
+          width: 150,
           child: Text(label, style: _t(12), overflow: TextOverflow.ellipsis),
         ),
         Expanded(
