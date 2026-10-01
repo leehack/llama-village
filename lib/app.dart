@@ -787,7 +787,7 @@ class VillageHomeState extends State<VillageHome> with SingleTickerProviderState
       test.simMs.add(simDone / 1000);
       test.sceneMs.add((watch.elapsedMicroseconds - simDone) / 1000);
     }
-    test.frame();
+    test.frame(dt);
     _autoplay?.tick(dt);
     _week?.tick(dt);
     _mem?.tick(dt);

@@ -77,6 +77,9 @@ class SelfTest {
   bool _busy = false;
   final List<double> _raster = [], _build = [];
   final List<double> _total = [];
+
+  /// Milliseconds between rendered frames in the current window.
+  final List<double> _intervals = [];
   int _frames = 0;
   int _rendered = 0;
   int _busyFrames = 0;
@@ -89,8 +92,9 @@ class SelfTest {
   /// Whether the dialogue model is generating, sampled once per frame.
   bool Function() generating = () => false;
 
-  /// (fps, share of frames with the model generating) per two-second window.
-  final List<(double, double)> windows = [];
+  /// (fps, share of frames with the model generating, milliseconds between
+  /// rendered frames) per two-second window.
+  final List<(double, double, List<double>)> windows = [];
   double worstFrameMs = 0;
 
   void start() {
@@ -102,10 +106,12 @@ class SelfTest {
     SchedulerBinding.instance.addTimingsCallback(_onTimings);
   }
 
-  /// Called once per rendered frame by the game loop.
-  void frame() {
+  /// Called once per rendered frame by the game loop, [dt] seconds after
+  /// the previous one.
+  void frame(double dt) {
     if (!capture) return;
     _rendered++;
+    if (dt > 0) _intervals.add(dt * 1000);
     if (generating()) _busyFrames++;
   }
 
@@ -132,7 +138,7 @@ class SelfTest {
     _capturing = _busy;
     final busy = _rendered == 0 ? 0.0 : (_busyFrames / _rendered).clamp(0.0, 1.0);
     if (!capturing) {
-      windows.add((fps, busy));
+      windows.add((fps, busy, [..._intervals]));
       for (final t in _total) {
         if (t > worstFrameMs) worstFrameMs = t;
       }
@@ -140,7 +146,7 @@ class SelfTest {
     log(
       'PERF fps=${fps.toStringAsFixed(1)} vsync=${vsync.toStringAsFixed(0)} gen=${(busy * 100).round()}% raster p50=${pct(_raster, .5)} '
       'p99=${pct(_raster, .99)} build p50=${pct(_build, .5)} p99=${pct(_build, .99)} '
-      'frame max=${pct(_total, 1)} ms sim p50=${pct(simMs, .5)} p99=${pct(simMs, .99)} '
+      'frame max=${pct(_total, 1)} interval p95=${pct(_intervals, .95)} ms sim p50=${pct(simMs, .5)} p99=${pct(simMs, .99)} '
       'scene p50=${pct(sceneMs, .5)} p99=${pct(sceneMs, .99)}${capturing ? ' (capture)' : ''}',
     );
     simMs.clear();
@@ -150,6 +156,7 @@ class SelfTest {
     _busyFrames = 0;
     _raster.clear();
     _build.clear();
+    _intervals.clear();
     _total.clear();
     _clock.reset();
   }

@@ -20,8 +20,10 @@ import 'sim/village.dart';
 ///   roof) and a crowded conversation's bubbles, then quits.
 /// * `VILLAGE_TOUR=chars` stages the characters for their captures (see
 ///   `character_tour.dart`).
-/// * `VILLAGE_TOUR=perf` measures the frame rate at each graphics quality,
-///   with the model generating and with the village paused (idle).
+/// * `VILLAGE_TOUR=perf` measures the frame rate and the p95 time between
+///   rendered frames at each graphics quality (or those in
+///   `VILLAGE_PERF_QUALITY`), with the model generating and with the
+///   village paused (idle).
 ///
 /// It starts a new game from the title screen and plays it without the
 /// week's cutscenes, so the clock runs straight through the day. The storm
@@ -257,12 +259,21 @@ class RenderTour {
   double _phaseTime = 0;
   bool _waitingIdle = false;
   bool _travelling = false;
-  final Map<(String, GraphicsQuality, bool), List<(double, double)>> _results = {};
+  final Map<(String, GraphicsQuality, bool), List<(double, double, List<double>)>> _results = {};
+
+  /// `VILLAGE_PERF_QUALITY=high,low` measures only those qualities.
+  static List<GraphicsQuality> get _qualities {
+    final only = Platform.environment['VILLAGE_PERF_QUALITY']?.split(',');
+    return [
+      for (final q in [GraphicsQuality.high, GraphicsQuality.medium, GraphicsQuality.low])
+        if (only == null || only.contains(q.name)) q,
+    ];
+  }
 
   void _perfPlan() {
     final scenes = [..._scenes]..sort((a, b) => a.$2.compareTo(b.$2));
     for (final (scene, _) in scenes) {
-      for (final q in [GraphicsQuality.high, GraphicsQuality.medium, GraphicsQuality.low]) {
+      for (final q in _qualities) {
         _phases
           ..add((scene, q, true))
           ..add((scene, q, false));
@@ -373,14 +384,21 @@ class RenderTour {
       return s.isEmpty ? '-' : '${s[s.length ~/ 2].toStringAsFixed(1)} (n=${s.length}, min ${s.first.toStringAsFixed(1)})';
     }
 
+    String p95(Iterable<(double, double, List<double>)> windows) {
+      final s = [for (final w in windows) ...w.$3]..sort();
+      return s.isEmpty ? '-' : '${s[(0.95 * (s.length - 1)).round()].toStringAsFixed(1)} ms';
+    }
+
     for (final (scene, _) in _scenes) {
       for (final q in GraphicsQuality.values.reversed) {
         final gen = _results[(scene, q, true)] ?? const [];
         final idle = _results[(scene, q, false)] ?? const [];
+        final busy = gen.where((w) => w.$2 >= 0.7);
+        final quiet = idle.where((w) => w.$2 <= 0.1);
         home.test.log(
-          'PERF_TABLE $scene ${q.name}: idle ${median(idle.where((w) => w.$2 <= 0.1).map((w) => w.$1))}; '
-          'generating ${median(gen.where((w) => w.$2 >= 0.7).map((w) => w.$1))}; '
-          'all generating-phase windows ${median(gen.map((w) => w.$1))}',
+          'PERF_TABLE $scene ${q.name}: idle ${median(quiet.map((w) => w.$1))} p95 ${p95(quiet)}; '
+          'generating ${median(busy.map((w) => w.$1))} p95 ${p95(busy)}; '
+          'all generating-phase windows ${median(gen.map((w) => w.$1))} p95 ${p95(gen)}',
         );
       }
     }
