@@ -11,10 +11,10 @@ import 'mesh_builder.dart';
 
 /// Wool and accent colours per llama, also used for their huts.
 const Map<String, (int wool, int accent)> llamaColors = {
-  'Pip': (0xF4EDE2, 0xC8372D),
+  'Pip': (0xF6F0E6, 0xC8372D),
   'Mo': (0xC99A6B, 0xE0A93B),
   'June': (0xE6C9A3, 0x8E4FB0),
-  'Bramble': (0x9C9A96, 0x4E7A3E),
+  'Bramble': (0x6A625C, 0x4E7A3E),
   'Clover': (0x6E4A33, 0x3F7BC9),
 };
 

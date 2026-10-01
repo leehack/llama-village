@@ -7,6 +7,7 @@ import 'package:vector_math/vector_math.dart' as vm;
 import '../ambient/creatures.dart';
 import '../ambient/layout.dart';
 import '../sim/geo.dart';
+import '../sim/dash.dart';
 import '../sim/places.dart';
 import '../sim/village.dart';
 import 'actors.dart';
@@ -118,6 +119,9 @@ class VillageStage {
 
   /// Cutscene overrides: the hour the sky shows, and huts whose lights are out.
   double? hourOverride;
+
+  /// Tour override for Pip's scarf; otherwise she wears it once it is returned.
+  bool? scarfOverride;
   final Set<String> lightsOut = {};
 
   Future<void> load(List<String> names) async {
@@ -136,7 +140,7 @@ class VillageStage {
       llamas[n] = a;
       scene.add(a.root);
     }
-    dash.build(pbr(rough: 0.35));
+    await dash.load();
     scene.add(dash.root);
     _ring = Node(mesh: Mesh(selectionRing(), ringMaterial()))
       ..castsShadows = false
@@ -200,10 +204,11 @@ class VillageStage {
     final hour = hourOverride ?? (v.now.minute + v.minuteFrac) / 60;
     sky.update(hour, storm: v.storm, dt: dt);
     _nightLights(v, hour);
+    _watch(v);
     for (final l in v.cast) {
       final a = llamas[l.name]!;
-      a.update(v, l, dt, _wall);
-      if (l.name == 'Pip') a.scarfShown = v.scarf.state == 'returned';
+      a.update(v, l, dt, _wall, _headAt);
+      if (l.name == 'Pip') a.scarfShown = scarfOverride ?? v.scarf.state == 'returned';
     }
     dash.update(v, dt, _wall);
     _updateRain(v, dt);
@@ -219,6 +224,40 @@ class VillageStage {
     world.wildflowers.visible = v.crush.flowersToday || v.kb.maybe('bramble_flowers') != null && v.now.minute < 12 * 60;
     world.festivalDecor.visible = v.festival.state != 'unannounced';
     rig.update(dt);
+  }
+
+  Village? _watched;
+  (DashVisit, int)? _reacted;
+
+  vm.Vector3? _headAt(String who) {
+    if (who == 'Dash') return dash.position;
+    final a = llamas[who];
+    return a != null && a.visible ? a.headWorld : null;
+  }
+
+  /// Faces react to the village: news makes a llama look surprised, and
+  /// Dash's line lands with a delighted or annoyed llama (and a happy or
+  /// drooping Dash).
+  void _watch(Village v) {
+    if (!identical(v, _watched)) {
+      _watched?.events.listeners.remove(_onEvent);
+      _watched = v;
+      v.events.listeners.add(_onEvent);
+    }
+    final visit = v.dash.visit;
+    final level = visit?.reaction;
+    if (visit == null || level == null || visit.stage != VisitStage.done) return;
+    final key = (visit, visit.round);
+    if (_reacted == key) return;
+    _reacted = key;
+    dash.react(level);
+    final a = llamas[visit.target.name];
+    if (level >= 3) a?.react('delight');
+    if (level <= 1) a?.react('annoyance');
+  }
+
+  void _onEvent(Map<String, Object?> e) {
+    if (e['type'] == 'learn' && e['how'] != 'own') llamas[e['who']]?.react('surprise');
   }
 
   void _ambient(Village v, double hour, double dt) {
@@ -272,7 +311,7 @@ class VillageStage {
   vm.Vector3 headOf(String name) {
     if (name == 'Dash') return dash.position + vm.Vector3(0, 0.75, 0);
     final a = llamas[name]!;
-    return a.position + vm.Vector3(0, LlamaActor.headHeight + 0.25, 0);
+    return a.position + vm.Vector3(0, a.headHeight + 0.25, 0);
   }
 
   ui.Offset? toScreen(vm.Vector3 p, ui.Size size) => rig.camera().worldToScreen(p, size);
