@@ -1,5 +1,6 @@
 import 'clock.dart';
 import 'lang.dart';
+import 'said.dart';
 
 enum FactKind { secret, event, rumour, deed, news }
 
@@ -29,12 +30,16 @@ class Fact {
     this.contradicts,
     this.secretOf = const {},
     this.interested,
-  });
+    Said? said,
+  }) : said = said ?? Said.raw(text);
 
   final String id;
 
   /// Third-person statement, as a narrator would write it.
   final String text;
+
+  /// [text] for the player's language.
+  final Said said;
   final bool truth;
   final String origin;
   final FactKind kind;

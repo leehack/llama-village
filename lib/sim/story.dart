@@ -5,12 +5,15 @@ import 'clock.dart';
 import 'dialogue.dart';
 import 'facts.dart';
 import 'places.dart';
+import 'said.dart';
 import 'village.dart';
 
 /// One thing worth telling in the storybook, as a plain English sentence
-/// built from the sim's state; [weight] ranks it within its day.
+/// built from the sim's state ([said] for the player's language); [weight]
+/// ranks it within its day.
 class StoryBeat {
-  const StoryBeat(this.seq, this.day, this.minute, this.kind, this.text, this.weight, {this.who = const []});
+  StoryBeat(this.seq, this.day, this.minute, this.kind, this.text, this.weight, {this.who = const [], Said? said})
+    : said = said ?? Said.raw(text);
   final int seq;
   final int day;
   final int minute;
@@ -18,13 +21,22 @@ class StoryBeat {
   final String text;
   final int weight;
   final List<String> who;
+  final Said said;
 
   String get hhmm => '${(minute ~/ 60).toString().padLeft(2, '0')}:${(minute % 60).toString().padLeft(2, '0')}';
 
-  List<Object?> toJson() => [seq, day, minute, kind, text, weight, who];
+  List<Object?> toJson() => [seq, day, minute, kind, text, weight, who, said.toJson()];
 
-  static StoryBeat fromJson(List<Object?> j) =>
-      StoryBeat(j[0] as int, j[1] as int, j[2] as int, j[3] as String, j[4] as String, j[5] as int, who: (j[6] as List).cast<String>());
+  static StoryBeat fromJson(List<Object?> j) => StoryBeat(
+    j[0] as int,
+    j[1] as int,
+    j[2] as int,
+    j[3] as String,
+    j[4] as String,
+    j[5] as int,
+    who: (j[6] as List).cast<String>(),
+    said: j.length > 7 ? Said.maybe(j[7]) : null,
+  );
 }
 
 /// The day a moment belongs to: the small hours count as the night before.
@@ -42,14 +54,14 @@ class StoryJournal {
 
   void attach(Village v) => v.events.listeners.add((e) => record(v, e));
 
-  void _add(Village v, String kind, String text, int weight, {List<String> who = const []}) {
+  void _add(Village v, String kind, String text, int weight, {List<String> who = const [], Said? said}) {
     final day = storyDay(v.now);
     if (beats.where((b) => b.day == day).length >= perDayCap) {
       final weakest = beats.where((b) => b.day == day).reduce((a, b) => b.weight < a.weight ? b : a);
       if (weakest.weight >= weight) return;
       beats.remove(weakest);
     }
-    beats.add(StoryBeat(_seq++, day, v.now.minute, kind, text, weight, who: who));
+    beats.add(StoryBeat(_seq++, day, v.now.minute, kind, text, weight, who: who, said: said));
   }
 
   void record(Village v, Map<String, Object?> e) {
@@ -57,7 +69,8 @@ class StoryJournal {
       case 'world_event':
         final title = e['title'] as String;
         final text = plainStory(e['text'] as String);
-        if (title == 'Lanterns') return _add(v, 'world', text, 2);
+        final said = Said.maybe(e['said']);
+        if (title == 'Lanterns') return _add(v, 'world', text, 2, said: said);
         final weight = switch (title) {
           'The Golden Bell' => 8,
           'Storm' => 7,
@@ -65,7 +78,7 @@ class StoryJournal {
           _ when title.startsWith('The Berry Festival') || title.endsWith(' sings') => 5,
           _ => 4,
         };
-        _add(v, 'world', text, weight);
+        _add(v, 'world', text, weight, said: said);
       case 'thread':
         final thread = e['thread'] as String;
         if (thread == 'week') return;
@@ -76,7 +89,8 @@ class StoryJournal {
           'debunked' || 'june exposed' || 'returned' || 'found' => 6,
           _ => 5,
         };
-        _add(v, 'thread', '$title: ${plainStory(e['why'] as String)}', weight);
+        final english = '$title: ${plainStory(e['why'] as String)}';
+        _add(v, 'thread', english, weight, said: Said(SaidKey.storyThread, english, {'thread': thread, 'why': Said.maybe(e['said'])}));
       case 'conversation_end':
         final c = v.done.where((c) => c.id == e['conv']).firstOrNull;
         if (c != null) _talk(v, c);
@@ -91,18 +105,32 @@ class StoryJournal {
     final topic = c.topic == null ? null : v.kb.maybe(c.topic!);
     final worst = [c.friendshipDelta[c.a.name] ?? 0, c.friendshipDelta[c.b.name] ?? 0].reduce((a, b) => a < b ? a : b);
     final best = [c.friendshipDelta[c.a.name] ?? 0, c.friendshipDelta[c.b.name] ?? 0].reduce((a, b) => a > b ? a : b);
-    final how = worst <= -2
-        ? ', and it ended in a quarrel'
+    final ending = worst <= -2
+        ? 'quarrel'
         : worst >= 1 && best >= 2
-        ? ', and they parted warmly'
-        : '';
+        ? 'warm'
+        : 'none';
+    final how = switch (ending) {
+      'quarrel' => ', and it ended in a quarrel',
+      'warm' => ', and they parted warmly',
+      _ => '',
+    };
     final juicy = topic != null && (topic.kind == FactKind.secret || topic.kind == FactKind.rumour || topic.secretOf.isNotEmpty);
+    final english = '${c.a.name} and ${c.b.name} talked at ${theP(c.place)}${topic == null ? '' : ' about ${topic.short}'}$how.';
     _add(
       v,
       'talk',
-      '${c.a.name} and ${c.b.name} talked at ${theP(c.place)}${topic == null ? '' : ' about ${topic.short}'}$how.',
+      english,
       2 + (juicy ? 1 : 0) + (how.isEmpty ? 0 : 2),
       who: [c.a.name, c.b.name],
+      said: Said(topic == null ? SaidKey.storyTalk : SaidKey.storyTalkAbout, english, {
+        'a': c.a.name,
+        'b': c.b.name,
+        'place': c.place,
+        'how': ending,
+        if (topic != null) 'fact': topic.id,
+        if (topic != null) 'short': topic.short,
+      }),
     );
   }
 
@@ -117,7 +145,8 @@ class StoryJournal {
     final believes = e['believes'] == true;
     final said = _unstop(f.text);
     if (who == 'Dash') {
-      _add(v, 'learn', '$from confided in Dash: $said.', 3, who: [from]);
+      final english = '$from confided in Dash: $said.';
+      _add(v, 'learn', english, 3, who: [from], said: Said(SaidKey.storyConfided, english, {'name': from, 'fact': f.said}));
       return;
     }
     final secret = f.secretOf.isNotEmpty && !f.secretOf.contains(who);
@@ -127,7 +156,22 @@ class StoryJournal {
     final verb = how == 'overheard' ? 'overheard $from say' : 'heard from $from';
     final tag = !f.truth ? ' (it was not true)' : '';
     final doubt = believes ? '' : ', but did not believe it';
-    _add(v, 'learn', '$who $verb: $said$tag$doubt.', secret ? 5 : (correction ? 4 : 3), who: [who, from]);
+    final english = '$who $verb: $said$tag$doubt.';
+    _add(
+      v,
+      'learn',
+      english,
+      secret ? 5 : (correction ? 4 : 3),
+      who: [who, from],
+      said: Said(SaidKey.storyHeard, english, {
+        'name': who,
+        'from': from,
+        'fact': f.said,
+        'overheard': how == 'overheard' ? 'yes' : 'no',
+        'untrue': f.truth ? 'no' : 'yes',
+        'doubts': believes ? 'no' : 'yes',
+      }),
+    );
   }
 
   void _dash(Village v, Map<String, Object?> e) {
@@ -142,6 +186,7 @@ class StoryJournal {
       final abouts = [if (i >= 0) ...beats[i].who.skip(1), if (i < 0 || !beats[i].who.skip(1).contains(about)) about];
       final text =
           'Dash whispered made-up ${abouts.length == 1 ? 'rumour' : 'rumours'} about ${_and(abouts)} to $target, and $target was $reaction.';
+      final said = Said(SaidKey.storyGossip, text, {'name': target, 'names': abouts, 'reaction': reaction});
       if (i >= 0) {
         final old = beats[i];
         beats[i] = StoryBeat(
@@ -152,9 +197,10 @@ class StoryJournal {
           text,
           (old.weight + (strong ? 1 : 0)).clamp(0, 6),
           who: [target, ...abouts],
+          said: said,
         );
       } else {
-        _add(v, 'gossip', text, 4 + (strong ? 1 : 0), who: [target, about]);
+        _add(v, 'gossip', text, 4 + (strong ? 1 : 0), who: [target, about], said: said);
       }
       return;
     }
@@ -167,7 +213,21 @@ class StoryJournal {
       'tease' => 'teased $target',
       final other => 'spoke with $target ($other)',
     };
-    _add(v, 'dash', 'Dash $did, and $target was $reaction.', 3 + (strong ? 1 : 0), who: [target]);
+    final english = 'Dash $did, and $target was $reaction.';
+    _add(
+      v,
+      'dash',
+      english,
+      3 + (strong ? 1 : 0),
+      who: [target],
+      said: Said(SaidKey.storyDash, english, {
+        'name': target,
+        'intent': e['intent'],
+        'about': ?about,
+        'item': ?e['item'],
+        'reaction': reaction,
+      }),
+    );
   }
 
   Map<String, Object?> save() => {

@@ -252,7 +252,7 @@ class _LogRow extends StatelessWidget {
               style: _t(11, color: Colors.white38),
             ),
             TextSpan(
-              text: entry.text,
+              text: entry.said == null ? entry.text : L10n.of(context).say(entry.said!),
               style: _t(12, weight: weight, color: color, style: style),
             ),
           ],
@@ -498,15 +498,14 @@ class Inspector extends StatelessWidget {
                   _section(words.sectionFriendships),
                   for (final o in [...cast.where((o) => o != l).map((o) => o.name), 'Dash'])
                     _bar(o, ((l.friendship[o] ?? 0) + 10) / 20, accentOf(o), centered: true, value: '${l.friendship[o] ?? 0}'),
-                  if (data.goals.isNotEmpty) ...[_section(words.sectionGoals), for (final g in data.goals.take(5)) _bullet(g)],
+                  if (data.goals.isNotEmpty) ...[_section(words.sectionGoals), for (final g in data.goals.take(5)) _bullet(words.say(g))],
                   _section(words.sectionWhy),
                   if (l.lastDecision == null)
                     Text(words.noDecision, style: _t(12, color: Colors.white54))
                   else
-                    for (final (i, o) in l.lastDecision!.options.take(5).indexed)
-                      _utility(words.choiceOf(o), o, i == 0, l.lastDecision!.options.first.utility),
+                    for (final (i, o) in l.lastDecision!.options.take(5).indexed) _utility(words.choiceOf(o), words.say(o.why), o, i == 0),
                   _section(words.sectionKnows(l.name, data.knows.length)),
-                  for (final k in data.knows) _fact(k, words.howOf(k)),
+                  for (final k in data.knows) _fact(k, k.said == null ? k.text : words.say(k.said!), words.howOf(k)),
                 ],
               ),
             ),
@@ -600,7 +599,7 @@ class Inspector extends StatelessWidget {
     ),
   );
 
-  Widget _utility(String label, DecisionOption o, bool chosen, double top) => Padding(
+  Widget _utility(String label, String why, DecisionOption o, bool chosen) => Padding(
     padding: const EdgeInsets.symmetric(vertical: 2),
     child: Row(
       children: [
@@ -619,9 +618,9 @@ class Inspector extends StatelessWidget {
                   text: label,
                   style: _t(12.5, weight: chosen ? FontWeight.w900 : FontWeight.w600, color: chosen ? Colors.white : Colors.white70),
                 ),
-                if (o.why.isNotEmpty)
+                if (why.isNotEmpty)
                   TextSpan(
-                    text: '  ${o.why}',
+                    text: '  $why',
                     style: _t(11.5, color: Colors.white54),
                   ),
               ],
@@ -632,7 +631,7 @@ class Inspector extends StatelessWidget {
     ),
   );
 
-  Widget _fact(KnownFact k, String how) {
+  Widget _fact(KnownFact k, String text, String how) {
     final heard = k.knowing?.how == 'told' || k.knowing?.how == 'overheard';
     final (tag, color) = switch (k.how) {
       _ when k.secret => (how, const Color(0xFFFF8FA3)),
@@ -646,7 +645,7 @@ class Inspector extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            k.text,
+            text,
             style: _t(
               12.5,
               color: k.believes ? Colors.white : Colors.white54,

@@ -1,8 +1,12 @@
+import 'dart:math' as math;
+
 import 'cast.dart';
 import 'dialogue.dart';
+import 'endings.dart';
 import 'influence.dart';
 import 'lang.dart';
 import 'model.dart';
+import 'said.dart';
 import 'village.dart';
 
 const Map<String, String> _pronoun = {'Pip': 'she', 'Mo': 'he', 'June': 'she', 'Bramble': 'he', 'Clover': 'she'};
@@ -49,14 +53,69 @@ String arcFor(Llama l, Influence i) => switch (l.name) {
   _ => '',
 };
 
-/// The model prompt for [l]'s epilogue card: its final state and what it
-/// knows, nothing else.
-String epiloguePrompt(Village v, Llama l, Influence i) {
+String _arcId(Llama l, Influence i) => switch (l.name) {
+  'Pip' || 'Mo' => i.pipMo.name,
+  _ => switch (i.bramble) {
+    BrambleArc.accepted => 'accepted',
+    BrambleArc.declined || BrambleArc.exposedDeclined => 'declined',
+    BrambleArc.revealed => 'revealed',
+    BrambleArc.secret => 'secret',
+  },
+};
+
+/// The settled facts of how the week ended, from the sim's state: the
+/// decided ending, the festival winner and how the village stands. The
+/// epilogue cards and the storybook's last page are both grounded in them.
+List<Said> endingFacts(Village v, Influence i, EndingVerdict verdict) {
+  final info = endingInfo[verdict.ending]!;
+  final lies = i.falseBeliefs.length;
+  final trusting = i.dashTrust.values.where((t) => t >= 3).length;
+  final cross = i.dashTrust.values.where((t) => t <= -3).length;
+  final happiest = [...v.cast]..sort((a, b) => b.mood.compareTo(a.mood));
+  final winner = i.festivalWinner;
+  return [
+    Said(SaidKey.endWeek, 'The week ended as "${info.title}": ${info.blurb}', {'ending': verdict.ending.name}),
+    winner == null
+        ? const Said(SaidKey.endNoWinner, 'Nobody won the Golden Bell.')
+        : Said(SaidKey.factFestivalWinner, '$winner won the Golden Bell at the Berry Festival.', {'name': winner}),
+    lies == 0
+        ? const Said(SaidKey.endRumoursNone, 'Every untrue rumour had been put right.')
+        : lies < 4
+        ? const Said(SaidKey.endRumoursFew, 'A few untrue rumours were still going round.')
+        : const Said(SaidKey.endRumoursMany, 'Many untrue rumours were still going round.'),
+    i.harmony >= 1.5
+        ? const Said(SaidKey.endFond, 'The llamas were fond of one another.')
+        : i.harmony < 0.5
+        ? const Said(SaidKey.endSoured, 'Many friendships had soured.')
+        : const Said(SaidKey.endMixed, 'Some friendships were warm and some were cool.'),
+    for (final l in v.cast)
+      if (arcFor(l, i).isNotEmpty && (l.name == 'Pip' || l.name == 'Bramble'))
+        Said(SaidKey.endArc, '${arcFor(l, i)[0].toUpperCase()}${arcFor(l, i).substring(1)}.', {'arc': _arcId(l, i)}),
+    Said(SaidKey.endHappiest, '${happiest.first.name} ended the week happiest, and ${happiest.last.name} the gloomiest.', {
+      'a': happiest.first.name,
+      'b': happiest.last.name,
+    }),
+    cross > trusting
+        ? const Said(SaidKey.endDashCross, 'Most llamas were cross with Dash.')
+        : trusting >= 3
+        ? const Said(SaidKey.endDashFond, 'Most llamas had grown fond of Dash.')
+        : const Said(SaidKey.endDashUnsure, 'The llamas were not sure what to make of Dash.'),
+  ];
+}
+
+/// The model prompt for [l]'s epilogue card: its final state, what it knows
+/// and how the week ended, nothing else.
+String epiloguePrompt(Village v, Llama l, Influence i, {EndingVerdict? verdict}) {
   final warm = _extreme(l, warmest: true), cold = _extreme(l, warmest: false);
   final facts = relevantFacts(v, l, limit: 4);
   final arc = arcFor(l, i);
   final he = _pronoun[l.name] ?? 'they';
+  final winner = v.festival.winner;
   final prompt = [
+    'How festival week really ended (true; never contradict it):',
+    for (final f in endingFacts(v, i, verdict ?? decideEnding(i))) '- ${f.english}',
+    '- ${winner == null ? 'Nobody won the Golden Bell; do not say anyone won it.' : 'Only $winner won the Golden Bell; nobody else won anything.'}',
+    '',
     'Festival week in Llama Village is over. ${l.name} ($he), the ${l.job} (${l.traits}), ${_festivalRole(v, l)}.',
     'Mood at the end: ${l.moodWord}. Closest to ${warm?.$1}; coolest toward ${cold?.$1}. '
         'Feels ${feelingWord(l.friendship['Dash'] ?? 0)} Dash, the little blue bird.',
@@ -142,14 +201,72 @@ String fallbackEpilogue(Village v, Llama l, Influence i) {
   }
 }
 
-/// Writes [l]'s epilogue line; falls back to [fallbackEpilogue].
-Future<String> epilogueLine(Village v, Llama l, Influence i) => v.chat.text<String>(
+final RegExp _winWord = RegExp(
+  r"\b(won|wins?|winning|winners?|champion|victor(y|ious)?)\b|우승|이겼|1등|일등|gagn|remport|vainqu|victoire|laur[ée]at",
+  caseSensitive: false,
+);
+final RegExp _bellWon = RegExp(r"golden bell|황금\s*종|cloche d.or", caseSensitive: false);
+final RegExp _holding = RegExp(
+  r"\b(got|gets|received?|took|earned|was given|clutch\w*|held|holds|holding|carried|kept|treasur\w*)\b|받|차지|거머|품|들고|안고|re[çc]u|obtenu|d[ée]croch|tenait|serr|brandi",
+  caseSensitive: false,
+);
+final RegExp _faintWord = RegExp(r"\b(faint\w*|swoon\w*|collapsed?)\b|기절|쓰러|[ée]vanoui|tomb[ée]e? dans les pommes", caseSensitive: false);
+final RegExp _negation = RegExp(
+  r"\b(not|never|without|lost|missed)\b|n't|못|않|놓쳤|\bne\b|\bn'|\bpas\b|jamais|sans|perdu|manqu",
+  caseSensitive: false,
+);
+
+/// Where [clause] claims a win, or null.
+Match? _winClaim(String clause) {
+  final win = _winWord.firstMatch(clause);
+  if (win != null) return win;
+  final bell = _bellWon.firstMatch(clause);
+  return bell != null && _holding.hasMatch(clause) ? bell : null;
+}
+
+/// A negation just before the claim ("did not win", "n'a pas gagné") or
+/// just after it ("받지 못했어요").
+bool _negated(String clause, Match m) =>
+    _negation.hasMatch(clause.substring(math.max(0, m.start - 25), math.min(clause.length, m.end + 8)));
+
+/// Whether [line], written for [l]'s epilogue card, claims something the
+/// sim contradicts: that someone other than the festival winner won (or
+/// that the winner did not), or that a llama fainted who did not. A clause
+/// that names no llama is about [l].
+bool epilogueContradicts(String line, Village v, Llama l) {
+  final winner = v.festival.winner;
+  final fainted = {
+    for (final e in v.festival.scores.entries)
+      if (e.value == -1) e.key,
+  };
+  for (final clause in line.split(RegExp(r'[.!?;。]|,\s*(?=but\b|mais\b|while\b|tandis\b)'))) {
+    final named = {
+      for (final n in llamaNames)
+        if (RegExp('\\b$n\\b').hasMatch(clause)) n,
+    };
+    final who = named.isEmpty ? {l.name} : named;
+    final win = _winClaim(clause);
+    if (win != null) {
+      final negated = _negated(clause, win);
+      if (!negated && (winner == null || !who.contains(winner))) return true;
+      if (negated && winner != null && who.length == 1 && who.single == winner) return true;
+    }
+    final faint = _faintWord.firstMatch(clause);
+    if (faint != null && !_negated(clause, faint) && who.intersection(fainted).isEmpty) return true;
+  }
+  return false;
+}
+
+/// Writes [l]'s epilogue line, grounded in [endingFacts]. A line that
+/// contradicts them is written once more, then replaced by
+/// [fallbackEpilogue].
+Future<String> epilogueLine(Village v, Llama l, Influence i, {EndingVerdict? verdict}) => v.chat.text<String>(
   'epilogue',
   Priority.dashReply,
-  epiloguePrompt(v, l, i),
+  epiloguePrompt(v, l, i, verdict: verdict),
   parse: (raw) {
     final line = parseLine(raw, [l.name]);
-    return line == null || line.length > 180 ? null : line;
+    return line == null || line.length > 180 || epilogueContradicts(line, v, l) ? null : line;
   },
   fallback: () => fallbackEpilogue(v, l, i),
   maxTokens: tokensFor(v.lang, 48),

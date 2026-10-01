@@ -12,7 +12,19 @@ Set<String> _keys(Map<String, Object?> arb) => {
 };
 
 /// Strings that read the same in every language (numbers, units, names).
-const Set<String> _same = {'fps', 'harmonyValue', 'lockedTitle', 'saveDetail', 'speedChoice', 'fpsChoice', 'creditsFlutter', 'laLaLa'};
+const Set<String> _same = {
+  'fps',
+  'harmonyValue',
+  'lockedTitle',
+  'saveDetail',
+  'speedChoice',
+  'fpsChoice',
+  'creditsFlutter',
+  'laLaLa',
+  'sayLogEvent',
+  'sayStoryThread',
+  'sayAnd',
+};
 
 void main() {
   final en = _arb('en');

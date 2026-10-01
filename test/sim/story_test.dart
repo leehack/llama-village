@@ -140,7 +140,7 @@ void main() {
     expect(changes, greaterThan(0));
     final day1 = book.pages[1];
     expect(day1.fallback, isTrue);
-    expect(day1.text, fallbackPageText(v, day1, pageFacts(v, day1, verdict: verdict, influence: i)));
+    expect(day1.text, fallbackPageText(v.lang, day1, ['Pip reaches for her red scarf on its hook. The hook is empty.']));
     expect(day1.text, startsWith('Once upon a time'));
     expect(day1.text, contains('The hook is empty.'));
     expect(book.pages.last.text, contains('Mo won the Golden Bell'));

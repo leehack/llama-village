@@ -1760,6 +1760,1122 @@ abstract class L10n {
   /// In en, this message translates to:
   /// **'Close the book (Esc)'**
   String get tipCloseBook;
+
+  /// No description provided for @sayScarfMissingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Pip notices her red scarf is missing'**
+  String get sayScarfMissingTitle;
+
+  /// No description provided for @sayScarfMissingHome.
+  ///
+  /// In en, this message translates to:
+  /// **'Pip reaches for her red scarf on its hook. The hook is empty. She turns her hut upside down: the scarf is gone.'**
+  String get sayScarfMissingHome;
+
+  /// No description provided for @sayScarfMissingAway.
+  ///
+  /// In en, this message translates to:
+  /// **'Pip realises she has not seen her red scarf since yesterday. It is not on its hook: the scarf is gone.'**
+  String get sayScarfMissingAway;
+
+  /// No description provided for @sayScarfFoundTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Scarf found'**
+  String get sayScarfFoundTitle;
+
+  /// No description provided for @sayScarfFound.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} pulls {name, select, Pip{her} other{Pip\'s}} red scarf, soggy, out of the pond reeds.'**
+  String sayScarfFound(String name);
+
+  /// No description provided for @sayScarfReturnedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Scarf returned'**
+  String get sayScarfReturnedTitle;
+
+  /// No description provided for @sayScarfReturned.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} hands Pip her red scarf.'**
+  String sayScarfReturned(String name);
+
+  /// No description provided for @sayFestivalAnnouncedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Berry Festival announced'**
+  String get sayFestivalAnnouncedTitle;
+
+  /// No description provided for @sayFestivalAnnounced.
+  ///
+  /// In en, this message translates to:
+  /// **'Clover rings her bell: the Berry Festival is on day {day} at 16:00 on the hilltop, and the best singer wins the Golden Bell.'**
+  String sayFestivalAnnounced(String day);
+
+  /// No description provided for @sayPipSignsUpTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Pip signs up'**
+  String get sayPipSignsUpTitle;
+
+  /// No description provided for @sayPipSignsUp.
+  ///
+  /// In en, this message translates to:
+  /// **'Pip shouts her name before Clover finishes the sentence.'**
+  String get sayPipSignsUp;
+
+  /// No description provided for @sayFestivalTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'The Berry Festival'**
+  String get sayFestivalTitle;
+
+  /// No description provided for @sayFestivalGathers.
+  ///
+  /// In en, this message translates to:
+  /// **'Lanterns, berry tarts and a wobbly stage. {count} llamas gather on the hilltop. Singers: {names}.'**
+  String sayFestivalGathers(String count, String names);
+
+  /// No description provided for @sayFestivalNoSingers.
+  ///
+  /// In en, this message translates to:
+  /// **'Lanterns, berry tarts and a wobbly stage. {count} llamas gather on the hilltop. Singers: nobody turned up.'**
+  String sayFestivalNoSingers(String count);
+
+  /// No description provided for @sayPipSingsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Pip sings'**
+  String get sayPipSingsTitle;
+
+  /// No description provided for @sayMoFaintsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Mo faints'**
+  String get sayMoFaintsTitle;
+
+  /// No description provided for @saySingsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} sings'**
+  String saySingsTitle(String name);
+
+  /// No description provided for @sayGoldenBellTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'The Golden Bell'**
+  String get sayGoldenBellTitle;
+
+  /// No description provided for @sayGoldenBell.
+  ///
+  /// In en, this message translates to:
+  /// **'Clover hands the Golden Bell to {name}. Scores: {scores}.'**
+  String sayGoldenBell(String name, String scores);
+
+  /// No description provided for @sayGoldenBellStory.
+  ///
+  /// In en, this message translates to:
+  /// **'Clover hands the Golden Bell to {name}.'**
+  String sayGoldenBellStory(String name);
+
+  /// No description provided for @sayStormTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Storm'**
+  String get sayStormTitle;
+
+  /// No description provided for @sayStorm.
+  ///
+  /// In en, this message translates to:
+  /// **'Thunder cracks over the hilltop and sideways rain sweeps the village.'**
+  String get sayStorm;
+
+  /// No description provided for @sayStormClearsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'The storm clears'**
+  String get sayStormClearsTitle;
+
+  /// No description provided for @sayStormClears.
+  ///
+  /// In en, this message translates to:
+  /// **'The storm passes. Puddles everywhere, a rainbow over the pond.'**
+  String get sayStormClears;
+
+  /// No description provided for @sayHoneyLoafTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Honey loaf'**
+  String get sayHoneyLoafTitle;
+
+  /// No description provided for @sayHoneyLoaf.
+  ///
+  /// In en, this message translates to:
+  /// **'Mo pulls a honey loaf as big as a hay bale out of the bakery oven.'**
+  String get sayHoneyLoaf;
+
+  /// No description provided for @sayRehearsalTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Rehearsal'**
+  String get sayRehearsalTitle;
+
+  /// No description provided for @sayRehearsalEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Clover blows her whistle at an empty stage and writes something stern on her clipboard.'**
+  String get sayRehearsalEmpty;
+
+  /// No description provided for @sayRehearsal.
+  ///
+  /// In en, this message translates to:
+  /// **'Clover runs the singers through their songs; the stage wobbles but holds.'**
+  String get sayRehearsal;
+
+  /// No description provided for @sayLanternsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Lanterns'**
+  String get sayLanternsTitle;
+
+  /// No description provided for @sayLanterns.
+  ///
+  /// In en, this message translates to:
+  /// **'Overnight, Clover has strung lanterns all the way up the hilltop path.'**
+  String get sayLanterns;
+
+  /// No description provided for @sayLogEvent.
+  ///
+  /// In en, this message translates to:
+  /// **'{title}. {text}'**
+  String sayLogEvent(String title, String text);
+
+  /// No description provided for @sayLogEventSeen.
+  ///
+  /// In en, this message translates to:
+  /// **'{title}. {text} (seen by {seen})'**
+  String sayLogEventSeen(String title, String text, String seen);
+
+  /// No description provided for @sayTalkStarted.
+  ///
+  /// In en, this message translates to:
+  /// **'{a} and {b} talk {at}'**
+  String sayTalkStarted(String a, String b, String at);
+
+  /// No description provided for @sayTalkStartedAbout.
+  ///
+  /// In en, this message translates to:
+  /// **'{a} and {b} talk {at} about {topic}'**
+  String sayTalkStartedAbout(String a, String b, String at, String topic);
+
+  /// No description provided for @sayNowKnows.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} now knows: {fact}'**
+  String sayNowKnows(String name, String fact);
+
+  /// No description provided for @sayNowKnowsDoubts.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} now knows: {fact}, but doubts it'**
+  String sayNowKnowsDoubts(String name, String fact);
+
+  /// No description provided for @sayOverheard.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} overheard: {fact}'**
+  String sayOverheard(String name, String fact);
+
+  /// No description provided for @saySawArgue.
+  ///
+  /// In en, this message translates to:
+  /// **'{names} saw them argue'**
+  String saySawArgue(String names);
+
+  /// No description provided for @sayThreadTurn.
+  ///
+  /// In en, this message translates to:
+  /// **'Thread {thread}: {from} → {to} ({why})'**
+  String sayThreadTurn(String thread, String from, String to, String why);
+
+  /// No description provided for @sayThreadNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Thread {thread}: {text}'**
+  String sayThreadNote(String thread, String text);
+
+  /// No description provided for @sayThreadTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{thread, select, scarf{The lost red scarf} festival{Berry Festival singing contest} crush{Bramble\'s crush on June} rumour{The bread rumour} storm{Bramble\'s storm warning} week{Festival week} other{{thread}}}'**
+  String sayThreadTitle(String thread);
+
+  /// No description provided for @sayThreadState.
+  ///
+  /// In en, this message translates to:
+  /// **'{state, select, unnoticed{unnoticed} missing{missing} found{found} returned{returned} unannounced{unannounced} announced{announced} contest{contest} performed{performed} judged{judged} secret{secret} poemFound{poem found} suspected{suspected} confessed{confessed} exposed{exposed} accepted{accepted} letDownGently{let down gently} spreading{spreading} debunked{debunked} juneExposed{june exposed} forecast{forecast} storm{storm} passed{passed} other{{state}}}'**
+  String sayThreadState(String state);
+
+  /// No description provided for @sayThreadDay.
+  ///
+  /// In en, this message translates to:
+  /// **'day {day}'**
+  String sayThreadDay(String day);
+
+  /// No description provided for @sayWhyPipNoticed.
+  ///
+  /// In en, this message translates to:
+  /// **'Pip noticed it was gone'**
+  String get sayWhyPipNoticed;
+
+  /// No description provided for @sayWhyPipFoundHerself.
+  ///
+  /// In en, this message translates to:
+  /// **'Pip found it herself in the pond reeds'**
+  String get sayWhyPipFoundHerself;
+
+  /// No description provided for @sayWhyFoundIt.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} found it in the pond reeds'**
+  String sayWhyFoundIt(String name);
+
+  /// No description provided for @sayWhyGaveBack.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} gave it back'**
+  String sayWhyGaveBack(String name);
+
+  /// No description provided for @sayWhyAnnounced.
+  ///
+  /// In en, this message translates to:
+  /// **'Clover announced it; Pip signed up at once'**
+  String get sayWhyAnnounced;
+
+  /// No description provided for @sayWhyJoinedPip.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} joined Pip in the contest'**
+  String sayWhyJoinedPip(String name);
+
+  /// No description provided for @sayWhyNoSingers.
+  ///
+  /// In en, this message translates to:
+  /// **'no singers'**
+  String get sayWhyNoSingers;
+
+  /// No description provided for @sayWhySang.
+  ///
+  /// In en, this message translates to:
+  /// **'{names} sang'**
+  String sayWhySang(String names);
+
+  /// No description provided for @sayWhyWon.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} won the Golden Bell; {how}.'**
+  String sayWhyWon(String name, String how);
+
+  /// No description provided for @sayWhyNoWinner.
+  ///
+  /// In en, this message translates to:
+  /// **'No winner: {how}.'**
+  String sayWhyNoWinner(String how);
+
+  /// No description provided for @sayHowNobodySang.
+  ///
+  /// In en, this message translates to:
+  /// **'nobody sang'**
+  String get sayHowNobodySang;
+
+  /// No description provided for @sayHowDeal.
+  ///
+  /// In en, this message translates to:
+  /// **'Clover quietly honoured her secret deal with Pip'**
+  String get sayHowDeal;
+
+  /// No description provided for @sayHowDealKnown.
+  ///
+  /// In en, this message translates to:
+  /// **'the deal was known to {names}, so Clover judged fairly'**
+  String sayHowDealKnown(String names);
+
+  /// No description provided for @sayHowFair.
+  ///
+  /// In en, this message translates to:
+  /// **'judged on voice and the crowd'**
+  String get sayHowFair;
+
+  /// No description provided for @sayWhyJuneFoundPoem.
+  ///
+  /// In en, this message translates to:
+  /// **'June found an anonymous love poem'**
+  String get sayWhyJuneFoundPoem;
+
+  /// No description provided for @sayWhyJuneSawFlowers.
+  ///
+  /// In en, this message translates to:
+  /// **'June saw Bramble leave the flowers'**
+  String get sayWhyJuneSawFlowers;
+
+  /// No description provided for @sayWhyBrambleTold.
+  ///
+  /// In en, this message translates to:
+  /// **'Bramble told June himself'**
+  String get sayWhyBrambleTold;
+
+  /// No description provided for @sayWhyJuneHeard.
+  ///
+  /// In en, this message translates to:
+  /// **'June heard it from {name}'**
+  String sayWhyJuneHeard(String name);
+
+  /// No description provided for @sayWhyJuneOverheard.
+  ///
+  /// In en, this message translates to:
+  /// **'June overheard it from {name}'**
+  String sayWhyJuneOverheard(String name);
+
+  /// No description provided for @sayWhyJuneHeardFlowers.
+  ///
+  /// In en, this message translates to:
+  /// **'June heard Bramble leaves the flowers'**
+  String get sayWhyJuneHeardFlowers;
+
+  /// No description provided for @sayWhyCrushConfessed.
+  ///
+  /// In en, this message translates to:
+  /// **'Bramble confessed; June {outcome, select, accepted{accepted him} other{let him down gently}}.'**
+  String sayWhyCrushConfessed(String outcome);
+
+  /// No description provided for @sayWhyCrushExposed.
+  ///
+  /// In en, this message translates to:
+  /// **'Bramble was exposed by {name}; June {outcome, select, accepted{accepted him} other{let him down gently}}.'**
+  String sayWhyCrushExposed(String name, String outcome);
+
+  /// No description provided for @sayWhyNobodyBelieves.
+  ///
+  /// In en, this message translates to:
+  /// **'nobody believes it any more'**
+  String get sayWhyNobodyBelieves;
+
+  /// No description provided for @sayWhyJuneExposed.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} learned June made it up (from {from})'**
+  String sayWhyJuneExposed(String name, String from);
+
+  /// No description provided for @sayWhyStormArrived.
+  ///
+  /// In en, this message translates to:
+  /// **'it arrived on time; {count} llamas had been warned'**
+  String sayWhyStormArrived(String count);
+
+  /// No description provided for @sayWhySkyCleared.
+  ///
+  /// In en, this message translates to:
+  /// **'the sky cleared'**
+  String get sayWhySkyCleared;
+
+  /// No description provided for @sayConfMoTold.
+  ///
+  /// In en, this message translates to:
+  /// **'Mo confessed to Pip'**
+  String get sayConfMoTold;
+
+  /// No description provided for @sayConfPipOverheard.
+  ///
+  /// In en, this message translates to:
+  /// **'Pip overheard Mo confessing to someone else'**
+  String get sayConfPipOverheard;
+
+  /// No description provided for @sayConfPipLearned.
+  ///
+  /// In en, this message translates to:
+  /// **'Pip learned it from {from}'**
+  String sayConfPipLearned(String from);
+
+  /// No description provided for @saySearchNothing.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} searches for the scarf {at} and finds nothing.'**
+  String saySearchNothing(String name, String at);
+
+  /// No description provided for @sayPondNothing.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} pokes around the pond reeds but finds nothing.'**
+  String sayPondNothing(String name);
+
+  /// No description provided for @saySignsUp.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} signs up for the singing contest ({how}).'**
+  String saySignsUp(String name, String how);
+
+  /// No description provided for @sayHowToldClover.
+  ///
+  /// In en, this message translates to:
+  /// **'he told Clover yes'**
+  String get sayHowToldClover;
+
+  /// No description provided for @sayHowCloverTalked.
+  ///
+  /// In en, this message translates to:
+  /// **'Clover talked her into it'**
+  String get sayHowCloverTalked;
+
+  /// No description provided for @sayMoBraver.
+  ///
+  /// In en, this message translates to:
+  /// **'Mo feels braver after talking with {name} (courage {pct}%).'**
+  String sayMoBraver(String name, String pct);
+
+  /// No description provided for @sayMoTookBack.
+  ///
+  /// In en, this message translates to:
+  /// **'Mo said yes, then went pale and took it back (courage {pct}%).'**
+  String sayMoTookBack(String pct);
+
+  /// No description provided for @sayJuneFindsPoem.
+  ///
+  /// In en, this message translates to:
+  /// **'June finds an unsigned love poem tucked into the wildflowers. She reads it twice.'**
+  String get sayJuneFindsPoem;
+
+  /// No description provided for @sayFlowersUnseen.
+  ///
+  /// In en, this message translates to:
+  /// **'Bramble tucks wildflowers into the berry bushes unseen.'**
+  String get sayFlowersUnseen;
+
+  /// No description provided for @sayFlowersSeen.
+  ///
+  /// In en, this message translates to:
+  /// **'Bramble tucks wildflowers into the berry bushes, but {names} sees him.'**
+  String sayFlowersSeen(String names);
+
+  /// No description provided for @saySayGoodnight.
+  ///
+  /// In en, this message translates to:
+  /// **'{a} and {b} say goodnight.'**
+  String saySayGoodnight(String a, String b);
+
+  /// No description provided for @sayBreakOffFestival.
+  ///
+  /// In en, this message translates to:
+  /// **'{a} and {b} break off to hurry to the festival.'**
+  String sayBreakOffFestival(String a, String b);
+
+  /// No description provided for @sayMorning.
+  ///
+  /// In en, this message translates to:
+  /// **'Morning of day {day}. The village wakes up.'**
+  String sayMorning(String day);
+
+  /// No description provided for @sayLiesAwake.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} lies awake thinking: \"{thought}\"'**
+  String sayLiesAwake(String name, String thought);
+
+  /// No description provided for @sayHearsPip.
+  ///
+  /// In en, this message translates to:
+  /// **'{names} {count, plural, =1{hears} other{hear}} Pip croaking scales {at}.'**
+  String sayHearsPip(String names, int count, String at);
+
+  /// No description provided for @sayPlanned.
+  ///
+  /// In en, this message translates to:
+  /// **'The llamas have planned their day.'**
+  String get sayPlanned;
+
+  /// No description provided for @sayGoalFetchScarf.
+  ///
+  /// In en, this message translates to:
+  /// **'fetch your red scarf from your hut to look your best'**
+  String get sayGoalFetchScarf;
+
+  /// No description provided for @sayGoalAskSeen.
+  ///
+  /// In en, this message translates to:
+  /// **'ask {name} whether they have seen your red scarf'**
+  String sayGoalAskSeen(String name);
+
+  /// No description provided for @sayGoalFindScarf.
+  ///
+  /// In en, this message translates to:
+  /// **'find your red scarf and find out who took it'**
+  String get sayGoalFindScarf;
+
+  /// No description provided for @sayGoalSearchScarf.
+  ///
+  /// In en, this message translates to:
+  /// **'search for your red scarf'**
+  String get sayGoalSearchScarf;
+
+  /// No description provided for @sayGoalMoFish.
+  ///
+  /// In en, this message translates to:
+  /// **'quietly fish Pip\'s scarf out of the pond reeds before anyone learns what you did'**
+  String get sayGoalMoFish;
+
+  /// No description provided for @sayGoalHelpPip.
+  ///
+  /// In en, this message translates to:
+  /// **'help Pip look for her red scarf'**
+  String get sayGoalHelpPip;
+
+  /// No description provided for @sayGoalGiveBackMo.
+  ///
+  /// In en, this message translates to:
+  /// **'give Pip back her red scarf, and decide whether to confess you knocked it into the pond'**
+  String get sayGoalGiveBackMo;
+
+  /// No description provided for @sayGoalGiveBack.
+  ///
+  /// In en, this message translates to:
+  /// **'give Pip back her red scarf (you found it in the pond reeds)'**
+  String get sayGoalGiveBack;
+
+  /// No description provided for @sayGoalMoGuilty.
+  ///
+  /// In en, this message translates to:
+  /// **'you still feel guilty: maybe confess to Pip that you knocked her scarf into the pond'**
+  String get sayGoalMoGuilty;
+
+  /// No description provided for @sayGoalBeAtFestival.
+  ///
+  /// In en, this message translates to:
+  /// **'be at the hilltop for the Berry Festival at 16:00'**
+  String get sayGoalBeAtFestival;
+
+  /// No description provided for @sayGoalSetUpStage.
+  ///
+  /// In en, this message translates to:
+  /// **'set up the festival stage on the hilltop'**
+  String get sayGoalSetUpStage;
+
+  /// No description provided for @sayGoalRecruitMo.
+  ///
+  /// In en, this message translates to:
+  /// **'recruit Mo to sing at the festival (he has the best voice)'**
+  String get sayGoalRecruitMo;
+
+  /// No description provided for @sayGoalTellClover.
+  ///
+  /// In en, this message translates to:
+  /// **'tell Clover you will sing at the festival after all'**
+  String get sayGoalTellClover;
+
+  /// No description provided for @sayGoalMoScared.
+  ///
+  /// In en, this message translates to:
+  /// **'you are far too scared to sing at the festival; you would faint'**
+  String get sayGoalMoScared;
+
+  /// No description provided for @sayGoalMoTempted.
+  ///
+  /// In en, this message translates to:
+  /// **'you are tempted to sing at the festival but scared of fainting'**
+  String get sayGoalMoTempted;
+
+  /// No description provided for @sayGoalMoAlmost.
+  ///
+  /// In en, this message translates to:
+  /// **'you are almost brave enough to say yes to singing at the festival'**
+  String get sayGoalMoAlmost;
+
+  /// No description provided for @sayGoalPractise.
+  ///
+  /// In en, this message translates to:
+  /// **'practise singing at the pond at dawn, where nobody can hear'**
+  String get sayGoalPractise;
+
+  /// No description provided for @sayGoalWinBell.
+  ///
+  /// In en, this message translates to:
+  /// **'win the Golden Bell; outshine Mo'**
+  String get sayGoalWinBell;
+
+  /// No description provided for @sayGoalLeaveFlowers.
+  ///
+  /// In en, this message translates to:
+  /// **'leave wildflowers for June at the berry bushes before anyone sees'**
+  String get sayGoalLeaveFlowers;
+
+  /// No description provided for @sayGoalTellJune.
+  ///
+  /// In en, this message translates to:
+  /// **'work up the courage to tell June that you are the one writing her love poems'**
+  String get sayGoalTellJune;
+
+  /// No description provided for @sayGoalFindWhoFlowers.
+  ///
+  /// In en, this message translates to:
+  /// **'find out who leaves you wildflowers and love poems'**
+  String get sayGoalFindWhoFlowers;
+
+  /// No description provided for @sayGoalTalkBramble.
+  ///
+  /// In en, this message translates to:
+  /// **'talk to Bramble about the love poems'**
+  String get sayGoalTalkBramble;
+
+  /// No description provided for @sayGoalFaceJune.
+  ///
+  /// In en, this message translates to:
+  /// **'face June about the poems'**
+  String get sayGoalFaceJune;
+
+  /// No description provided for @sayGoalSpreadRumour.
+  ///
+  /// In en, this message translates to:
+  /// **'spread the juicy story about Mo\'s bread'**
+  String get sayGoalSpreadRumour;
+
+  /// No description provided for @sayGoalClearName.
+  ///
+  /// In en, this message translates to:
+  /// **'clear your name: your bread never made anyone sick'**
+  String get sayGoalClearName;
+
+  /// No description provided for @sayGoalSetRecord.
+  ///
+  /// In en, this message translates to:
+  /// **'set the record straight: Mo\'s bread never made you sick'**
+  String get sayGoalSetRecord;
+
+  /// No description provided for @sayGoalWarnToday.
+  ///
+  /// In en, this message translates to:
+  /// **'warn everyone that a storm will hit this afternoon; be taken seriously'**
+  String get sayGoalWarnToday;
+
+  /// No description provided for @sayGoalWarnDay.
+  ///
+  /// In en, this message translates to:
+  /// **'warn everyone that a storm will hit on the afternoon of day {day}; be taken seriously'**
+  String sayGoalWarnDay(String day);
+
+  /// No description provided for @sayGoalRunRehearsal.
+  ///
+  /// In en, this message translates to:
+  /// **'run the festival rehearsal on the hilltop at 11:00'**
+  String get sayGoalRunRehearsal;
+
+  /// No description provided for @sayGoalGoRehearsal.
+  ///
+  /// In en, this message translates to:
+  /// **'go to Clover\'s rehearsal on the hilltop at 11:00'**
+  String get sayGoalGoRehearsal;
+
+  /// No description provided for @sayWhyHunger.
+  ///
+  /// In en, this message translates to:
+  /// **'hunger {v}'**
+  String sayWhyHunger(String v);
+
+  /// No description provided for @sayWhyEnergy.
+  ///
+  /// In en, this message translates to:
+  /// **'energy {v}'**
+  String sayWhyEnergy(String v);
+
+  /// No description provided for @sayWhyPlanWork.
+  ///
+  /// In en, this message translates to:
+  /// **'plan says work'**
+  String get sayWhyPlanWork;
+
+  /// No description provided for @sayWhyAtWorkplace.
+  ///
+  /// In en, this message translates to:
+  /// **'at workplace'**
+  String get sayWhyAtWorkplace;
+
+  /// No description provided for @sayWhyNight.
+  ///
+  /// In en, this message translates to:
+  /// **'night'**
+  String get sayWhyNight;
+
+  /// No description provided for @sayWhyPlanAt.
+  ///
+  /// In en, this message translates to:
+  /// **'plan: {place}'**
+  String sayWhyPlanAt(String place);
+
+  /// No description provided for @sayWhyWaiting.
+  ///
+  /// In en, this message translates to:
+  /// **'waiting for {name}'**
+  String sayWhyWaiting(String name);
+
+  /// No description provided for @sayWhyFood.
+  ///
+  /// In en, this message translates to:
+  /// **'food'**
+  String get sayWhyFood;
+
+  /// No description provided for @sayWhyRest.
+  ///
+  /// In en, this message translates to:
+  /// **'rest'**
+  String get sayWhyRest;
+
+  /// No description provided for @sayWhyWork.
+  ///
+  /// In en, this message translates to:
+  /// **'work'**
+  String get sayWhyWork;
+
+  /// No description provided for @sayWhyCompany.
+  ///
+  /// In en, this message translates to:
+  /// **'company: {name}'**
+  String sayWhyCompany(String name);
+
+  /// No description provided for @sayWhyBedtime.
+  ///
+  /// In en, this message translates to:
+  /// **'bedtime'**
+  String get sayWhyBedtime;
+
+  /// No description provided for @sayWhyShelter.
+  ///
+  /// In en, this message translates to:
+  /// **'shelter from the storm'**
+  String get sayWhyShelter;
+
+  /// No description provided for @sayWhyNothing.
+  ///
+  /// In en, this message translates to:
+  /// **'nothing better'**
+  String get sayWhyNothing;
+
+  /// No description provided for @sayStoryThread.
+  ///
+  /// In en, this message translates to:
+  /// **'{thread}: {why}'**
+  String sayStoryThread(String thread, String why);
+
+  /// No description provided for @sayStoryTalk.
+  ///
+  /// In en, this message translates to:
+  /// **'{a} and {b} talked {at}{how, select, quarrel{, and it ended in a quarrel} warm{, and they parted warmly} other{}}.'**
+  String sayStoryTalk(String a, String b, String at, String how);
+
+  /// No description provided for @sayStoryTalkAbout.
+  ///
+  /// In en, this message translates to:
+  /// **'{a} and {b} talked {at} about {topic}{how, select, quarrel{, and it ended in a quarrel} warm{, and they parted warmly} other{}}.'**
+  String sayStoryTalkAbout(String a, String b, String at, String topic, String how);
+
+  /// No description provided for @sayStoryConfided.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} confided in Dash: {fact}.'**
+  String sayStoryConfided(String name, String fact);
+
+  /// No description provided for @sayStoryHeard.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} {overheard, select, yes{overheard {from} say} other{heard from {from}}}: {fact}{untrue, select, yes{ (it was not true)} other{}}{doubts, select, yes{, but did not believe it} other{}}.'**
+  String sayStoryHeard(String name, String from, String fact, String overheard, String untrue, String doubts);
+
+  /// No description provided for @sayStoryGossip.
+  ///
+  /// In en, this message translates to:
+  /// **'Dash whispered made-up {count, plural, =1{rumour} other{rumours}} about {names} to {name}, and {name} was {reaction, select, offended{offended} annoyed{annoyed} indifferent{indifferent} pleased{pleased} delighted{delighted} other{{reaction}}}.'**
+  String sayStoryGossip(String name, String names, int count, String reaction);
+
+  /// No description provided for @sayStoryDash.
+  ///
+  /// In en, this message translates to:
+  /// **'Dash {intent, select, praise{told {name} something kind about {about}} tell{passed on some news to {name}} gift{gave {name} {item}} help{offered to help {name}} compliment{paid {name} a compliment} tease{teased {name}} other{spoke with {name}}}, and {name} was {reaction, select, offended{offended} annoyed{annoyed} indifferent{indifferent} pleased{pleased} delighted{delighted} other{{reaction}}}.'**
+  String sayStoryDash(String name, String intent, String about, String item, String reaction);
+
+  /// No description provided for @sayItem.
+  ///
+  /// In en, this message translates to:
+  /// **'{item, select, ribbon{a red ribbon} honey{a jar of honey} pebble{a shiny pebble} mint{a bundle of mint} other{{item}}}'**
+  String sayItem(String item);
+
+  /// No description provided for @sayAt.
+  ///
+  /// In en, this message translates to:
+  /// **'{place, select, pond{at the pond} berryBushes{at the berry bushes} bakery{at the bakery} hilltop{on the hilltop} hut{at {name}\'s hut} other{at {place}}}'**
+  String sayAt(String place, String name);
+
+  /// No description provided for @sayAnd.
+  ///
+  /// In en, this message translates to:
+  /// **'{first} and {last}'**
+  String sayAnd(String first, String last);
+
+  /// No description provided for @sayFactPipTune.
+  ///
+  /// In en, this message translates to:
+  /// **'Pip cannot hold a tune and practises singing in secret at the pond at dawn.'**
+  String get sayFactPipTune;
+
+  /// No description provided for @sayFactMoScarf.
+  ///
+  /// In en, this message translates to:
+  /// **'Mo knocked Pip\'s red scarf into the pond reeds by accident and never told her.'**
+  String get sayFactMoScarf;
+
+  /// No description provided for @sayFactScarfWhere.
+  ///
+  /// In en, this message translates to:
+  /// **'Pip\'s red scarf is lying in the pond reeds.'**
+  String get sayFactScarfWhere;
+
+  /// No description provided for @sayFactJuneRumour.
+  ///
+  /// In en, this message translates to:
+  /// **'June made up the rumour that Mo\'s bread made Bramble sick.'**
+  String get sayFactJuneRumour;
+
+  /// No description provided for @sayFactBreadRumour.
+  ///
+  /// In en, this message translates to:
+  /// **'Mo\'s bread made Bramble sick.'**
+  String get sayFactBreadRumour;
+
+  /// No description provided for @sayFactBreadTruth.
+  ///
+  /// In en, this message translates to:
+  /// **'Bramble was never sick from Mo\'s bread; the bread rumour is false.'**
+  String get sayFactBreadTruth;
+
+  /// No description provided for @sayFactBramblePoems.
+  ///
+  /// In en, this message translates to:
+  /// **'Bramble writes anonymous love poems to June.'**
+  String get sayFactBramblePoems;
+
+  /// No description provided for @sayFactWildflowers.
+  ///
+  /// In en, this message translates to:
+  /// **'Someone keeps leaving wildflowers at the berry bushes for June.'**
+  String get sayFactWildflowers;
+
+  /// No description provided for @sayFactCloverDeal.
+  ///
+  /// In en, this message translates to:
+  /// **'Clover secretly promised Pip the Golden Bell in exchange for a free scarf.'**
+  String get sayFactCloverDeal;
+
+  /// No description provided for @sayFactStormForecast.
+  ///
+  /// In en, this message translates to:
+  /// **'Bramble predicts a big storm will hit the village on the afternoon of day {day}.'**
+  String sayFactStormForecast(String day);
+
+  /// No description provided for @sayFactMoVoice.
+  ///
+  /// In en, this message translates to:
+  /// **'Mo sang beautifully at last year\'s festival and got the loudest applause.'**
+  String get sayFactMoVoice;
+
+  /// No description provided for @sayFactHoneyLoaf.
+  ///
+  /// In en, this message translates to:
+  /// **'Mo baked a giant honey loaf for the Berry Festival on day 2.'**
+  String get sayFactHoneyLoaf;
+
+  /// No description provided for @sayFactRehearsal.
+  ///
+  /// In en, this message translates to:
+  /// **'Clover held a festival rehearsal on the hilltop on day 4; {names} practised.'**
+  String sayFactRehearsal(String names);
+
+  /// No description provided for @sayFactRehearsalEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Clover held a festival rehearsal on the hilltop on day 4; no singer came.'**
+  String get sayFactRehearsalEmpty;
+
+  /// No description provided for @sayFactLanterns.
+  ///
+  /// In en, this message translates to:
+  /// **'Clover strung lanterns all the way up the hilltop path for the festival.'**
+  String get sayFactLanterns;
+
+  /// No description provided for @sayFactScarfMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'Pip\'s red scarf has gone missing from her hut.'**
+  String get sayFactScarfMissing;
+
+  /// No description provided for @sayFactScarfFound.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} found Pip\'s red scarf in the pond reeds.'**
+  String sayFactScarfFound(String name);
+
+  /// No description provided for @sayFactScarfReturned.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} gave Pip back her red scarf.'**
+  String sayFactScarfReturned(String name);
+
+  /// No description provided for @sayFactFestival.
+  ///
+  /// In en, this message translates to:
+  /// **'Clover announced the Berry Festival for day {day} at 16:00 on the hilltop; the best singer wins the Golden Bell.'**
+  String sayFactFestival(String day);
+
+  /// No description provided for @sayFactSigned.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} signed up to sing at the Berry Festival.'**
+  String sayFactSigned(String name);
+
+  /// No description provided for @sayFactMoFainted.
+  ///
+  /// In en, this message translates to:
+  /// **'Mo fainted on stage at the Berry Festival before singing a note.'**
+  String get sayFactMoFainted;
+
+  /// No description provided for @sayFactFestivalWinner.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} won the Golden Bell at the Berry Festival.'**
+  String sayFactFestivalWinner(String name);
+
+  /// No description provided for @sayFactAnonPoem.
+  ///
+  /// In en, this message translates to:
+  /// **'June found an unsigned love poem tucked into the wildflowers at the berry bushes.'**
+  String get sayFactAnonPoem;
+
+  /// No description provided for @sayFactBrambleFlowers.
+  ///
+  /// In en, this message translates to:
+  /// **'Bramble was seen leaving wildflowers at the berry bushes at dawn.'**
+  String get sayFactBrambleFlowers;
+
+  /// No description provided for @sayFactStormHit.
+  ///
+  /// In en, this message translates to:
+  /// **'A storm hit the village on day {day} at 15:00: thunder, sideways rain, the festival bunting blew away.'**
+  String sayFactStormHit(String day);
+
+  /// No description provided for @sayFactBrambleRight.
+  ///
+  /// In en, this message translates to:
+  /// **'Bramble\'s storm prediction came true.'**
+  String get sayFactBrambleRight;
+
+  /// No description provided for @sayFactStormPassed.
+  ///
+  /// In en, this message translates to:
+  /// **'The storm passed in the evening of day {day}, leaving puddles and a rainbow over the pond.'**
+  String sayFactStormPassed(String day);
+
+  /// No description provided for @sayFactGift.
+  ///
+  /// In en, this message translates to:
+  /// **'Dash gave {name} {item}.'**
+  String sayFactGift(String name, String item);
+
+  /// No description provided for @sayFactArgument.
+  ///
+  /// In en, this message translates to:
+  /// **'{a} and {b} had a heated argument {at} (day {day}).'**
+  String sayFactArgument(String a, String b, String at, String day);
+
+  /// No description provided for @sayEndWeek.
+  ///
+  /// In en, this message translates to:
+  /// **'The week ended as \"{title}\": {blurb}'**
+  String sayEndWeek(String title, String blurb);
+
+  /// No description provided for @sayEndNoWinner.
+  ///
+  /// In en, this message translates to:
+  /// **'Nobody won the Golden Bell.'**
+  String get sayEndNoWinner;
+
+  /// No description provided for @sayEndRumoursNone.
+  ///
+  /// In en, this message translates to:
+  /// **'Every untrue rumour had been put right.'**
+  String get sayEndRumoursNone;
+
+  /// No description provided for @sayEndRumoursFew.
+  ///
+  /// In en, this message translates to:
+  /// **'A few untrue rumours were still going round.'**
+  String get sayEndRumoursFew;
+
+  /// No description provided for @sayEndRumoursMany.
+  ///
+  /// In en, this message translates to:
+  /// **'Many untrue rumours were still going round.'**
+  String get sayEndRumoursMany;
+
+  /// No description provided for @sayEndFond.
+  ///
+  /// In en, this message translates to:
+  /// **'The llamas were fond of one another.'**
+  String get sayEndFond;
+
+  /// No description provided for @sayEndSoured.
+  ///
+  /// In en, this message translates to:
+  /// **'Many friendships had soured.'**
+  String get sayEndSoured;
+
+  /// No description provided for @sayEndMixed.
+  ///
+  /// In en, this message translates to:
+  /// **'Some friendships were warm and some were cool.'**
+  String get sayEndMixed;
+
+  /// No description provided for @sayEndArc.
+  ///
+  /// In en, this message translates to:
+  /// **'{arc, select, reconciled{Pip and Mo made up.} rift{Pip and Mo fell out.} unresolved{Things between Pip and Mo were left unsaid.} accepted{June said yes to Bramble.} declined{June let Bramble down gently.} revealed{Everyone knows Bramble writes June\'s poems.} secret{Nobody learned who writes June\'s poems.} other{}}'**
+  String sayEndArc(String arc);
+
+  /// No description provided for @sayEndHappiest.
+  ///
+  /// In en, this message translates to:
+  /// **'{a} ended the week happiest, and {b} the gloomiest.'**
+  String sayEndHappiest(String a, String b);
+
+  /// No description provided for @sayEndDashCross.
+  ///
+  /// In en, this message translates to:
+  /// **'Most llamas were cross with Dash.'**
+  String get sayEndDashCross;
+
+  /// No description provided for @sayEndDashFond.
+  ///
+  /// In en, this message translates to:
+  /// **'Most llamas had grown fond of Dash.'**
+  String get sayEndDashFond;
+
+  /// No description provided for @sayEndDashUnsure.
+  ///
+  /// In en, this message translates to:
+  /// **'The llamas were not sure what to make of Dash.'**
+  String get sayEndDashUnsure;
+
+  /// No description provided for @sayQuietDay.
+  ///
+  /// In en, this message translates to:
+  /// **'A quiet day: the llamas went about their work.'**
+  String get sayQuietDay;
 }
 
 class _L10nDelegate extends LocalizationsDelegate<L10n> {

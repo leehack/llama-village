@@ -517,7 +517,7 @@ class VillageHomeState extends State<VillageHome> with SingleTickerProviderState
     if (v == null) return;
     final b = book = newStorybook(v, verdict, id: 'week-${DateTime.now().millisecondsSinceEpoch}', title: L10n.of(context).storyTitle);
     _bookSaved = false;
-    final writer = _writer = StoryWriter(v, b, verdict: verdict, influence: i, onChange: () => _storyChanged(b));
+    final writer = _writer = StoryWriter(v, b, verdict: verdict, influence: i, onChange: () => _storyChanged(b), say: L10n.of(context).say);
     test.log('STORYBOOK start (${v.journal.beats.length} beats, ${v.album.shots.length} pictures)');
     unawaited(writer.start());
   }
@@ -587,7 +587,7 @@ class VillageHomeState extends State<VillageHome> with SingleTickerProviderState
     });
     unawaited(_unlock(v.ending));
     for (final l in game.cast) {
-      epilogueLine(game, l, i).then((line) {
+      epilogueLine(game, l, i, verdict: v).then((line) {
         if (!mounted || village != game) return;
         setState(() => epilogue[l.name] = line);
         test.log('EPILOGUE ${l.name}: $line');

@@ -1,6 +1,7 @@
 import 'clock.dart';
 import 'facts.dart';
 import 'places.dart';
+import 'said.dart';
 
 /// What a llama is doing right now; the 3D scene animates from this.
 class Activity {
@@ -124,7 +125,7 @@ class DecisionOption {
   const DecisionOption(this.kind, this.utility, this.why, {this.dest});
   final String kind;
   final double utility;
-  final String why;
+  final Said why;
   final String? dest;
 
   String get label => dest == null ? kind : '$kind to ${theP(dest!)}';
@@ -215,6 +216,20 @@ List<Llama> buildCast() => [
   ),
 ];
 
+const Map<String, SaidKey> _seedSaid = {
+  'pip_tune': SaidKey.factPipTune,
+  'mo_scarf': SaidKey.factMoScarf,
+  'scarf_where': SaidKey.factScarfWhere,
+  'june_rumour': SaidKey.factJuneRumour,
+  'bread_rumour': SaidKey.factBreadRumour,
+  'bread_truth': SaidKey.factBreadTruth,
+  'bramble_poems': SaidKey.factBramblePoems,
+  'wildflowers': SaidKey.factWildflowers,
+  'clover_deal': SaidKey.factCloverDeal,
+  'storm_forecast': SaidKey.factStormForecast,
+  'mo_voice': SaidKey.factMoVoice,
+};
+
 /// Backstory facts. Each llama starts knowing only its own.
 void seedFacts(KnowledgeBase kb) {
   void add(
@@ -243,6 +258,7 @@ void seedFacts(KnowledgeBase kb) {
         contradicts: contradicts,
         secretOf: secretOf,
         interested: interested,
+        said: Said(_seedSaid[id]!, text, id == 'storm_forecast' ? const {'day': stormDay} : const {}),
       ),
     );
     for (final e in known.entries) {

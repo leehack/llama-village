@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'cast.dart';
 import 'places.dart';
+import 'said.dart';
 import 'threads.dart';
 import 'village.dart';
 
@@ -9,7 +10,7 @@ class Choice {
   Choice(this.kind, this.utility, this.why, {this.dest, this.minutes = 10, this.goal});
   final String kind;
   double utility;
-  final String why;
+  final Said why;
   final String? dest;
   final int minutes;
   final Goal? goal;
@@ -30,28 +31,50 @@ Choice decide(Village v, Llama l) {
 
   // Staying put.
   if (hasFood(l.place, l.home)) {
-    add(Choice('eat', l.hunger > 0.45 ? 0.25 + l.hunger * 1.1 : 0.02, 'hunger ${l.hunger.toStringAsFixed(2)}', minutes: 20));
+    final hunger = l.hunger.toStringAsFixed(2);
+    add(
+      Choice('eat', l.hunger > 0.45 ? 0.25 + l.hunger * 1.1 : 0.02, Said(SaidKey.whyHunger, 'hunger $hunger', {'v': hunger}), minutes: 20),
+    );
   }
   if (l.place == l.workplace) {
     var u = 0.38 + (planPlace == l.workplace ? 0.25 : 0);
     if (l.hunger > 0.8) u -= 0.4;
     if (l.energy < 0.2) u -= 0.4;
-    add(Choice('work', u, planPlace == l.workplace ? 'plan says work' : 'at workplace', minutes: 30));
+    add(
+      Choice(
+        'work',
+        u,
+        planPlace == l.workplace ? const Said(SaidKey.whyPlanWork, 'plan says work') : const Said(SaidKey.whyAtWorkplace, 'at workplace'),
+        minutes: 30,
+      ),
+    );
   }
   if (l.place == l.home) {
-    add(Choice('nap', l.energy < 0.45 ? (1 - l.energy) * 1.15 : 0.02, 'energy ${l.energy.toStringAsFixed(2)}', minutes: 40));
-    if (night) add(Choice('sleep', 3, 'night', minutes: 600));
+    final energy = l.energy.toStringAsFixed(2);
+    add(
+      Choice('nap', l.energy < 0.45 ? (1 - l.energy) * 1.15 : 0.02, Said(SaidKey.whyEnergy, 'energy $energy', {'v': energy}), minutes: 40),
+    );
+    if (night) add(Choice('sleep', 3, const Said(SaidKey.whyNight, 'night'), minutes: 600));
   }
-  if (planPlace == l.place) add(Choice('linger', 0.3, 'plan: ${plan!.$2}', minutes: 15));
+  Said planWhy() => Said(SaidKey.whyPlan, 'plan: ${plan!.$2}', {'place': planPlace});
+  if (planPlace == l.place) add(Choice('linger', 0.3, planWhy(), minutes: 15));
   for (final g in goals) {
     if (g.action != null && g.action != 'festival' && (g.place == null || g.place == l.place)) {
-      add(Choice(g.action!, g.weight + 0.25, g.text, minutes: g.action == 'flowers' ? 8 : 20, goal: g));
+      add(Choice(g.action!, g.weight + 0.25, g.said, minutes: g.action == 'flowers' ? 8 : 20, goal: g));
     }
-    if (g.action == 'festival' && l.place == 'hilltop') add(Choice('watch', g.weight + 0.3, g.text, minutes: 15, goal: g));
+    if (g.action == 'festival' && l.place == 'hilltop') add(Choice('watch', g.weight + 0.3, g.said, minutes: 15, goal: g));
     if (g.seek != null) {
       final target = v.byName(g.seek!);
       if (target.place == l.place && target.busyTalking) {
-        add(Choice('wait', g.weight + 0.1, 'waiting for ${target.name}', minutes: 5, goal: g));
+        add(
+          Choice(
+            'wait',
+            g.weight + 0.1,
+            Said(SaidKey.whyWaiting, 'waiting for ${target.name}', {'name': target.name}),
+            minutes: 5,
+            goal: g,
+          ),
+        );
       }
     }
   }
@@ -70,44 +93,44 @@ Choice decide(Village v, Llama l) {
   for (final dest in [...publicPlaces, l.home]) {
     if (dest == l.place) continue;
     var u = 0.0;
-    var why = '';
-    void consider(double value, String reason) {
+    var why = const Said.raw('');
+    void consider(double value, Said reason) {
       if (value > u) {
         u = value;
         why = reason;
       }
     }
 
-    if (planPlace == dest) consider(0.5, 'plan: ${plan!.$2}');
-    if (l.hunger > 0.55 && hasFood(dest, l.home)) consider(l.hunger, 'food');
-    if (l.energy < 0.3 && dest == l.home) consider(1 - l.energy, 'rest');
-    if (dest == l.workplace && !night) consider(0.3, 'work');
+    if (planPlace == dest) consider(0.5, planWhy());
+    if (l.hunger > 0.55 && hasFood(dest, l.home)) consider(l.hunger, const Said(SaidKey.whyFood, 'food'));
+    if (l.energy < 0.3 && dest == l.home) consider(1 - l.energy, const Said(SaidKey.whyRest, 'rest'));
+    if (dest == l.workplace && !night) consider(0.3, const Said(SaidKey.whyWork, 'work'));
     for (final g in goals) {
-      if (g.place == dest) consider(g.weight + 0.15, g.text);
+      if (g.place == dest) consider(g.weight + 0.15, g.said);
       if (g.seek != null) {
         final t = v.byName(g.seek!);
         final where = t.activity.kind == 'walk' ? t.activity.dest : t.place;
-        if (where == dest && !t.asleep) consider(g.weight + 0.1, g.text);
+        if (where == dest && !t.asleep) consider(g.weight + 0.1, g.said);
       }
     }
     for (final o in v.cast) {
       if (o != l && o.place == dest && !o.asleep) {
-        consider(l.social * 0.45 + (l.friendship[o.name] ?? 0) / 40, 'company: ${o.name}');
+        consider(l.social * 0.45 + (l.friendship[o.name] ?? 0) / 40, Said(SaidKey.whyCompany, 'company: ${o.name}', {'name': o.name}));
       }
     }
-    if (night && dest == l.home) consider(2.5, 'bedtime');
+    if (night && dest == l.home) consider(2.5, const Said(SaidKey.whyBedtime, 'bedtime'));
     if (v.storm) {
       if (outdoorPlaces.contains(dest)) {
         u -= 1.0;
       } else if (l.outdoors) {
-        consider(1.6, 'shelter from the storm');
+        consider(1.6, const Said(SaidKey.whyShelter, 'shelter from the storm'));
       }
     }
     u -= travelMinutes(l.place, dest) * 0.008;
     if (u > 0.05) add(Choice('walk', u, why, dest: dest, minutes: travelMinutes(l.place, dest)));
   }
 
-  add(Choice('linger', 0.06, 'nothing better', minutes: 10));
+  add(Choice('linger', 0.06, const Said(SaidKey.whyNothing, 'nothing better'), minutes: 10));
   for (final o in options) {
     o.utility += v.rng.nextDouble() * 0.12;
   }

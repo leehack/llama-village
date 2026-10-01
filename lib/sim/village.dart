@@ -14,6 +14,7 @@ import 'log.dart';
 import 'model.dart';
 import 'places.dart';
 import 'rng.dart';
+import 'said.dart';
 import 'story.dart';
 import 'threads.dart';
 import 'week.dart';
@@ -41,8 +42,11 @@ class Speech {
 
 /// What a llama knows, as the inspector lists it.
 class KnownFact {
-  const KnownFact(this.text, this.how, {required this.believes, required this.secret, this.knowing, this.own = false});
+  const KnownFact(this.text, this.how, {required this.believes, required this.secret, this.knowing, this.own = false, this.said});
   final String text;
+
+  /// [text] for the player's language.
+  final Said? said;
   final String how;
 
   /// How it was learned, for a localised tag; [own]: the llama's own secret.
@@ -57,7 +61,7 @@ class LlamaInspector {
   const LlamaInspector({required this.llama, required this.activity, required this.goals, required this.knows, required this.thought});
   final Llama llama;
   final String activity;
-  final List<String> goals;
+  final List<Said> goals;
   final List<KnownFact> knows;
   final String? thought;
 }
@@ -183,6 +187,8 @@ class Village {
   Llama? maybeByName(String name) => cast.where((l) => l.name == name).firstOrNull;
   List<Goal> goalsFor(Llama l) => [for (final t in threads) ...t.goalsFor(l, this)];
 
+  /// A new fact; [saidKey] (with [said] as its arguments) is how the player
+  /// reads [text], and a fact without one is shown as it is.
   Fact newFact(
     String id,
     String text,
@@ -191,7 +197,21 @@ class Village {
     List<List<String>> keywords = const [],
     bool truth = true,
     String origin = 'world',
-  }) => kb.add(Fact(id: id, text: text, truth: truth, origin: origin, kind: kind, created: now, short: short, keywords: keywords));
+    SaidKey saidKey = SaidKey.raw,
+    Map<String, Object?> said = const {},
+  }) => kb.add(
+    Fact(
+      id: id,
+      text: text,
+      truth: truth,
+      origin: origin,
+      kind: kind,
+      created: now,
+      short: short,
+      keywords: keywords,
+      said: Said(saidKey, text, said),
+    ),
+  );
 
   List<String> presentAt(String place, {Set<String> exclude = const {}}) => [
     for (final l in cast)
@@ -208,13 +228,15 @@ class Village {
     return learned;
   }
 
-  void worldEvent(String title, String text, {required String at, String? fact, Set<String> also = const {}}) {
+  /// Something happens at [at]; the storybook tells it as [story] when the
+  /// log's [text] is not fit for it.
+  void worldEvent(Said title, Said text, {required String at, String? fact, Set<String> also = const {}, Said? story}) {
     final seen = fact == null ? <String>[] : witness(fact, at, extra: also);
-    log.event(title, '$text${seen.isEmpty ? '' : ' (seen by ${seen.join(', ')})'}');
-    events.emit('world_event', {'title': title, 'text': text, 'place': at, 'fact': fact});
+    log.event(title, text, seen: seen);
+    _emitWorld(title, text, at, fact, story);
   }
 
-  void announce(String title, String text, String factId, {bool quiet = false, String how = 'announced'}) {
+  void announce(Said title, Said text, String factId, {bool quiet = false, String how = 'announced', Said? story}) {
     for (final n in [...cast.map((l) => l.name), 'Dash']) {
       kb.learn(n, factId, how, now);
     }
@@ -223,8 +245,16 @@ class Village {
     } else {
       log.event(title, text);
     }
-    events.emit('world_event', {'title': title, 'text': text, 'place': 'everywhere', 'fact': factId});
+    _emitWorld(title, text, 'everywhere', factId, story);
   }
+
+  void _emitWorld(Said title, Said text, String place, String? fact, Said? story) => events.emit('world_event', {
+    'title': title.english,
+    'text': text.english,
+    'place': place,
+    'fact': fact,
+    'said': (story ?? text).toJson(),
+  });
 
   // ------------------------------------------------------------ clock
 
@@ -238,7 +268,7 @@ class Village {
 
   /// Ends conversations at once, without outcomes: all of them, so nobody
   /// is left talking through a night skip, or those [where] says.
-  void abandonConversations({bool Function(Conversation c)? where, String why = 'say goodnight'}) {
+  void abandonConversations({bool Function(Conversation c)? where, bool rush = false}) {
     for (final c in active.where(where ?? (_) => true).toList()) {
       c.abandoned = true;
       active.remove(c);
@@ -247,14 +277,19 @@ class Village {
         l.lastConversationEnd = now;
         speech.remove(l.name);
       }
-      log.note('${c.a.name} and ${c.b.name} $why.');
+      final args = {'a': c.a.name, 'b': c.b.name};
+      log.note(
+        rush
+            ? Said(SaidKey.breakOffFestival, '${c.a.name} and ${c.b.name} break off to hurry to the festival.', args)
+            : Said(SaidKey.sayGoodnight, '${c.a.name} and ${c.b.name} say goodnight.', args),
+      );
     }
   }
 
   /// Twenty-five minutes before the festival, everyone still chatting
   /// elsewhere breaks off and heads for the hilltop.
   void _callToFestival() {
-    abandonConversations(where: (c) => c.place != 'hilltop', why: 'break off to hurry to the festival');
+    abandonConversations(where: (c) => c.place != 'hilltop', rush: true);
     final visit = dash.visit;
     if (visit != null && visit.target.place != 'hilltop') {
       dash.leave();
@@ -381,7 +416,7 @@ class Village {
     }
     _plannedTomorrow = false;
     _reflected = false;
-    log.note('Morning of day ${now.day}. The village wakes up.', kind: LogKind.event);
+    log.note(Said(SaidKey.morning, 'Morning of day ${now.day}. The village wakes up.', {'day': now.day}), kind: LogKind.event);
     events.emit('morning', {'day': now.day});
   }
 
@@ -417,7 +452,7 @@ class Village {
               ..reflections.add(r)
               ..reflectedDay = day;
             l.thoughts.add(r);
-            log.note('${l.name} lies awake thinking: "$r"');
+            log.note(Said(SaidKey.liesAwake, '${l.name} lies awake thinking: "$r"', {'name': l.name, 'thought': r}));
           });
     }
   }
@@ -451,12 +486,12 @@ class Village {
       if (l.activity.kind != 'idle') continue;
       final c = decide(this, l);
       if (c.kind == 'walk') {
-        l.activity = Activity('walk', now.plus(math.max(1, c.minutes)), dest: c.dest, label: c.why, start: now);
-        events.emit('move', {'who': l.name, 'from': l.place, 'to': c.dest, 'eta': l.activity.until.label, 'why': c.why});
+        l.activity = Activity('walk', now.plus(math.max(1, c.minutes)), dest: c.dest, label: c.why.english, start: now);
+        events.emit('move', {'who': l.name, 'from': l.place, 'to': c.dest, 'eta': l.activity.until.label, 'why': c.why.english});
       } else {
-        l.activity = Activity(c.kind, now.plus(c.minutes), label: c.why, start: now);
+        l.activity = Activity(c.kind, now.plus(c.minutes), label: c.why.english, start: now);
         if (c.kind == 'sleep') speech.remove(l.name);
-        events.emit('activity', {'who': l.name, 'kind': c.kind, 'place': l.place, 'until': l.activity.until.label, 'why': c.why});
+        events.emit('activity', {'who': l.name, 'kind': c.kind, 'place': l.place, 'until': l.activity.until.label, 'why': c.why.english});
       }
     }
   }
@@ -465,7 +500,14 @@ class Village {
     final pip = byName('Pip');
     if (pip.activity.kind == 'practise') {
       final seen = witness('pip_tune', pip.place, exclude: {'Pip'});
-      if (seen.isNotEmpty) log.note('${seen.join(' and ')} hear${seen.length == 1 ? 's' : ''} Pip croaking scales at ${theP(pip.place)}.');
+      if (seen.isNotEmpty) {
+        log.note(
+          Said(SaidKey.hearsPip, '${seen.join(' and ')} hear${seen.length == 1 ? 's' : ''} Pip croaking scales at ${theP(pip.place)}.', {
+            'names': seen,
+            'place': pip.place,
+          }),
+        );
+      }
     }
   }
 
@@ -714,7 +756,12 @@ class Village {
       t.onConversationEnd(c, this);
     }
     log.conversation(c, kb);
-    events.emit('conversation_end', {'conv': c.id, 'mood': c.moodDelta, 'friendship': c.friendshipDelta, 'notes': c.notes});
+    events.emit('conversation_end', {
+      'conv': c.id,
+      'mood': c.moodDelta,
+      'friendship': c.friendshipDelta,
+      'notes': [for (final n in c.notes) n.english],
+    });
   }
 
   // ------------------------------------------------------------ thoughts
@@ -871,7 +918,7 @@ class Village {
       final e = l.schedule.entries.toList()..sort((a, b) => a.key.compareTo(b.key));
       log.raw('- **${l.name}**: ${e.map((x) => '${x.key.toString().padLeft(2, '0')} ${x.value.$2} (${x.value.$1})').join(' · ')}');
     }
-    log.note('The llamas have planned their day.', kind: LogKind.event);
+    log.note(const Said(SaidKey.planned, 'The llamas have planned their day.'), kind: LogKind.event);
   }
 
   // ------------------------------------------------------------ views
@@ -900,7 +947,7 @@ class Village {
     return LlamaInspector(
       llama: l,
       activity: activityLabel(l),
-      goals: [for (final g in goals) g.text],
+      goals: [for (final g in goals) g.said],
       knows: [
         for (final f in known)
           KnownFact(
@@ -910,6 +957,7 @@ class Village {
             secret: f.secretOf.contains(l.name) && f.knownBy[l.name]!.how == 'own',
             knowing: f.knownBy[l.name],
             own: f.secretOf.contains(l.name),
+            said: f.said,
           ),
       ],
       thought: l.thoughts.lastOrNull,

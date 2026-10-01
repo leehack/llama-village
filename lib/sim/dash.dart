@@ -9,6 +9,7 @@ import 'lang.dart';
 import 'laya_roles.dart';
 import 'model.dart';
 import 'places.dart';
+import 'said.dart';
 import 'village.dart';
 
 /// A note for the player about the visit ("Mo is asleep"); [kind] is
@@ -45,6 +46,32 @@ class DashEffect {
   final bool? believes;
   final String? fact;
   final String? short;
+
+  Map<String, Object?> get args => {
+    'kind': kind,
+    'name': name,
+    'delta': ?delta,
+    'now': ?now,
+    'mood': ?mood,
+    'about': ?about,
+    'believes': ?believes,
+    'fact': ?fact,
+    'short': ?short,
+  };
+
+  static DashEffect fromArgs(Map<String, Object?> a) => DashEffect(
+    a['kind'] as String,
+    a['name'] as String,
+    delta: a['delta'] as int?,
+    now: a['now'] as int?,
+    mood: a['mood'] as int?,
+    about: a['about'] as String?,
+    believes: a['believes'] as bool?,
+    fact: a['fact'] as String?,
+    short: a['short'] as String?,
+  );
+
+  Said get said => Said(SaidKey.dashEffect, english, args);
 
   String get english => switch (kind) {
     'trust' => '$name toward Dash ${_signed(delta!)} (now $now), mood ${_signed(mood!)}',
@@ -463,7 +490,7 @@ class Dash {
       ..stage = VisitStage.done
       ..doneMs = v.uiMs;
     final said = [for (final e in effects) e.english];
-    v.log.dash(v.now, l, dv.options!, pick, level, reply, said);
+    v.log.dash(v.now, l, dv.options!, pick, level, reply, [for (final e in effects) e.said]);
     v.events.emit('dash_reply', {
       'target': l.name,
       'intent': pick.intent,
@@ -493,7 +520,14 @@ class Dash {
     if (pick.intent == 'gift' && pick.item != null) {
       inventory.remove(pick.item);
       l.items.add(pick.item!);
-      final f = v.newFact(v.kb.newId('gift'), 'Dash gave ${l.name} ${pick.item}.', 'Dash\'s gift to ${l.name}', kind: FactKind.deed);
+      final f = v.newFact(
+        v.kb.newId('gift'),
+        'Dash gave ${l.name} ${pick.item}.',
+        'Dash\'s gift to ${l.name}',
+        kind: FactKind.deed,
+        saidKey: SaidKey.factGift,
+        said: {'name': l.name, 'item': pick.item},
+      );
       v.kb.learn('Dash', f.id, 'own', v.now);
       v.witness(f.id, l.place, extra: {l.name});
     }

@@ -1202,4 +1202,812 @@ class L10nEn extends L10n {
 
   @override
   String get tipCloseBook => 'Close the book (Esc)';
+
+  @override
+  String get sayScarfMissingTitle => 'Pip notices her red scarf is missing';
+
+  @override
+  String get sayScarfMissingHome =>
+      'Pip reaches for her red scarf on its hook. The hook is empty. She turns her hut upside down: the scarf is gone.';
+
+  @override
+  String get sayScarfMissingAway =>
+      'Pip realises she has not seen her red scarf since yesterday. It is not on its hook: the scarf is gone.';
+
+  @override
+  String get sayScarfFoundTitle => 'Scarf found';
+
+  @override
+  String sayScarfFound(String name) {
+    String _temp0 = intl.Intl.selectLogic(name, {'Pip': 'her', 'other': 'Pip\'s'});
+    return '$name pulls $_temp0 red scarf, soggy, out of the pond reeds.';
+  }
+
+  @override
+  String get sayScarfReturnedTitle => 'Scarf returned';
+
+  @override
+  String sayScarfReturned(String name) {
+    return '$name hands Pip her red scarf.';
+  }
+
+  @override
+  String get sayFestivalAnnouncedTitle => 'Berry Festival announced';
+
+  @override
+  String sayFestivalAnnounced(String day) {
+    return 'Clover rings her bell: the Berry Festival is on day $day at 16:00 on the hilltop, and the best singer wins the Golden Bell.';
+  }
+
+  @override
+  String get sayPipSignsUpTitle => 'Pip signs up';
+
+  @override
+  String get sayPipSignsUp => 'Pip shouts her name before Clover finishes the sentence.';
+
+  @override
+  String get sayFestivalTitle => 'The Berry Festival';
+
+  @override
+  String sayFestivalGathers(String count, String names) {
+    return 'Lanterns, berry tarts and a wobbly stage. $count llamas gather on the hilltop. Singers: $names.';
+  }
+
+  @override
+  String sayFestivalNoSingers(String count) {
+    return 'Lanterns, berry tarts and a wobbly stage. $count llamas gather on the hilltop. Singers: nobody turned up.';
+  }
+
+  @override
+  String get sayPipSingsTitle => 'Pip sings';
+
+  @override
+  String get sayMoFaintsTitle => 'Mo faints';
+
+  @override
+  String saySingsTitle(String name) {
+    return '$name sings';
+  }
+
+  @override
+  String get sayGoldenBellTitle => 'The Golden Bell';
+
+  @override
+  String sayGoldenBell(String name, String scores) {
+    return 'Clover hands the Golden Bell to $name. Scores: $scores.';
+  }
+
+  @override
+  String sayGoldenBellStory(String name) {
+    return 'Clover hands the Golden Bell to $name.';
+  }
+
+  @override
+  String get sayStormTitle => 'Storm';
+
+  @override
+  String get sayStorm => 'Thunder cracks over the hilltop and sideways rain sweeps the village.';
+
+  @override
+  String get sayStormClearsTitle => 'The storm clears';
+
+  @override
+  String get sayStormClears => 'The storm passes. Puddles everywhere, a rainbow over the pond.';
+
+  @override
+  String get sayHoneyLoafTitle => 'Honey loaf';
+
+  @override
+  String get sayHoneyLoaf => 'Mo pulls a honey loaf as big as a hay bale out of the bakery oven.';
+
+  @override
+  String get sayRehearsalTitle => 'Rehearsal';
+
+  @override
+  String get sayRehearsalEmpty => 'Clover blows her whistle at an empty stage and writes something stern on her clipboard.';
+
+  @override
+  String get sayRehearsal => 'Clover runs the singers through their songs; the stage wobbles but holds.';
+
+  @override
+  String get sayLanternsTitle => 'Lanterns';
+
+  @override
+  String get sayLanterns => 'Overnight, Clover has strung lanterns all the way up the hilltop path.';
+
+  @override
+  String sayLogEvent(String title, String text) {
+    return '$title. $text';
+  }
+
+  @override
+  String sayLogEventSeen(String title, String text, String seen) {
+    return '$title. $text (seen by $seen)';
+  }
+
+  @override
+  String sayTalkStarted(String a, String b, String at) {
+    return '$a and $b talk $at';
+  }
+
+  @override
+  String sayTalkStartedAbout(String a, String b, String at, String topic) {
+    return '$a and $b talk $at about $topic';
+  }
+
+  @override
+  String sayNowKnows(String name, String fact) {
+    return '$name now knows: $fact';
+  }
+
+  @override
+  String sayNowKnowsDoubts(String name, String fact) {
+    return '$name now knows: $fact, but doubts it';
+  }
+
+  @override
+  String sayOverheard(String name, String fact) {
+    return '$name overheard: $fact';
+  }
+
+  @override
+  String saySawArgue(String names) {
+    return '$names saw them argue';
+  }
+
+  @override
+  String sayThreadTurn(String thread, String from, String to, String why) {
+    return 'Thread $thread: $from → $to ($why)';
+  }
+
+  @override
+  String sayThreadNote(String thread, String text) {
+    return 'Thread $thread: $text';
+  }
+
+  @override
+  String sayThreadTitle(String thread) {
+    String _temp0 = intl.Intl.selectLogic(thread, {
+      'scarf': 'The lost red scarf',
+      'festival': 'Berry Festival singing contest',
+      'crush': 'Bramble\'s crush on June',
+      'rumour': 'The bread rumour',
+      'storm': 'Bramble\'s storm warning',
+      'week': 'Festival week',
+      'other': '$thread',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String sayThreadState(String state) {
+    String _temp0 = intl.Intl.selectLogic(state, {
+      'unnoticed': 'unnoticed',
+      'missing': 'missing',
+      'found': 'found',
+      'returned': 'returned',
+      'unannounced': 'unannounced',
+      'announced': 'announced',
+      'contest': 'contest',
+      'performed': 'performed',
+      'judged': 'judged',
+      'secret': 'secret',
+      'poemFound': 'poem found',
+      'suspected': 'suspected',
+      'confessed': 'confessed',
+      'exposed': 'exposed',
+      'accepted': 'accepted',
+      'letDownGently': 'let down gently',
+      'spreading': 'spreading',
+      'debunked': 'debunked',
+      'juneExposed': 'june exposed',
+      'forecast': 'forecast',
+      'storm': 'storm',
+      'passed': 'passed',
+      'other': '$state',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String sayThreadDay(String day) {
+    return 'day $day';
+  }
+
+  @override
+  String get sayWhyPipNoticed => 'Pip noticed it was gone';
+
+  @override
+  String get sayWhyPipFoundHerself => 'Pip found it herself in the pond reeds';
+
+  @override
+  String sayWhyFoundIt(String name) {
+    return '$name found it in the pond reeds';
+  }
+
+  @override
+  String sayWhyGaveBack(String name) {
+    return '$name gave it back';
+  }
+
+  @override
+  String get sayWhyAnnounced => 'Clover announced it; Pip signed up at once';
+
+  @override
+  String sayWhyJoinedPip(String name) {
+    return '$name joined Pip in the contest';
+  }
+
+  @override
+  String get sayWhyNoSingers => 'no singers';
+
+  @override
+  String sayWhySang(String names) {
+    return '$names sang';
+  }
+
+  @override
+  String sayWhyWon(String name, String how) {
+    return '$name won the Golden Bell; $how.';
+  }
+
+  @override
+  String sayWhyNoWinner(String how) {
+    return 'No winner: $how.';
+  }
+
+  @override
+  String get sayHowNobodySang => 'nobody sang';
+
+  @override
+  String get sayHowDeal => 'Clover quietly honoured her secret deal with Pip';
+
+  @override
+  String sayHowDealKnown(String names) {
+    return 'the deal was known to $names, so Clover judged fairly';
+  }
+
+  @override
+  String get sayHowFair => 'judged on voice and the crowd';
+
+  @override
+  String get sayWhyJuneFoundPoem => 'June found an anonymous love poem';
+
+  @override
+  String get sayWhyJuneSawFlowers => 'June saw Bramble leave the flowers';
+
+  @override
+  String get sayWhyBrambleTold => 'Bramble told June himself';
+
+  @override
+  String sayWhyJuneHeard(String name) {
+    return 'June heard it from $name';
+  }
+
+  @override
+  String sayWhyJuneOverheard(String name) {
+    return 'June overheard it from $name';
+  }
+
+  @override
+  String get sayWhyJuneHeardFlowers => 'June heard Bramble leaves the flowers';
+
+  @override
+  String sayWhyCrushConfessed(String outcome) {
+    String _temp0 = intl.Intl.selectLogic(outcome, {'accepted': 'accepted him', 'other': 'let him down gently'});
+    return 'Bramble confessed; June $_temp0.';
+  }
+
+  @override
+  String sayWhyCrushExposed(String name, String outcome) {
+    String _temp0 = intl.Intl.selectLogic(outcome, {'accepted': 'accepted him', 'other': 'let him down gently'});
+    return 'Bramble was exposed by $name; June $_temp0.';
+  }
+
+  @override
+  String get sayWhyNobodyBelieves => 'nobody believes it any more';
+
+  @override
+  String sayWhyJuneExposed(String name, String from) {
+    return '$name learned June made it up (from $from)';
+  }
+
+  @override
+  String sayWhyStormArrived(String count) {
+    return 'it arrived on time; $count llamas had been warned';
+  }
+
+  @override
+  String get sayWhySkyCleared => 'the sky cleared';
+
+  @override
+  String get sayConfMoTold => 'Mo confessed to Pip';
+
+  @override
+  String get sayConfPipOverheard => 'Pip overheard Mo confessing to someone else';
+
+  @override
+  String sayConfPipLearned(String from) {
+    return 'Pip learned it from $from';
+  }
+
+  @override
+  String saySearchNothing(String name, String at) {
+    return '$name searches for the scarf $at and finds nothing.';
+  }
+
+  @override
+  String sayPondNothing(String name) {
+    return '$name pokes around the pond reeds but finds nothing.';
+  }
+
+  @override
+  String saySignsUp(String name, String how) {
+    return '$name signs up for the singing contest ($how).';
+  }
+
+  @override
+  String get sayHowToldClover => 'he told Clover yes';
+
+  @override
+  String get sayHowCloverTalked => 'Clover talked her into it';
+
+  @override
+  String sayMoBraver(String name, String pct) {
+    return 'Mo feels braver after talking with $name (courage $pct%).';
+  }
+
+  @override
+  String sayMoTookBack(String pct) {
+    return 'Mo said yes, then went pale and took it back (courage $pct%).';
+  }
+
+  @override
+  String get sayJuneFindsPoem => 'June finds an unsigned love poem tucked into the wildflowers. She reads it twice.';
+
+  @override
+  String get sayFlowersUnseen => 'Bramble tucks wildflowers into the berry bushes unseen.';
+
+  @override
+  String sayFlowersSeen(String names) {
+    return 'Bramble tucks wildflowers into the berry bushes, but $names sees him.';
+  }
+
+  @override
+  String saySayGoodnight(String a, String b) {
+    return '$a and $b say goodnight.';
+  }
+
+  @override
+  String sayBreakOffFestival(String a, String b) {
+    return '$a and $b break off to hurry to the festival.';
+  }
+
+  @override
+  String sayMorning(String day) {
+    return 'Morning of day $day. The village wakes up.';
+  }
+
+  @override
+  String sayLiesAwake(String name, String thought) {
+    return '$name lies awake thinking: \"$thought\"';
+  }
+
+  @override
+  String sayHearsPip(String names, int count, String at) {
+    String _temp0 = intl.Intl.pluralLogic(count, locale: localeName, other: 'hear', one: 'hears');
+    return '$names $_temp0 Pip croaking scales $at.';
+  }
+
+  @override
+  String get sayPlanned => 'The llamas have planned their day.';
+
+  @override
+  String get sayGoalFetchScarf => 'fetch your red scarf from your hut to look your best';
+
+  @override
+  String sayGoalAskSeen(String name) {
+    return 'ask $name whether they have seen your red scarf';
+  }
+
+  @override
+  String get sayGoalFindScarf => 'find your red scarf and find out who took it';
+
+  @override
+  String get sayGoalSearchScarf => 'search for your red scarf';
+
+  @override
+  String get sayGoalMoFish => 'quietly fish Pip\'s scarf out of the pond reeds before anyone learns what you did';
+
+  @override
+  String get sayGoalHelpPip => 'help Pip look for her red scarf';
+
+  @override
+  String get sayGoalGiveBackMo => 'give Pip back her red scarf, and decide whether to confess you knocked it into the pond';
+
+  @override
+  String get sayGoalGiveBack => 'give Pip back her red scarf (you found it in the pond reeds)';
+
+  @override
+  String get sayGoalMoGuilty => 'you still feel guilty: maybe confess to Pip that you knocked her scarf into the pond';
+
+  @override
+  String get sayGoalBeAtFestival => 'be at the hilltop for the Berry Festival at 16:00';
+
+  @override
+  String get sayGoalSetUpStage => 'set up the festival stage on the hilltop';
+
+  @override
+  String get sayGoalRecruitMo => 'recruit Mo to sing at the festival (he has the best voice)';
+
+  @override
+  String get sayGoalTellClover => 'tell Clover you will sing at the festival after all';
+
+  @override
+  String get sayGoalMoScared => 'you are far too scared to sing at the festival; you would faint';
+
+  @override
+  String get sayGoalMoTempted => 'you are tempted to sing at the festival but scared of fainting';
+
+  @override
+  String get sayGoalMoAlmost => 'you are almost brave enough to say yes to singing at the festival';
+
+  @override
+  String get sayGoalPractise => 'practise singing at the pond at dawn, where nobody can hear';
+
+  @override
+  String get sayGoalWinBell => 'win the Golden Bell; outshine Mo';
+
+  @override
+  String get sayGoalLeaveFlowers => 'leave wildflowers for June at the berry bushes before anyone sees';
+
+  @override
+  String get sayGoalTellJune => 'work up the courage to tell June that you are the one writing her love poems';
+
+  @override
+  String get sayGoalFindWhoFlowers => 'find out who leaves you wildflowers and love poems';
+
+  @override
+  String get sayGoalTalkBramble => 'talk to Bramble about the love poems';
+
+  @override
+  String get sayGoalFaceJune => 'face June about the poems';
+
+  @override
+  String get sayGoalSpreadRumour => 'spread the juicy story about Mo\'s bread';
+
+  @override
+  String get sayGoalClearName => 'clear your name: your bread never made anyone sick';
+
+  @override
+  String get sayGoalSetRecord => 'set the record straight: Mo\'s bread never made you sick';
+
+  @override
+  String get sayGoalWarnToday => 'warn everyone that a storm will hit this afternoon; be taken seriously';
+
+  @override
+  String sayGoalWarnDay(String day) {
+    return 'warn everyone that a storm will hit on the afternoon of day $day; be taken seriously';
+  }
+
+  @override
+  String get sayGoalRunRehearsal => 'run the festival rehearsal on the hilltop at 11:00';
+
+  @override
+  String get sayGoalGoRehearsal => 'go to Clover\'s rehearsal on the hilltop at 11:00';
+
+  @override
+  String sayWhyHunger(String v) {
+    return 'hunger $v';
+  }
+
+  @override
+  String sayWhyEnergy(String v) {
+    return 'energy $v';
+  }
+
+  @override
+  String get sayWhyPlanWork => 'plan says work';
+
+  @override
+  String get sayWhyAtWorkplace => 'at workplace';
+
+  @override
+  String get sayWhyNight => 'night';
+
+  @override
+  String sayWhyPlanAt(String place) {
+    return 'plan: $place';
+  }
+
+  @override
+  String sayWhyWaiting(String name) {
+    return 'waiting for $name';
+  }
+
+  @override
+  String get sayWhyFood => 'food';
+
+  @override
+  String get sayWhyRest => 'rest';
+
+  @override
+  String get sayWhyWork => 'work';
+
+  @override
+  String sayWhyCompany(String name) {
+    return 'company: $name';
+  }
+
+  @override
+  String get sayWhyBedtime => 'bedtime';
+
+  @override
+  String get sayWhyShelter => 'shelter from the storm';
+
+  @override
+  String get sayWhyNothing => 'nothing better';
+
+  @override
+  String sayStoryThread(String thread, String why) {
+    return '$thread: $why';
+  }
+
+  @override
+  String sayStoryTalk(String a, String b, String at, String how) {
+    String _temp0 = intl.Intl.selectLogic(how, {'quarrel': ', and it ended in a quarrel', 'warm': ', and they parted warmly', 'other': ''});
+    return '$a and $b talked $at$_temp0.';
+  }
+
+  @override
+  String sayStoryTalkAbout(String a, String b, String at, String topic, String how) {
+    String _temp0 = intl.Intl.selectLogic(how, {'quarrel': ', and it ended in a quarrel', 'warm': ', and they parted warmly', 'other': ''});
+    return '$a and $b talked $at about $topic$_temp0.';
+  }
+
+  @override
+  String sayStoryConfided(String name, String fact) {
+    return '$name confided in Dash: $fact.';
+  }
+
+  @override
+  String sayStoryHeard(String name, String from, String fact, String overheard, String untrue, String doubts) {
+    String _temp0 = intl.Intl.selectLogic(overheard, {'yes': 'overheard $from say', 'other': 'heard from $from'});
+    String _temp1 = intl.Intl.selectLogic(untrue, {'yes': ' (it was not true)', 'other': ''});
+    String _temp2 = intl.Intl.selectLogic(doubts, {'yes': ', but did not believe it', 'other': ''});
+    return '$name $_temp0: $fact$_temp1$_temp2.';
+  }
+
+  @override
+  String sayStoryGossip(String name, String names, int count, String reaction) {
+    String _temp0 = intl.Intl.pluralLogic(count, locale: localeName, other: 'rumours', one: 'rumour');
+    String _temp1 = intl.Intl.selectLogic(reaction, {
+      'offended': 'offended',
+      'annoyed': 'annoyed',
+      'indifferent': 'indifferent',
+      'pleased': 'pleased',
+      'delighted': 'delighted',
+      'other': '$reaction',
+    });
+    return 'Dash whispered made-up $_temp0 about $names to $name, and $name was $_temp1.';
+  }
+
+  @override
+  String sayStoryDash(String name, String intent, String about, String item, String reaction) {
+    String _temp0 = intl.Intl.selectLogic(intent, {
+      'praise': 'told $name something kind about $about',
+      'tell': 'passed on some news to $name',
+      'gift': 'gave $name $item',
+      'help': 'offered to help $name',
+      'compliment': 'paid $name a compliment',
+      'tease': 'teased $name',
+      'other': 'spoke with $name',
+    });
+    String _temp1 = intl.Intl.selectLogic(reaction, {
+      'offended': 'offended',
+      'annoyed': 'annoyed',
+      'indifferent': 'indifferent',
+      'pleased': 'pleased',
+      'delighted': 'delighted',
+      'other': '$reaction',
+    });
+    return 'Dash $_temp0, and $name was $_temp1.';
+  }
+
+  @override
+  String sayItem(String item) {
+    String _temp0 = intl.Intl.selectLogic(item, {
+      'ribbon': 'a red ribbon',
+      'honey': 'a jar of honey',
+      'pebble': 'a shiny pebble',
+      'mint': 'a bundle of mint',
+      'other': '$item',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String sayAt(String place, String name) {
+    String _temp0 = intl.Intl.selectLogic(place, {
+      'pond': 'at the pond',
+      'berryBushes': 'at the berry bushes',
+      'bakery': 'at the bakery',
+      'hilltop': 'on the hilltop',
+      'hut': 'at $name\'s hut',
+      'other': 'at $place',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String sayAnd(String first, String last) {
+    return '$first and $last';
+  }
+
+  @override
+  String get sayFactPipTune => 'Pip cannot hold a tune and practises singing in secret at the pond at dawn.';
+
+  @override
+  String get sayFactMoScarf => 'Mo knocked Pip\'s red scarf into the pond reeds by accident and never told her.';
+
+  @override
+  String get sayFactScarfWhere => 'Pip\'s red scarf is lying in the pond reeds.';
+
+  @override
+  String get sayFactJuneRumour => 'June made up the rumour that Mo\'s bread made Bramble sick.';
+
+  @override
+  String get sayFactBreadRumour => 'Mo\'s bread made Bramble sick.';
+
+  @override
+  String get sayFactBreadTruth => 'Bramble was never sick from Mo\'s bread; the bread rumour is false.';
+
+  @override
+  String get sayFactBramblePoems => 'Bramble writes anonymous love poems to June.';
+
+  @override
+  String get sayFactWildflowers => 'Someone keeps leaving wildflowers at the berry bushes for June.';
+
+  @override
+  String get sayFactCloverDeal => 'Clover secretly promised Pip the Golden Bell in exchange for a free scarf.';
+
+  @override
+  String sayFactStormForecast(String day) {
+    return 'Bramble predicts a big storm will hit the village on the afternoon of day $day.';
+  }
+
+  @override
+  String get sayFactMoVoice => 'Mo sang beautifully at last year\'s festival and got the loudest applause.';
+
+  @override
+  String get sayFactHoneyLoaf => 'Mo baked a giant honey loaf for the Berry Festival on day 2.';
+
+  @override
+  String sayFactRehearsal(String names) {
+    return 'Clover held a festival rehearsal on the hilltop on day 4; $names practised.';
+  }
+
+  @override
+  String get sayFactRehearsalEmpty => 'Clover held a festival rehearsal on the hilltop on day 4; no singer came.';
+
+  @override
+  String get sayFactLanterns => 'Clover strung lanterns all the way up the hilltop path for the festival.';
+
+  @override
+  String get sayFactScarfMissing => 'Pip\'s red scarf has gone missing from her hut.';
+
+  @override
+  String sayFactScarfFound(String name) {
+    return '$name found Pip\'s red scarf in the pond reeds.';
+  }
+
+  @override
+  String sayFactScarfReturned(String name) {
+    return '$name gave Pip back her red scarf.';
+  }
+
+  @override
+  String sayFactFestival(String day) {
+    return 'Clover announced the Berry Festival for day $day at 16:00 on the hilltop; the best singer wins the Golden Bell.';
+  }
+
+  @override
+  String sayFactSigned(String name) {
+    return '$name signed up to sing at the Berry Festival.';
+  }
+
+  @override
+  String get sayFactMoFainted => 'Mo fainted on stage at the Berry Festival before singing a note.';
+
+  @override
+  String sayFactFestivalWinner(String name) {
+    return '$name won the Golden Bell at the Berry Festival.';
+  }
+
+  @override
+  String get sayFactAnonPoem => 'June found an unsigned love poem tucked into the wildflowers at the berry bushes.';
+
+  @override
+  String get sayFactBrambleFlowers => 'Bramble was seen leaving wildflowers at the berry bushes at dawn.';
+
+  @override
+  String sayFactStormHit(String day) {
+    return 'A storm hit the village on day $day at 15:00: thunder, sideways rain, the festival bunting blew away.';
+  }
+
+  @override
+  String get sayFactBrambleRight => 'Bramble\'s storm prediction came true.';
+
+  @override
+  String sayFactStormPassed(String day) {
+    return 'The storm passed in the evening of day $day, leaving puddles and a rainbow over the pond.';
+  }
+
+  @override
+  String sayFactGift(String name, String item) {
+    return 'Dash gave $name $item.';
+  }
+
+  @override
+  String sayFactArgument(String a, String b, String at, String day) {
+    return '$a and $b had a heated argument $at (day $day).';
+  }
+
+  @override
+  String sayEndWeek(String title, String blurb) {
+    return 'The week ended as \"$title\": $blurb';
+  }
+
+  @override
+  String get sayEndNoWinner => 'Nobody won the Golden Bell.';
+
+  @override
+  String get sayEndRumoursNone => 'Every untrue rumour had been put right.';
+
+  @override
+  String get sayEndRumoursFew => 'A few untrue rumours were still going round.';
+
+  @override
+  String get sayEndRumoursMany => 'Many untrue rumours were still going round.';
+
+  @override
+  String get sayEndFond => 'The llamas were fond of one another.';
+
+  @override
+  String get sayEndSoured => 'Many friendships had soured.';
+
+  @override
+  String get sayEndMixed => 'Some friendships were warm and some were cool.';
+
+  @override
+  String sayEndArc(String arc) {
+    String _temp0 = intl.Intl.selectLogic(arc, {
+      'reconciled': 'Pip and Mo made up.',
+      'rift': 'Pip and Mo fell out.',
+      'unresolved': 'Things between Pip and Mo were left unsaid.',
+      'accepted': 'June said yes to Bramble.',
+      'declined': 'June let Bramble down gently.',
+      'revealed': 'Everyone knows Bramble writes June\'s poems.',
+      'secret': 'Nobody learned who writes June\'s poems.',
+      'other': '',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String sayEndHappiest(String a, String b) {
+    return '$a ended the week happiest, and $b the gloomiest.';
+  }
+
+  @override
+  String get sayEndDashCross => 'Most llamas were cross with Dash.';
+
+  @override
+  String get sayEndDashFond => 'Most llamas had grown fond of Dash.';
+
+  @override
+  String get sayEndDashUnsure => 'The llamas were not sure what to make of Dash.';
+
+  @override
+  String get sayQuietDay => 'A quiet day: the llamas went about their work.';
 }

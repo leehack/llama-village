@@ -1276,5 +1276,1010 @@
   "tipNextPage": "Next page (→)",
   "@tipNextPage": {},
   "tipCloseBook": "Close the book (Esc)",
-  "@tipCloseBook": {}
+  "@tipCloseBook": {},
+  "sayScarfMissingTitle": "Pip notices her red scarf is missing",
+  "@sayScarfMissingTitle": {},
+  "sayScarfMissingHome": "Pip reaches for her red scarf on its hook. The hook is empty. She turns her hut upside down: the scarf is gone.",
+  "@sayScarfMissingHome": {},
+  "sayScarfMissingAway": "Pip realises she has not seen her red scarf since yesterday. It is not on its hook: the scarf is gone.",
+  "@sayScarfMissingAway": {},
+  "sayScarfFoundTitle": "Scarf found",
+  "@sayScarfFoundTitle": {},
+  "sayScarfFound": "{name} pulls {name, select, Pip{her} other{Pip's}} red scarf, soggy, out of the pond reeds.",
+  "@sayScarfFound": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "sayScarfReturnedTitle": "Scarf returned",
+  "@sayScarfReturnedTitle": {},
+  "sayScarfReturned": "{name} hands Pip her red scarf.",
+  "@sayScarfReturned": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "sayFestivalAnnouncedTitle": "Berry Festival announced",
+  "@sayFestivalAnnouncedTitle": {},
+  "sayFestivalAnnounced": "Clover rings her bell: the Berry Festival is on day {day} at 16:00 on the hilltop, and the best singer wins the Golden Bell.",
+  "@sayFestivalAnnounced": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "sayPipSignsUpTitle": "Pip signs up",
+  "@sayPipSignsUpTitle": {},
+  "sayPipSignsUp": "Pip shouts her name before Clover finishes the sentence.",
+  "@sayPipSignsUp": {},
+  "sayFestivalTitle": "The Berry Festival",
+  "@sayFestivalTitle": {},
+  "sayFestivalGathers": "Lanterns, berry tarts and a wobbly stage. {count} llamas gather on the hilltop. Singers: {names}.",
+  "@sayFestivalGathers": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      },
+      "names": {
+        "type": "String"
+      }
+    }
+  },
+  "sayFestivalNoSingers": "Lanterns, berry tarts and a wobbly stage. {count} llamas gather on the hilltop. Singers: nobody turned up.",
+  "@sayFestivalNoSingers": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "sayPipSingsTitle": "Pip sings",
+  "@sayPipSingsTitle": {},
+  "sayMoFaintsTitle": "Mo faints",
+  "@sayMoFaintsTitle": {},
+  "saySingsTitle": "{name} sings",
+  "@saySingsTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "sayGoldenBellTitle": "The Golden Bell",
+  "@sayGoldenBellTitle": {},
+  "sayGoldenBell": "Clover hands the Golden Bell to {name}. Scores: {scores}.",
+  "@sayGoldenBell": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "scores": {
+        "type": "String"
+      }
+    }
+  },
+  "sayGoldenBellStory": "Clover hands the Golden Bell to {name}.",
+  "@sayGoldenBellStory": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "sayStormTitle": "Storm",
+  "@sayStormTitle": {},
+  "sayStorm": "Thunder cracks over the hilltop and sideways rain sweeps the village.",
+  "@sayStorm": {},
+  "sayStormClearsTitle": "The storm clears",
+  "@sayStormClearsTitle": {},
+  "sayStormClears": "The storm passes. Puddles everywhere, a rainbow over the pond.",
+  "@sayStormClears": {},
+  "sayHoneyLoafTitle": "Honey loaf",
+  "@sayHoneyLoafTitle": {},
+  "sayHoneyLoaf": "Mo pulls a honey loaf as big as a hay bale out of the bakery oven.",
+  "@sayHoneyLoaf": {},
+  "sayRehearsalTitle": "Rehearsal",
+  "@sayRehearsalTitle": {},
+  "sayRehearsalEmpty": "Clover blows her whistle at an empty stage and writes something stern on her clipboard.",
+  "@sayRehearsalEmpty": {},
+  "sayRehearsal": "Clover runs the singers through their songs; the stage wobbles but holds.",
+  "@sayRehearsal": {},
+  "sayLanternsTitle": "Lanterns",
+  "@sayLanternsTitle": {},
+  "sayLanterns": "Overnight, Clover has strung lanterns all the way up the hilltop path.",
+  "@sayLanterns": {},
+  "sayLogEvent": "{title}. {text}",
+  "@sayLogEvent": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "text": {
+        "type": "String"
+      }
+    }
+  },
+  "sayLogEventSeen": "{title}. {text} (seen by {seen})",
+  "@sayLogEventSeen": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "text": {
+        "type": "String"
+      },
+      "seen": {
+        "type": "String"
+      }
+    }
+  },
+  "sayTalkStarted": "{a} and {b} talk {at}",
+  "@sayTalkStarted": {
+    "placeholders": {
+      "a": {
+        "type": "String"
+      },
+      "b": {
+        "type": "String"
+      },
+      "at": {
+        "type": "String"
+      }
+    }
+  },
+  "sayTalkStartedAbout": "{a} and {b} talk {at} about {topic}",
+  "@sayTalkStartedAbout": {
+    "placeholders": {
+      "a": {
+        "type": "String"
+      },
+      "b": {
+        "type": "String"
+      },
+      "at": {
+        "type": "String"
+      },
+      "topic": {
+        "type": "String"
+      }
+    }
+  },
+  "sayNowKnows": "{name} now knows: {fact}",
+  "@sayNowKnows": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "fact": {
+        "type": "String"
+      }
+    }
+  },
+  "sayNowKnowsDoubts": "{name} now knows: {fact}, but doubts it",
+  "@sayNowKnowsDoubts": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "fact": {
+        "type": "String"
+      }
+    }
+  },
+  "sayOverheard": "{name} overheard: {fact}",
+  "@sayOverheard": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "fact": {
+        "type": "String"
+      }
+    }
+  },
+  "saySawArgue": "{names} saw them argue",
+  "@saySawArgue": {
+    "placeholders": {
+      "names": {
+        "type": "String"
+      }
+    }
+  },
+  "sayThreadTurn": "Thread {thread}: {from} → {to} ({why})",
+  "@sayThreadTurn": {
+    "placeholders": {
+      "thread": {
+        "type": "String"
+      },
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      },
+      "why": {
+        "type": "String"
+      }
+    }
+  },
+  "sayThreadNote": "Thread {thread}: {text}",
+  "@sayThreadNote": {
+    "placeholders": {
+      "thread": {
+        "type": "String"
+      },
+      "text": {
+        "type": "String"
+      }
+    }
+  },
+  "sayThreadTitle": "{thread, select, scarf{The lost red scarf} festival{Berry Festival singing contest} crush{Bramble's crush on June} rumour{The bread rumour} storm{Bramble's storm warning} week{Festival week} other{{thread}}}",
+  "@sayThreadTitle": {
+    "placeholders": {
+      "thread": {
+        "type": "String"
+      }
+    }
+  },
+  "sayThreadState": "{state, select, unnoticed{unnoticed} missing{missing} found{found} returned{returned} unannounced{unannounced} announced{announced} contest{contest} performed{performed} judged{judged} secret{secret} poemFound{poem found} suspected{suspected} confessed{confessed} exposed{exposed} accepted{accepted} letDownGently{let down gently} spreading{spreading} debunked{debunked} juneExposed{june exposed} forecast{forecast} storm{storm} passed{passed} other{{state}}}",
+  "@sayThreadState": {
+    "placeholders": {
+      "state": {
+        "type": "String"
+      }
+    }
+  },
+  "sayThreadDay": "day {day}",
+  "@sayThreadDay": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "sayWhyPipNoticed": "Pip noticed it was gone",
+  "@sayWhyPipNoticed": {},
+  "sayWhyPipFoundHerself": "Pip found it herself in the pond reeds",
+  "@sayWhyPipFoundHerself": {},
+  "sayWhyFoundIt": "{name} found it in the pond reeds",
+  "@sayWhyFoundIt": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "sayWhyGaveBack": "{name} gave it back",
+  "@sayWhyGaveBack": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "sayWhyAnnounced": "Clover announced it; Pip signed up at once",
+  "@sayWhyAnnounced": {},
+  "sayWhyJoinedPip": "{name} joined Pip in the contest",
+  "@sayWhyJoinedPip": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "sayWhyNoSingers": "no singers",
+  "@sayWhyNoSingers": {},
+  "sayWhySang": "{names} sang",
+  "@sayWhySang": {
+    "placeholders": {
+      "names": {
+        "type": "String"
+      }
+    }
+  },
+  "sayWhyWon": "{name} won the Golden Bell; {how}.",
+  "@sayWhyWon": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "how": {
+        "type": "String"
+      }
+    }
+  },
+  "sayWhyNoWinner": "No winner: {how}.",
+  "@sayWhyNoWinner": {
+    "placeholders": {
+      "how": {
+        "type": "String"
+      }
+    }
+  },
+  "sayHowNobodySang": "nobody sang",
+  "@sayHowNobodySang": {},
+  "sayHowDeal": "Clover quietly honoured her secret deal with Pip",
+  "@sayHowDeal": {},
+  "sayHowDealKnown": "the deal was known to {names}, so Clover judged fairly",
+  "@sayHowDealKnown": {
+    "placeholders": {
+      "names": {
+        "type": "String"
+      }
+    }
+  },
+  "sayHowFair": "judged on voice and the crowd",
+  "@sayHowFair": {},
+  "sayWhyJuneFoundPoem": "June found an anonymous love poem",
+  "@sayWhyJuneFoundPoem": {},
+  "sayWhyJuneSawFlowers": "June saw Bramble leave the flowers",
+  "@sayWhyJuneSawFlowers": {},
+  "sayWhyBrambleTold": "Bramble told June himself",
+  "@sayWhyBrambleTold": {},
+  "sayWhyJuneHeard": "June heard it from {name}",
+  "@sayWhyJuneHeard": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "sayWhyJuneOverheard": "June overheard it from {name}",
+  "@sayWhyJuneOverheard": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "sayWhyJuneHeardFlowers": "June heard Bramble leaves the flowers",
+  "@sayWhyJuneHeardFlowers": {},
+  "sayWhyCrushConfessed": "Bramble confessed; June {outcome, select, accepted{accepted him} other{let him down gently}}.",
+  "@sayWhyCrushConfessed": {
+    "placeholders": {
+      "outcome": {
+        "type": "String"
+      }
+    }
+  },
+  "sayWhyCrushExposed": "Bramble was exposed by {name}; June {outcome, select, accepted{accepted him} other{let him down gently}}.",
+  "@sayWhyCrushExposed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "outcome": {
+        "type": "String"
+      }
+    }
+  },
+  "sayWhyNobodyBelieves": "nobody believes it any more",
+  "@sayWhyNobodyBelieves": {},
+  "sayWhyJuneExposed": "{name} learned June made it up (from {from})",
+  "@sayWhyJuneExposed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "from": {
+        "type": "String"
+      }
+    }
+  },
+  "sayWhyStormArrived": "it arrived on time; {count} llamas had been warned",
+  "@sayWhyStormArrived": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "sayWhySkyCleared": "the sky cleared",
+  "@sayWhySkyCleared": {},
+  "sayConfMoTold": "Mo confessed to Pip",
+  "@sayConfMoTold": {},
+  "sayConfPipOverheard": "Pip overheard Mo confessing to someone else",
+  "@sayConfPipOverheard": {},
+  "sayConfPipLearned": "Pip learned it from {from}",
+  "@sayConfPipLearned": {
+    "placeholders": {
+      "from": {
+        "type": "String"
+      }
+    }
+  },
+  "saySearchNothing": "{name} searches for the scarf {at} and finds nothing.",
+  "@saySearchNothing": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "at": {
+        "type": "String"
+      }
+    }
+  },
+  "sayPondNothing": "{name} pokes around the pond reeds but finds nothing.",
+  "@sayPondNothing": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "saySignsUp": "{name} signs up for the singing contest ({how}).",
+  "@saySignsUp": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "how": {
+        "type": "String"
+      }
+    }
+  },
+  "sayHowToldClover": "he told Clover yes",
+  "@sayHowToldClover": {},
+  "sayHowCloverTalked": "Clover talked her into it",
+  "@sayHowCloverTalked": {},
+  "sayMoBraver": "Mo feels braver after talking with {name} (courage {pct}%).",
+  "@sayMoBraver": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "pct": {
+        "type": "String"
+      }
+    }
+  },
+  "sayMoTookBack": "Mo said yes, then went pale and took it back (courage {pct}%).",
+  "@sayMoTookBack": {
+    "placeholders": {
+      "pct": {
+        "type": "String"
+      }
+    }
+  },
+  "sayJuneFindsPoem": "June finds an unsigned love poem tucked into the wildflowers. She reads it twice.",
+  "@sayJuneFindsPoem": {},
+  "sayFlowersUnseen": "Bramble tucks wildflowers into the berry bushes unseen.",
+  "@sayFlowersUnseen": {},
+  "sayFlowersSeen": "Bramble tucks wildflowers into the berry bushes, but {names} sees him.",
+  "@sayFlowersSeen": {
+    "placeholders": {
+      "names": {
+        "type": "String"
+      }
+    }
+  },
+  "saySayGoodnight": "{a} and {b} say goodnight.",
+  "@saySayGoodnight": {
+    "placeholders": {
+      "a": {
+        "type": "String"
+      },
+      "b": {
+        "type": "String"
+      }
+    }
+  },
+  "sayBreakOffFestival": "{a} and {b} break off to hurry to the festival.",
+  "@sayBreakOffFestival": {
+    "placeholders": {
+      "a": {
+        "type": "String"
+      },
+      "b": {
+        "type": "String"
+      }
+    }
+  },
+  "sayMorning": "Morning of day {day}. The village wakes up.",
+  "@sayMorning": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "sayLiesAwake": "{name} lies awake thinking: \"{thought}\"",
+  "@sayLiesAwake": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "thought": {
+        "type": "String"
+      }
+    }
+  },
+  "sayHearsPip": "{names} {count, plural, =1{hears} other{hear}} Pip croaking scales {at}.",
+  "@sayHearsPip": {
+    "placeholders": {
+      "names": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      },
+      "at": {
+        "type": "String"
+      }
+    }
+  },
+  "sayPlanned": "The llamas have planned their day.",
+  "@sayPlanned": {},
+  "sayGoalFetchScarf": "fetch your red scarf from your hut to look your best",
+  "@sayGoalFetchScarf": {},
+  "sayGoalAskSeen": "ask {name} whether they have seen your red scarf",
+  "@sayGoalAskSeen": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "sayGoalFindScarf": "find your red scarf and find out who took it",
+  "@sayGoalFindScarf": {},
+  "sayGoalSearchScarf": "search for your red scarf",
+  "@sayGoalSearchScarf": {},
+  "sayGoalMoFish": "quietly fish Pip's scarf out of the pond reeds before anyone learns what you did",
+  "@sayGoalMoFish": {},
+  "sayGoalHelpPip": "help Pip look for her red scarf",
+  "@sayGoalHelpPip": {},
+  "sayGoalGiveBackMo": "give Pip back her red scarf, and decide whether to confess you knocked it into the pond",
+  "@sayGoalGiveBackMo": {},
+  "sayGoalGiveBack": "give Pip back her red scarf (you found it in the pond reeds)",
+  "@sayGoalGiveBack": {},
+  "sayGoalMoGuilty": "you still feel guilty: maybe confess to Pip that you knocked her scarf into the pond",
+  "@sayGoalMoGuilty": {},
+  "sayGoalBeAtFestival": "be at the hilltop for the Berry Festival at 16:00",
+  "@sayGoalBeAtFestival": {},
+  "sayGoalSetUpStage": "set up the festival stage on the hilltop",
+  "@sayGoalSetUpStage": {},
+  "sayGoalRecruitMo": "recruit Mo to sing at the festival (he has the best voice)",
+  "@sayGoalRecruitMo": {},
+  "sayGoalTellClover": "tell Clover you will sing at the festival after all",
+  "@sayGoalTellClover": {},
+  "sayGoalMoScared": "you are far too scared to sing at the festival; you would faint",
+  "@sayGoalMoScared": {},
+  "sayGoalMoTempted": "you are tempted to sing at the festival but scared of fainting",
+  "@sayGoalMoTempted": {},
+  "sayGoalMoAlmost": "you are almost brave enough to say yes to singing at the festival",
+  "@sayGoalMoAlmost": {},
+  "sayGoalPractise": "practise singing at the pond at dawn, where nobody can hear",
+  "@sayGoalPractise": {},
+  "sayGoalWinBell": "win the Golden Bell; outshine Mo",
+  "@sayGoalWinBell": {},
+  "sayGoalLeaveFlowers": "leave wildflowers for June at the berry bushes before anyone sees",
+  "@sayGoalLeaveFlowers": {},
+  "sayGoalTellJune": "work up the courage to tell June that you are the one writing her love poems",
+  "@sayGoalTellJune": {},
+  "sayGoalFindWhoFlowers": "find out who leaves you wildflowers and love poems",
+  "@sayGoalFindWhoFlowers": {},
+  "sayGoalTalkBramble": "talk to Bramble about the love poems",
+  "@sayGoalTalkBramble": {},
+  "sayGoalFaceJune": "face June about the poems",
+  "@sayGoalFaceJune": {},
+  "sayGoalSpreadRumour": "spread the juicy story about Mo's bread",
+  "@sayGoalSpreadRumour": {},
+  "sayGoalClearName": "clear your name: your bread never made anyone sick",
+  "@sayGoalClearName": {},
+  "sayGoalSetRecord": "set the record straight: Mo's bread never made you sick",
+  "@sayGoalSetRecord": {},
+  "sayGoalWarnToday": "warn everyone that a storm will hit this afternoon; be taken seriously",
+  "@sayGoalWarnToday": {},
+  "sayGoalWarnDay": "warn everyone that a storm will hit on the afternoon of day {day}; be taken seriously",
+  "@sayGoalWarnDay": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "sayGoalRunRehearsal": "run the festival rehearsal on the hilltop at 11:00",
+  "@sayGoalRunRehearsal": {},
+  "sayGoalGoRehearsal": "go to Clover's rehearsal on the hilltop at 11:00",
+  "@sayGoalGoRehearsal": {},
+  "sayWhyHunger": "hunger {v}",
+  "@sayWhyHunger": {
+    "placeholders": {
+      "v": {
+        "type": "String"
+      }
+    }
+  },
+  "sayWhyEnergy": "energy {v}",
+  "@sayWhyEnergy": {
+    "placeholders": {
+      "v": {
+        "type": "String"
+      }
+    }
+  },
+  "sayWhyPlanWork": "plan says work",
+  "@sayWhyPlanWork": {},
+  "sayWhyAtWorkplace": "at workplace",
+  "@sayWhyAtWorkplace": {},
+  "sayWhyNight": "night",
+  "@sayWhyNight": {},
+  "sayWhyPlanAt": "plan: {place}",
+  "@sayWhyPlanAt": {
+    "placeholders": {
+      "place": {
+        "type": "String"
+      }
+    }
+  },
+  "sayWhyWaiting": "waiting for {name}",
+  "@sayWhyWaiting": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "sayWhyFood": "food",
+  "@sayWhyFood": {},
+  "sayWhyRest": "rest",
+  "@sayWhyRest": {},
+  "sayWhyWork": "work",
+  "@sayWhyWork": {},
+  "sayWhyCompany": "company: {name}",
+  "@sayWhyCompany": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "sayWhyBedtime": "bedtime",
+  "@sayWhyBedtime": {},
+  "sayWhyShelter": "shelter from the storm",
+  "@sayWhyShelter": {},
+  "sayWhyNothing": "nothing better",
+  "@sayWhyNothing": {},
+  "sayStoryThread": "{thread}: {why}",
+  "@sayStoryThread": {
+    "placeholders": {
+      "thread": {
+        "type": "String"
+      },
+      "why": {
+        "type": "String"
+      }
+    }
+  },
+  "sayStoryTalk": "{a} and {b} talked {at}{how, select, quarrel{, and it ended in a quarrel} warm{, and they parted warmly} other{}}.",
+  "@sayStoryTalk": {
+    "placeholders": {
+      "a": {
+        "type": "String"
+      },
+      "b": {
+        "type": "String"
+      },
+      "at": {
+        "type": "String"
+      },
+      "how": {
+        "type": "String"
+      }
+    }
+  },
+  "sayStoryTalkAbout": "{a} and {b} talked {at} about {topic}{how, select, quarrel{, and it ended in a quarrel} warm{, and they parted warmly} other{}}.",
+  "@sayStoryTalkAbout": {
+    "placeholders": {
+      "a": {
+        "type": "String"
+      },
+      "b": {
+        "type": "String"
+      },
+      "at": {
+        "type": "String"
+      },
+      "topic": {
+        "type": "String"
+      },
+      "how": {
+        "type": "String"
+      }
+    }
+  },
+  "sayStoryConfided": "{name} confided in Dash: {fact}.",
+  "@sayStoryConfided": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "fact": {
+        "type": "String"
+      }
+    }
+  },
+  "sayStoryHeard": "{name} {overheard, select, yes{overheard {from} say} other{heard from {from}}}: {fact}{untrue, select, yes{ (it was not true)} other{}}{doubts, select, yes{, but did not believe it} other{}}.",
+  "@sayStoryHeard": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "from": {
+        "type": "String"
+      },
+      "fact": {
+        "type": "String"
+      },
+      "overheard": {
+        "type": "String"
+      },
+      "untrue": {
+        "type": "String"
+      },
+      "doubts": {
+        "type": "String"
+      }
+    }
+  },
+  "sayStoryGossip": "Dash whispered made-up {count, plural, =1{rumour} other{rumours}} about {names} to {name}, and {name} was {reaction, select, offended{offended} annoyed{annoyed} indifferent{indifferent} pleased{pleased} delighted{delighted} other{{reaction}}}.",
+  "@sayStoryGossip": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "names": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      },
+      "reaction": {
+        "type": "String"
+      }
+    }
+  },
+  "sayStoryDash": "Dash {intent, select, praise{told {name} something kind about {about}} tell{passed on some news to {name}} gift{gave {name} {item}} help{offered to help {name}} compliment{paid {name} a compliment} tease{teased {name}} other{spoke with {name}}}, and {name} was {reaction, select, offended{offended} annoyed{annoyed} indifferent{indifferent} pleased{pleased} delighted{delighted} other{{reaction}}}.",
+  "@sayStoryDash": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "intent": {
+        "type": "String"
+      },
+      "about": {
+        "type": "String"
+      },
+      "item": {
+        "type": "String"
+      },
+      "reaction": {
+        "type": "String"
+      }
+    }
+  },
+  "sayItem": "{item, select, ribbon{a red ribbon} honey{a jar of honey} pebble{a shiny pebble} mint{a bundle of mint} other{{item}}}",
+  "@sayItem": {
+    "placeholders": {
+      "item": {
+        "type": "String"
+      }
+    }
+  },
+  "sayAt": "{place, select, pond{at the pond} berryBushes{at the berry bushes} bakery{at the bakery} hilltop{on the hilltop} hut{at {name}'s hut} other{at {place}}}",
+  "@sayAt": {
+    "placeholders": {
+      "place": {
+        "type": "String"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "sayAnd": "{first} and {last}",
+  "@sayAnd": {
+    "placeholders": {
+      "first": {
+        "type": "String"
+      },
+      "last": {
+        "type": "String"
+      }
+    }
+  },
+  "sayFactPipTune": "Pip cannot hold a tune and practises singing in secret at the pond at dawn.",
+  "@sayFactPipTune": {},
+  "sayFactMoScarf": "Mo knocked Pip's red scarf into the pond reeds by accident and never told her.",
+  "@sayFactMoScarf": {},
+  "sayFactScarfWhere": "Pip's red scarf is lying in the pond reeds.",
+  "@sayFactScarfWhere": {},
+  "sayFactJuneRumour": "June made up the rumour that Mo's bread made Bramble sick.",
+  "@sayFactJuneRumour": {},
+  "sayFactBreadRumour": "Mo's bread made Bramble sick.",
+  "@sayFactBreadRumour": {},
+  "sayFactBreadTruth": "Bramble was never sick from Mo's bread; the bread rumour is false.",
+  "@sayFactBreadTruth": {},
+  "sayFactBramblePoems": "Bramble writes anonymous love poems to June.",
+  "@sayFactBramblePoems": {},
+  "sayFactWildflowers": "Someone keeps leaving wildflowers at the berry bushes for June.",
+  "@sayFactWildflowers": {},
+  "sayFactCloverDeal": "Clover secretly promised Pip the Golden Bell in exchange for a free scarf.",
+  "@sayFactCloverDeal": {},
+  "sayFactStormForecast": "Bramble predicts a big storm will hit the village on the afternoon of day {day}.",
+  "@sayFactStormForecast": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "sayFactMoVoice": "Mo sang beautifully at last year's festival and got the loudest applause.",
+  "@sayFactMoVoice": {},
+  "sayFactHoneyLoaf": "Mo baked a giant honey loaf for the Berry Festival on day 2.",
+  "@sayFactHoneyLoaf": {},
+  "sayFactRehearsal": "Clover held a festival rehearsal on the hilltop on day 4; {names} practised.",
+  "@sayFactRehearsal": {
+    "placeholders": {
+      "names": {
+        "type": "String"
+      }
+    }
+  },
+  "sayFactRehearsalEmpty": "Clover held a festival rehearsal on the hilltop on day 4; no singer came.",
+  "@sayFactRehearsalEmpty": {},
+  "sayFactLanterns": "Clover strung lanterns all the way up the hilltop path for the festival.",
+  "@sayFactLanterns": {},
+  "sayFactScarfMissing": "Pip's red scarf has gone missing from her hut.",
+  "@sayFactScarfMissing": {},
+  "sayFactScarfFound": "{name} found Pip's red scarf in the pond reeds.",
+  "@sayFactScarfFound": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "sayFactScarfReturned": "{name} gave Pip back her red scarf.",
+  "@sayFactScarfReturned": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "sayFactFestival": "Clover announced the Berry Festival for day {day} at 16:00 on the hilltop; the best singer wins the Golden Bell.",
+  "@sayFactFestival": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "sayFactSigned": "{name} signed up to sing at the Berry Festival.",
+  "@sayFactSigned": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "sayFactMoFainted": "Mo fainted on stage at the Berry Festival before singing a note.",
+  "@sayFactMoFainted": {},
+  "sayFactFestivalWinner": "{name} won the Golden Bell at the Berry Festival.",
+  "@sayFactFestivalWinner": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "sayFactAnonPoem": "June found an unsigned love poem tucked into the wildflowers at the berry bushes.",
+  "@sayFactAnonPoem": {},
+  "sayFactBrambleFlowers": "Bramble was seen leaving wildflowers at the berry bushes at dawn.",
+  "@sayFactBrambleFlowers": {},
+  "sayFactStormHit": "A storm hit the village on day {day} at 15:00: thunder, sideways rain, the festival bunting blew away.",
+  "@sayFactStormHit": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "sayFactBrambleRight": "Bramble's storm prediction came true.",
+  "@sayFactBrambleRight": {},
+  "sayFactStormPassed": "The storm passed in the evening of day {day}, leaving puddles and a rainbow over the pond.",
+  "@sayFactStormPassed": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "sayFactGift": "Dash gave {name} {item}.",
+  "@sayFactGift": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "item": {
+        "type": "String"
+      }
+    }
+  },
+  "sayFactArgument": "{a} and {b} had a heated argument {at} (day {day}).",
+  "@sayFactArgument": {
+    "placeholders": {
+      "a": {
+        "type": "String"
+      },
+      "b": {
+        "type": "String"
+      },
+      "at": {
+        "type": "String"
+      },
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "sayEndWeek": "The week ended as \"{title}\": {blurb}",
+  "@sayEndWeek": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "blurb": {
+        "type": "String"
+      }
+    }
+  },
+  "sayEndNoWinner": "Nobody won the Golden Bell.",
+  "@sayEndNoWinner": {},
+  "sayEndRumoursNone": "Every untrue rumour had been put right.",
+  "@sayEndRumoursNone": {},
+  "sayEndRumoursFew": "A few untrue rumours were still going round.",
+  "@sayEndRumoursFew": {},
+  "sayEndRumoursMany": "Many untrue rumours were still going round.",
+  "@sayEndRumoursMany": {},
+  "sayEndFond": "The llamas were fond of one another.",
+  "@sayEndFond": {},
+  "sayEndSoured": "Many friendships had soured.",
+  "@sayEndSoured": {},
+  "sayEndMixed": "Some friendships were warm and some were cool.",
+  "@sayEndMixed": {},
+  "sayEndArc": "{arc, select, reconciled{Pip and Mo made up.} rift{Pip and Mo fell out.} unresolved{Things between Pip and Mo were left unsaid.} accepted{June said yes to Bramble.} declined{June let Bramble down gently.} revealed{Everyone knows Bramble writes June's poems.} secret{Nobody learned who writes June's poems.} other{}}",
+  "@sayEndArc": {
+    "placeholders": {
+      "arc": {
+        "type": "String"
+      }
+    }
+  },
+  "sayEndHappiest": "{a} ended the week happiest, and {b} the gloomiest.",
+  "@sayEndHappiest": {
+    "placeholders": {
+      "a": {
+        "type": "String"
+      },
+      "b": {
+        "type": "String"
+      }
+    }
+  },
+  "sayEndDashCross": "Most llamas were cross with Dash.",
+  "@sayEndDashCross": {},
+  "sayEndDashFond": "Most llamas had grown fond of Dash.",
+  "@sayEndDashFond": {},
+  "sayEndDashUnsure": "The llamas were not sure what to make of Dash.",
+  "@sayEndDashUnsure": {},
+  "sayQuietDay": "A quiet day: the llamas went about their work.",
+  "@sayQuietDay": {}
 }

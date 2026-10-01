@@ -98,7 +98,7 @@ void main() {
     final prompt = storyPagePrompt(v, page, pageFacts(v, page));
     expect(prompt, contains('Begin with "Il était une fois"'));
     expect(prompt, endsWith(speakIn(Lang.fr, story: true)));
-    expect(fallbackPageText(v, page, const []), startsWith('Il était une fois'));
+    expect(fallbackPageText(v.lang, page, const []), startsWith('Il était une fois'));
     v.lang = Lang.ko;
     expect(fallbackEpilogue(v, v.byName('Mo'), i), startsWith('Mo는 '));
     expect(fallbackEpilogue(v, v.byName('Pip'), i), startsWith('Pip은 '));

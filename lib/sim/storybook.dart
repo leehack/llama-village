@@ -7,6 +7,7 @@ import 'epilogue.dart';
 import 'influence.dart';
 import 'lang.dart';
 import 'model.dart';
+import 'said.dart';
 import 'story.dart';
 import 'village.dart';
 import 'week.dart';
@@ -104,42 +105,26 @@ const String _cast =
 
 const List<String> _ordinal = ['first', 'second', 'third', 'fourth', 'fifth'];
 
-/// The facts a page may use: the day's digest, or the ending's state.
+const Said _quietDay = Said(SaidKey.quietDay, 'A quiet day: the llamas went about their work.');
+
+/// What a page may tell, in order: the day's digest, or [endingFacts].
+List<Said> pageSaid(Village v, StoryPage page, {EndingVerdict? verdict, Influence? influence}) {
+  if (page.kind == PageKind.day) {
+    final digest = dayDigest(v.journal.beats, page.day!);
+    return digest.isEmpty ? [_quietDay] : [for (final b in digest) b.said];
+  }
+  final i = influence ?? measure(v);
+  return endingFacts(v, i, verdict ?? decideEnding(i));
+}
+
+/// [pageSaid] as the prompt's English lines; a day's carry when in the day
+/// each moment happened.
 List<String> pageFacts(Village v, StoryPage page, {EndingVerdict? verdict, Influence? influence}) {
   if (page.kind == PageKind.day) {
     final lines = digestLines(dayDigest(v.journal.beats, page.day!));
-    return lines.isEmpty ? ['- A quiet day: the llamas went about their work.'] : lines;
+    return lines.isEmpty ? ['- ${_quietDay.english}'] : lines;
   }
-  final i = influence ?? measure(v);
-  final verdictNow = verdict ?? decideEnding(i);
-  final info = endingInfo[verdictNow.ending]!;
-  final lies = i.falseBeliefs.length;
-  final trusting = i.dashTrust.values.where((t) => t >= 3).length;
-  final cross = i.dashTrust.values.where((t) => t <= -3).length;
-  final happiest = [...v.cast]..sort((a, b) => b.mood.compareTo(a.mood));
-  return [
-    '- The week ended as "${info.title}": ${info.blurb}',
-    '- ${i.festivalWinner == null ? 'Nobody won the Golden Bell.' : '${i.festivalWinner} won the Golden Bell at the Berry Festival.'}',
-    '- ${lies == 0
-        ? 'Every untrue rumour had been put right.'
-        : lies < 4
-        ? 'A few untrue rumours were still going round.'
-        : 'Many untrue rumours were still going round.'}',
-    '- ${i.harmony >= 1.5
-        ? 'The llamas were fond of one another.'
-        : i.harmony < 0.5
-        ? 'Many friendships had soured.'
-        : 'Some friendships were warm and some were cool.'}',
-    for (final l in v.cast)
-      if (arcFor(l, i).isNotEmpty && (l.name == 'Pip' || l.name == 'Bramble'))
-        '- ${arcFor(l, i)[0].toUpperCase()}${arcFor(l, i).substring(1)}.',
-    '- ${happiest.first.name} ended the week happiest, and ${happiest.last.name} the gloomiest.',
-    '- ${cross > trusting
-        ? 'Most llamas were cross with Dash.'
-        : trusting >= 3
-        ? 'Most llamas had grown fond of Dash.'
-        : 'The llamas were not sure what to make of Dash.'}',
-  ];
+  return [for (final f in pageSaid(v, page, verdict: verdict, influence: influence)) '- ${f.english}'];
 }
 
 /// The model prompt for one page, grounded only in [pageFacts].
@@ -204,10 +189,9 @@ String? parseStoryPage(String raw) {
   return text.length > 1400 ? null : text;
 }
 
-/// A page written by rules from the same facts, for when the model fails.
-String fallbackPageText(Village v, StoryPage page, List<String> facts) {
-  final told = [for (final f in facts) f.replaceFirst(RegExp(r'^- (\([^)]*\) )?'), '')];
-  final lang = v.lang;
+/// A page written by rules from the same facts ([told], each a sentence in
+/// [lang]), for when the model fails.
+String fallbackPageText(Lang lang, StoryPage page, List<String> told) {
   if (page.kind == PageKind.day) {
     final day = page.day!;
     final start = switch ((lang, day == 1)) {
@@ -237,13 +221,20 @@ String fallbackPageText(Village v, StoryPage page, List<String> facts) {
 /// in order, each continuing from the last. [onChange] fires as text streams
 /// in and when a page is done.
 class StoryWriter {
-  StoryWriter(this.v, this.book, {this.verdict, this.influence, required this.onChange});
+  StoryWriter(this.v, this.book, {this.verdict, this.influence, required this.onChange, String Function(Said)? say})
+    : say = say ?? ((s) => s.english);
 
   final Village v;
   final Storybook book;
   final EndingVerdict? verdict;
   final Influence? influence;
   final void Function() onChange;
+
+  /// Says a fact in the book's language, for pages written by rules.
+  final String Function(Said) say;
+
+  String _fallback(StoryPage page) =>
+      fallbackPageText(v.lang, page, [for (final f in pageSaid(v, page, verdict: verdict, influence: influence)) _sentence(say(f))]);
   bool _stopped = false;
   Future<void>? _run;
 
@@ -279,7 +270,7 @@ class StoryWriter {
     );
     if (_stopped) return;
     page
-      ..text = text ?? fallbackPageText(v, page, facts)
+      ..text = text ?? _fallback(page)
       ..fallback = text == null
       ..draft = '';
     onChange();
@@ -291,12 +282,19 @@ class StoryWriter {
     _stopped = true;
     for (final page in book.pages.where((p) => !p.written)) {
       page
-        ..text = fallbackPageText(v, page, pageFacts(v, page, verdict: verdict, influence: influence))
+        ..text = _fallback(page)
         ..fallback = true
         ..draft = '';
     }
     onChange();
   }
+}
+
+String _sentence(String s) {
+  final t = s.trim();
+  if (t.isEmpty) return t;
+  final first = t[0].toUpperCase() + t.substring(1);
+  return RegExp(r'[.!?…。]$').hasMatch(first) ? first : '$first.';
 }
 
 String _lastSentence(String text) {

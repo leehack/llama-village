@@ -2,6 +2,7 @@ import 'cast.dart';
 import 'clock.dart';
 import 'facts.dart';
 import 'lang.dart';
+import 'said.dart';
 import 'threads.dart';
 import 'village.dart';
 
@@ -43,19 +44,25 @@ class WeekThread extends StoryThread {
   @override
   void onMinute(Village v) {
     final t = v.now;
-    if (t.minute == 6 * 60 && state != 'day ${t.day}') advance(v, 'day ${t.day}', dayLabel(t.day));
+    if (t.minute == 6 * 60 && state != 'day ${t.day}') advance(v, 'day ${t.day}', Said(SaidKey.whyDay, dayLabel(t.day), {'day': t.day}));
     if (t.day == 2 && t.minute == 8 * 60 && v.kb.maybe('honey_loaf') == null) {
       final f = v.newFact(
         'honey_loaf',
         'Mo baked a giant honey loaf for the Berry Festival on day 2.',
         "Mo's honey loaf",
         kind: FactKind.news,
+        saidKey: SaidKey.factHoneyLoaf,
         keywords: [
           ['honey', 'loaf'],
         ],
       );
       v.kb.learn('Mo', f.id, 'own', t);
-      v.worldEvent('Honey loaf', 'Mo pulls a honey loaf as big as a hay bale out of the bakery oven.', at: 'bakery', fact: f.id);
+      v.worldEvent(
+        const Said(SaidKey.honeyLoafTitle, 'Honey loaf'),
+        const Said(SaidKey.honeyLoaf, 'Mo pulls a honey loaf as big as a hay bale out of the bakery oven.'),
+        at: 'bakery',
+        fact: f.id,
+      );
       v.byName('Mo').addMood(1);
     }
     if (t.day == 4 && t.minute == 11 * 60 && v.kb.maybe('rehearsal') == null) {
@@ -66,15 +73,17 @@ class WeekThread extends StoryThread {
         'Clover held a festival rehearsal on the hilltop on day 4; ${singers.isEmpty ? 'no singer came' : '${singers.join(' and ')} practised'}.',
         'the rehearsal',
         kind: FactKind.event,
+        saidKey: singers.isEmpty ? SaidKey.factRehearsalEmpty : SaidKey.factRehearsal,
+        said: {'names': singers},
         keywords: [
           ['rehears'],
         ],
       );
       v.worldEvent(
-        'Rehearsal',
+        const Said(SaidKey.rehearsalTitle, 'Rehearsal'),
         singers.isEmpty
-            ? 'Clover blows her whistle at an empty stage and writes something stern on her clipboard.'
-            : 'Clover runs the singers through their songs; the stage wobbles but holds.',
+            ? const Said(SaidKey.rehearsalEmpty, 'Clover blows her whistle at an empty stage and writes something stern on her clipboard.')
+            : const Said(SaidKey.rehearsal, 'Clover runs the singers through their songs; the stage wobbles but holds.'),
         at: 'hilltop',
         fact: f.id,
         also: {'Clover'},
@@ -84,8 +93,19 @@ class WeekThread extends StoryThread {
       }
     }
     if (t.day == festivalDay && t.minute == 6 * 60 + 30 && v.kb.maybe('lanterns') == null) {
-      final f = v.newFact('lanterns', 'Clover strung lanterns all the way up the hilltop path for the festival.', 'the lanterns');
-      v.announce('Lanterns', 'Overnight, Clover has strung lanterns all the way up the hilltop path.', f.id, quiet: true, how: 'saw');
+      final f = v.newFact(
+        'lanterns',
+        'Clover strung lanterns all the way up the hilltop path for the festival.',
+        'the lanterns',
+        saidKey: SaidKey.factLanterns,
+      );
+      v.announce(
+        const Said(SaidKey.lanternsTitle, 'Lanterns'),
+        const Said(SaidKey.lanterns, 'Overnight, Clover has strung lanterns all the way up the hilltop path.'),
+        f.id,
+        quiet: true,
+        how: 'saw',
+      );
     }
   }
 
@@ -94,9 +114,15 @@ class WeekThread extends StoryThread {
     final t = v.now;
     final rehearsal = t.day == 4 && t.minute >= 10 * 60 && t.minute < 11 * 60 + 10;
     if (!rehearsal || !v.kb.knows(l.name, 'festival')) return const [];
-    if (l.name == 'Clover') return [Goal(id, 'run the festival rehearsal on the hilltop at 11:00', place: 'hilltop', weight: 0.8)];
+    if (l.name == 'Clover') {
+      return [
+        Goal(id, const Said(SaidKey.goalRunRehearsal, 'run the festival rehearsal on the hilltop at 11:00'), place: 'hilltop', weight: 0.8),
+      ];
+    }
     if (v.festival.contestants.contains(l.name)) {
-      return [Goal(id, "go to Clover's rehearsal on the hilltop at 11:00", place: 'hilltop', weight: 0.7)];
+      return [
+        Goal(id, const Said(SaidKey.goalGoRehearsal, "go to Clover's rehearsal on the hilltop at 11:00"), place: 'hilltop', weight: 0.7),
+      ];
     }
     return const [];
   }

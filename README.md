@@ -266,10 +266,20 @@ parse in any language. Facts told in Korean or French are still
 recognised as told: the facts' English keywords have Korean and French
 equivalents (`keywordTranslations` in `lib/sim/lang.dart`).
 
-What stays English: the sim's own text, which the player sees in the
-village log, in the inspector's list of what a llama knows and its goals,
-and in a storybook page or epilogue the model failed to write (the rule
-version frames the day's English facts in the chosen language).
+The sim's own text is localised too. The sim keeps its sentences as
+templates with their parameters (`Said` in `lib/sim/said.dart`), and the
+UI says them through `say…` messages in the ARB files. This covers the
+village log, the inspector's facts, goals and "why" notes, and the
+storybook pages and epilogue lines written by rules. The sim's English
+wording stays in the prompts, the transcript and its logic. The one
+exception is a "why" note that quotes a morning plan: plans are written
+in English, so in Korean and French the note names only the place.
+
+An epilogue card is grounded in the same ending facts as the
+storybook's last page: the ending that was decided, the festival winner
+and how the village stands. A line that names a different winner, or a
+llama fainting who did not, is written once more and then replaced by
+the rule-made line.
 
 Korean and French take more tokens than English, so each call gets a
 larger budget and runs longer: on a quiet M4 Max, a dialogue line takes

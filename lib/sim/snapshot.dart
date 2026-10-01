@@ -6,6 +6,7 @@ import 'clock.dart';
 import 'facts.dart';
 import 'log.dart';
 import 'rng.dart';
+import 'said.dart';
 import 'village.dart';
 
 /// Bumped whenever the save layout changes; older saves are refused.
@@ -40,7 +41,7 @@ Map<String, Object?> snapshotVillage(Village v, {DateTime? at}) => {
   'album': v.album.save(),
   'log': [
     for (final e in v.log.entries.skip(v.log.entries.length > 300 ? v.log.entries.length - 300 : 0))
-      {'at': e.at.absolute, 'kind': e.kind.name, 'text': e.text, 'who': e.who},
+      {'at': e.at.absolute, 'kind': e.kind.name, 'text': e.text, 'who': e.who, if (e.said != null) 'said': e.said!.toJson()},
   ],
 };
 
@@ -94,6 +95,7 @@ void restoreVillage(Village v, Map<String, Object?> j) {
             LogKind.values.byName(raw['kind'] as String),
             raw['text'] as String,
             who: (raw['who'] as List).cast<String>(),
+            said: Said.maybe(raw['said']),
           ),
       ]);
     v.speech.clear();
@@ -212,6 +214,7 @@ Map<String, Object?> _kb(KnowledgeBase kb) => {
         'contradicts': f.contradicts,
         'secretOf': [...f.secretOf],
         'interested': f.interested,
+        'said': f.said.toJson(),
         'knownBy': {
           for (final e in f.knownBy.entries)
             e.key: {'how': e.value.how, 'from': e.value.from, 'at': e.value.at.absolute, 'believes': e.value.believes},
@@ -224,6 +227,10 @@ Map<String, Object?> _kb(KnowledgeBase kb) => {
 };
 
 void _loadKb(KnowledgeBase kb, Map<String, Object?> j) {
+  // Saves from before templates: backstory facts take their template from a
+  // fresh seeding.
+  final seeds = KnowledgeBase();
+  seedFacts(seeds);
   kb.facts.clear();
   kb.transfers.clear();
   kb.idCounter = j['idCounter'] as int;
@@ -241,6 +248,7 @@ void _loadKb(KnowledgeBase kb, Map<String, Object?> j) {
       contradicts: m['contradicts'] as String?,
       secretOf: (m['secretOf'] as List).cast<String>().toSet(),
       interested: m['interested'] as String?,
+      said: Said.maybe(m['said']) ?? seeds.maybe(m['id'] as String)?.said,
     );
     for (final e in (m['knownBy'] as Map).entries) {
       final k = (e.value as Map).cast<String, Object?>();

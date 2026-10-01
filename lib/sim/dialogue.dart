@@ -6,6 +6,7 @@ import 'facts.dart';
 import 'lang.dart';
 import 'places.dart';
 import 'model.dart';
+import 'said.dart';
 import 'village.dart';
 import 'week.dart';
 
@@ -56,7 +57,7 @@ class Conversation {
   /// Yes/no story questions a thread wants the outcome model to answer.
   final Map<String, String> questions = {};
   final Map<String, bool> answers = {};
-  final List<String> notes = [];
+  final List<Said> notes = [];
   final List<String> bystanders = [];
 
   /// Cut short (the night skip): no more turns or outcome.
@@ -293,11 +294,17 @@ Future<void> runOutcome(Village v, Conversation c) async {
     final trust = (hearer.friendship[teller.name] ?? 0) >= 0 || hearer.traits.contains('nosy');
     final believes = tellerBelieves && trust;
     if (v.kb.learn(hearer.name, f.id, 'told', v.now, from: teller.name, believes: believes)) {
-      c.notes.add('(${hearer.name} now knows: ${f.short}${believes ? '' : ', but doubts it'})');
+      c.notes.add(
+        Said(
+          believes ? SaidKey.nowKnows : SaidKey.nowKnowsDoubts,
+          '${hearer.name} now knows: ${f.short}${believes ? '' : ', but doubts it'}',
+          {'name': hearer.name, 'fact': f.id, 'short': f.short},
+        ),
+      );
     }
     for (final by in v.presentAt(c.place, exclude: {c.a.name, c.b.name})) {
       if (v.rng.nextDouble() < 0.5 && v.kb.learn(by, f.id, 'overheard', v.now, from: teller.name, believes: believes)) {
-        c.notes.add('($by overheard: ${f.short})');
+        c.notes.add(Said(SaidKey.overheard, '$by overheard: ${f.short}', {'name': by, 'fact': f.id, 'short': f.short}));
       }
     }
   }
@@ -309,11 +316,13 @@ Future<void> runOutcome(Village v, Conversation c) async {
       '${c.a.name} and ${c.b.name} had a heated argument at ${theP(c.place)} (day ${v.now.day}).',
       '${c.a.name} and ${c.b.name} arguing',
       kind: FactKind.deed,
+      said: {'a': c.a.name, 'b': c.b.name, 'place': c.place, 'day': v.now.day},
+      saidKey: SaidKey.factArgument,
     );
     v.kb.learn(c.a.name, f.id, 'own', v.now);
     v.kb.learn(c.b.name, f.id, 'own', v.now);
     final seen = v.witness(f.id, c.place);
-    if (seen.isNotEmpty) c.notes.add('(${seen.join(', ')} saw them argue)');
+    if (seen.isNotEmpty) c.notes.add(Said(SaidKey.sawArgue, '${seen.join(', ')} saw them argue', {'names': seen}));
   }
   for (final l in [c.a, c.b]) {
     final o = c.other(l);
