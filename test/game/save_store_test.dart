@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -61,6 +62,54 @@ void main() {
     await expectLater(store.read('slot3'), throwsA(isA<SaveException>()));
     await expectLater(store.read(SaveStore.autoSlot), throwsA(isA<SaveException>()));
     await expectLater(store.read('slot2'), throwsA(isA<SaveException>()));
+  });
+
+  test('a save keeps its playtime and thumbnail, and a damaged thumbnail never stops it loading', () async {
+    final v = testVillage(seed: 4);
+    await v.begin();
+    await runMinutes(v, 30);
+    v.playtime = 3725.4;
+    final png = Uint8List.fromList([137, 80, 78, 71, 13, 10, 26, 10, 1, 2, 3]);
+    await store.write('slot1', snapshotVillage(v), thumbnail: png);
+
+    final info = (await store.list())['slot1']!;
+    expect(info.damaged, isFalse);
+    expect(info.playtime, const Duration(milliseconds: 3725400));
+    expect(info.thumbnail, png);
+    final copy = testVillage(seed: 0);
+    restoreVillage(copy, await store.read('slot1'));
+    expect(copy.playtime, 3725.4);
+
+    final f = File('${store.dir.path}/slot1.json');
+    final broken = jsonDecode(f.readAsStringSync()) as Map<String, Object?>..[SaveStore.thumbKey] = '%%% not base64';
+    f.writeAsStringSync(jsonEncode(broken));
+    final damagedThumb = (await store.info('slot1'))!;
+    expect(damagedThumb.damaged, isFalse);
+    expect(damagedThumb.thumbnail, isNull);
+    expect(damagedThumb.playtime.inSeconds, 3725);
+    restoreVillage(testVillage(seed: 0), await store.read('slot1'));
+  });
+
+  test('a save from before playtime and thumbnails is listed and loads', () async {
+    final v = testVillage(seed: 4);
+    await v.begin();
+    await runMinutes(v, 30);
+    final old = snapshotVillage(v, at: DateTime.utc(2026, 9, 1))
+      ..remove('playtime')
+      ..remove('talks');
+    File('${store.dir.path}/autosave.json')
+      ..parent.createSync(recursive: true)
+      ..writeAsStringSync(jsonEncode(old));
+
+    final info = (await store.info(SaveStore.autoSlot))!;
+    expect(info.damaged, isFalse);
+    expect(info.playtime, Duration.zero);
+    expect(info.thumbnail, isNull);
+    expect(info.when, 'Day 1, ${v.now.hhmm}');
+    final copy = testVillage(seed: 0);
+    restoreVillage(copy, await store.read(SaveStore.autoSlot));
+    expect(copy.now, v.now);
+    expect(copy.playtime, 0);
   });
 
   test('with no saves there is nothing to continue', () async {

@@ -23,7 +23,8 @@ class StartMenu extends StatelessWidget {
     this.busy,
   });
 
-  /// The save Continue would load, if any.
+  /// The newest save that loads; with none, Continue is off. Continue
+  /// opens the save picker.
   final SaveInfo? save;
 
   /// The models' state ("Loading the dialogue model… 40%").

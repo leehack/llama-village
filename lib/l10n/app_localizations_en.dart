@@ -2032,4 +2032,25 @@ class L10nEn extends L10n {
 
   @override
   String get sayQuietDay => 'A quiet day: the llamas went about their work.';
+
+  @override
+  String get pickSave => 'Pick a save to load.';
+
+  @override
+  String playtimeMinutes(int minutes) {
+    return 'Played $minutes min';
+  }
+
+  @override
+  String playtimeHours(int hours, int minutes) {
+    return 'Played $hours h $minutes min';
+  }
+
+  @override
+  String savedOn(String date) {
+    return 'Saved $date';
+  }
+
+  @override
+  String get saveCannotLoad => 'This save cannot be loaded.';
 }

@@ -375,6 +375,11 @@ extension SimWords on L10n {
 
   String saveWhen(SaveInfo s) => s.damaged ? damaged : dayAndTime(s.day!, s.time!);
 
+  String savePlaytime(SaveInfo s) {
+    final m = s.playtime.inMinutes;
+    return m < 60 ? playtimeMinutes(m) : playtimeHours(m ~/ 60, m % 60);
+  }
+
   String endingName(Ending e) => endingTitle(e.name);
 }
 

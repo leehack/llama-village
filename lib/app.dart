@@ -47,6 +47,7 @@ import 'ui/menus/credits.dart';
 import 'ui/menus/gallery.dart';
 import 'ui/menus/menu_kit.dart';
 import 'ui/menus/pause_menu.dart';
+import 'ui/menus/save_picker.dart';
 import 'ui/menus/start_menu.dart';
 import 'ui/menus/storybook.dart';
 import 'ui/menus/week_end.dart';
@@ -82,7 +83,7 @@ class VillageApp extends StatelessWidget {
 enum Phase { loading, menu, playing, epilogue, results, failed }
 
 /// Pages over the title screen.
-enum MenuPage { none, settings, credits, endings }
+enum MenuPage { none, settings, credits, endings, saves }
 
 class VillageHome extends StatefulWidget {
   const VillageHome({super.key, required this.test, required this.settings});
@@ -137,6 +138,8 @@ class VillageHomeState extends State<VillageHome> with SingleTickerProviderState
   Director? director;
   PlayerBot? bot;
   SaveStore? store;
+
+  /// The newest save that loads, for the title screen's Continue.
   SaveInfo? continueSave;
   Set<Ending> unlocked = {};
 
@@ -144,6 +147,8 @@ class VillageHomeState extends State<VillageHome> with SingleTickerProviderState
   String Function(L10n l)? busy;
   bool pauseMenu = false;
   bool _pausedBefore = false;
+
+  /// Every save slot, empty ones as null.
   Map<String, SaveInfo?> slots = {};
   String? toast;
   double _toastUntil = 0;
@@ -342,14 +347,13 @@ class VillageHomeState extends State<VillageHome> with SingleTickerProviderState
   Future<void> _refreshSaves() async {
     final s = store;
     if (s == null) return;
-    final latest = await s.latest();
-    final have = await s.unlocked();
     final all = await s.list();
+    final have = await s.unlocked();
     if (!mounted) return;
     setState(() {
-      continueSave = latest;
+      continueSave = SaveStore.newest(all.values);
       unlocked = have;
-      slots = {for (final slot in SaveStore.manualSlots) slot: all[slot]};
+      slots = all;
     });
   }
 
@@ -419,11 +423,15 @@ class VillageHomeState extends State<VillageHome> with SingleTickerProviderState
     _enterGame(v);
   }
 
-  Future<void> continueGame() async {
-    final s = store, info = continueSave;
-    if (s == null || info == null || busy != null) return;
+  /// Loads the save in [info]'s slot, picked in the save picker.
+  Future<void> continueGame(SaveInfo info) async {
+    final s = store;
+    if (s == null || busy != null || phase != Phase.menu) return;
     sound.click();
-    setState(() => busy = (l) => l.busyLoading(l.saveWhen(info)));
+    setState(() {
+      page = MenuPage.none;
+      busy = (l) => l.busyLoading(l.saveWhen(info));
+    });
     final Map<String, Object?> json;
     try {
       json = await s.read(info.slot);
@@ -502,7 +510,9 @@ class VillageHomeState extends State<VillageHome> with SingleTickerProviderState
     final s = store, v = village;
     if (s == null || v == null) return;
     try {
-      await s.write(slot, snapshotVillage(v));
+      // The sim keeps running while the picture is taken; save this moment.
+      final save = snapshotVillage(v);
+      await s.write(slot, save, thumbnail: await _thumbnail());
       if (!quiet) {
         _toast((l) => l.toastSaved(slot == SaveStore.autoSlot ? 'auto' : slot.substring(4), v.now.day, v.now.hhmm));
       }
@@ -510,6 +520,17 @@ class VillageHomeState extends State<VillageHome> with SingleTickerProviderState
       _toast((l) => l.toastSaveFailed('$e'));
     }
     await _refreshSaves();
+  }
+
+  /// The save list's picture of the 3D view; a save without one still
+  /// loads.
+  Future<Uint8List?> _thumbnail() async {
+    try {
+      return await captureScene(_sceneShotKey, 320);
+    } catch (e) {
+      test.log('THUMBNAIL failed: $e');
+      return null;
+    }
   }
 
   void _toast(String Function(L10n l) say) {
@@ -765,6 +786,8 @@ class VillageHomeState extends State<VillageHome> with SingleTickerProviderState
     final watch = Stopwatch()..start();
     final game = village;
     if (game != null && phase == Phase.playing) {
+      // A stall longer than a second (a sleeping Mac) is not play.
+      if (!pauseMenu) game.playtime += math.min(dt, 1);
       if (!inCutscene && !pauseMenu) _steer(game);
       game.advance(step * 1000);
       director?.tick(step);
@@ -932,6 +955,7 @@ class VillageHomeState extends State<VillageHome> with SingleTickerProviderState
       unawaited(_refreshSaves());
       unawaited(_refreshBooks());
     }
+    if (p == MenuPage.saves) unawaited(_refreshSaves());
   }
 
   void closePage() {
@@ -1116,7 +1140,7 @@ class VillageHomeState extends State<VillageHome> with SingleTickerProviderState
       status: modelStatus(L10n.of(context)),
       busy: busy?.call(L10n.of(context)),
       onNew: () => unawaited(newGame()),
-      onContinue: () => unawaited(continueGame()),
+      onContinue: () => openPage(MenuPage.saves),
       onEndings: () => openPage(MenuPage.endings),
       onSettings: () => openPage(MenuPage.settings),
       onCredits: () => openPage(MenuPage.credits),
@@ -1131,6 +1155,7 @@ class VillageHomeState extends State<VillageHome> with SingleTickerProviderState
           MenuPage.settings => SettingsPanel(settings: settings, onClick: sound.click, onClose: closePage, maxHeight: _panelHeight),
           MenuPage.credits => CreditsView(onClose: closePage),
           MenuPage.endings => EndingsGallery(unlocked: unlocked, onClose: closePage, books: books, onOpenBook: openStory),
+          MenuPage.saves => SavePicker(slots: slots, onPick: (info) => unawaited(continueGame(info)), onClose: closePage),
           MenuPage.none => const SizedBox.shrink(),
         },
       ),
@@ -1323,7 +1348,7 @@ class VillageHomeState extends State<VillageHome> with SingleTickerProviderState
                 )
               : PauseMenu(
                   when: L10n.of(context).dayAndTime(v.now.day, v.now.hhmm),
-                  slots: slots,
+                  slots: {for (final slot in SaveStore.manualSlots) slot: slots[slot]},
                   onResume: closePause,
                   onSave: saveTo,
                   onSettings: _clicky(() => setState(() => showSettings = true)),

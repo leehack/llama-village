@@ -2289,5 +2289,39 @@
   "sayEndDashUnsure": "The llamas were not sure what to make of Dash.",
   "@sayEndDashUnsure": {},
   "sayQuietDay": "A quiet day: the llamas went about their work.",
-  "@sayQuietDay": {}
+  "@sayQuietDay": {},
+  "pickSave": "Pick a save to load.",
+  "@pickSave": {},
+  "playtimeMinutes": "Played {minutes} min",
+  "@playtimeMinutes": {
+    "description": "Real time played in a saved game, under an hour.",
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "playtimeHours": "Played {hours} h {minutes} min",
+  "@playtimeHours": {
+    "description": "Real time played in a saved game.",
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      },
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "savedOn": "Saved {date}",
+  "@savedOn": {
+    "description": "When a save was written; date is a short date and time.",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "saveCannotLoad": "This save cannot be loaded.",
+  "@saveCannotLoad": {}
 }

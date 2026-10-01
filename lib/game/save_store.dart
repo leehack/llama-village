@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'dart:isolate';
+import 'dart:typed_data';
 
 import 'package:path_provider/path_provider.dart';
 
@@ -10,11 +11,32 @@ import '../sim/storybook.dart';
 
 /// One save slot as the menus list it.
 class SaveInfo {
-  const SaveInfo(this.slot, {this.savedAt, this.day, this.time, this.error});
+  const SaveInfo(this.slot, {this.savedAt, this.day, this.time, this.playtime = Duration.zero, this.thumbnail, this.error});
+
+  /// The header of a decoded save. Saves from before playtime and
+  /// thumbnails have neither; a damaged thumbnail is left out.
+  factory SaveInfo.fromSave(String slot, Map<String, Object?> j) {
+    final played = j['playtime'];
+    return SaveInfo(
+      slot,
+      savedAt: DateTime.parse(j['savedAt'] as String),
+      day: j['day'] as int,
+      time: j['time'] as String,
+      playtime: Duration(milliseconds: played is num ? (played * 1000).round() : 0),
+      thumbnail: _thumbnail(j[SaveStore.thumbKey]),
+    );
+  }
+
   final String slot;
   final DateTime? savedAt;
   final int? day;
   final String? time;
+
+  /// Real time played in that game.
+  final Duration playtime;
+
+  /// A small PNG of the 3D view when the game was saved.
+  final Uint8List? thumbnail;
 
   /// Why the file cannot be loaded, if it cannot.
   final String? error;
@@ -23,6 +45,15 @@ class SaveInfo {
   bool get isAuto => slot == SaveStore.autoSlot;
   String get name => isAuto ? 'Autosave' : 'Slot ${slot.substring(4)}';
   String get when => damaged ? 'damaged' : 'Day $day, $time';
+
+  static Uint8List? _thumbnail(Object? b64) {
+    if (b64 is! String) return null;
+    try {
+      return base64Decode(b64);
+    } on FormatException {
+      return null;
+    }
+  }
 }
 
 /// Save files (an autosave and three manual slots) and the endings gallery,
@@ -36,6 +67,9 @@ class SaveStore {
   static const String autoSlot = 'autosave';
   static const List<String> manualSlots = ['slot1', 'slot2', 'slot3'];
   static const List<String> allSlots = [autoSlot, ...manualSlots];
+
+  /// Where a save keeps its thumbnail (base64 PNG); loading ignores it.
+  static const String thumbKey = 'thumb';
 
   /// The store in the app support directory.
   static Future<SaveStore> open() async => SaveStore(Directory('${(await getApplicationSupportDirectory()).path}/saves'));
@@ -51,33 +85,38 @@ class SaveStore {
     await tmp.rename(file.path);
   }
 
-  /// Writes [save] (from snapshotVillage) to [slot], encoding off the UI isolate.
-  Future<void> write(String slot, Map<String, Object?> save) async {
-    final text = await Isolate.run(() => jsonEncode(save));
+  /// Writes [save] (from snapshotVillage) to [slot] with its [thumbnail],
+  /// encoding off the UI isolate.
+  Future<void> write(String slot, Map<String, Object?> save, {Uint8List? thumbnail}) async {
+    final text = await Isolate.run(() => jsonEncode({...save, if (thumbnail != null) thumbKey: base64Encode(thumbnail)}));
     await _writeAtomic(_file(slot), text);
   }
 
-  /// Reads and checks [slot]; throws [SaveException] when it is missing or damaged.
-  Future<Map<String, Object?>> read(String slot) async {
+  Future<String> _text(String slot) async {
     final f = _file(slot);
     if (!await f.exists()) throw SaveException('no save in $slot');
-    final String text;
     try {
-      text = await f.readAsString();
+      return await f.readAsString();
     } on FileSystemException catch (e) {
       throw SaveException('cannot read $slot (${e.osError?.message ?? e.message})');
     } on FormatException {
       throw SaveException('$slot is not text');
     }
+  }
+
+  /// Reads and checks [slot]; throws [SaveException] when it is missing or damaged.
+  Future<Map<String, Object?>> read(String slot) async {
+    final text = await _text(slot);
     return Isolate.run(() => decodeSave(text));
   }
 
-  /// The slot's header, or null when the slot is empty.
+  /// The slot's header, or null when the slot is empty. Only the header
+  /// leaves the decoding isolate.
   Future<SaveInfo?> info(String slot) async {
     if (!await _file(slot).exists()) return null;
     try {
-      final j = await read(slot);
-      return SaveInfo(slot, savedAt: DateTime.parse(j['savedAt'] as String), day: j['day'] as int, time: j['time'] as String);
+      final text = await _text(slot);
+      return await Isolate.run(() => SaveInfo.fromSave(slot, decodeSave(text)));
     } on SaveException catch (e) {
       return SaveInfo(slot, error: e.message);
     } catch (e) {
@@ -86,12 +125,17 @@ class SaveStore {
   }
 
   /// Every slot, empty ones as null.
-  Future<Map<String, SaveInfo?>> list() async => {for (final s in allSlots) s: await info(s)};
+  Future<Map<String, SaveInfo?>> list() async {
+    final infos = await Future.wait(allSlots.map(info));
+    return {for (final (i, s) in allSlots.indexed) s: infos[i]};
+  }
 
   /// The newest save that loads.
-  Future<SaveInfo?> latest() async {
-    final good = (await list()).values.whereType<SaveInfo>().where((s) => !s.damaged).toList()
-      ..sort((a, b) => b.savedAt!.compareTo(a.savedAt!));
+  Future<SaveInfo?> latest() async => newest((await list()).values);
+
+  /// The newest of [saves] that loads.
+  static SaveInfo? newest(Iterable<SaveInfo?> saves) {
+    final good = saves.whereType<SaveInfo>().where((s) => !s.damaged).toList()..sort((a, b) => b.savedAt!.compareTo(a.savedAt!));
     return good.firstOrNull;
   }
 

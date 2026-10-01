@@ -467,5 +467,10 @@
   "sayEndDashCross": "La plupart des lamas en voulaient à Dash.",
   "sayEndDashFond": "La plupart des lamas s'étaient attachés à Dash.",
   "sayEndDashUnsure": "Les lamas ne savaient pas trop quoi penser de Dash.",
-  "sayQuietDay": "Une journée tranquille : les lamas vaquaient à leurs occupations."
+  "sayQuietDay": "Une journée tranquille : les lamas vaquaient à leurs occupations.",
+  "pickSave": "Choisis une sauvegarde à charger.",
+  "playtimeMinutes": "Temps de jeu : {minutes} min",
+  "playtimeHours": "Temps de jeu : {hours} h {minutes} min",
+  "savedOn": "Sauvegardée le {date}",
+  "saveCannotLoad": "Impossible de charger cette sauvegarde."
 }

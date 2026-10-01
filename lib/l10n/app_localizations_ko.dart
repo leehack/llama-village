@@ -2058,4 +2058,25 @@ class L10nKo extends L10n {
 
   @override
   String get sayQuietDay => '조용한 하루였어요. 라마들은 저마다 할 일을 했어요.';
+
+  @override
+  String get pickSave => '불러올 저장을 골라 주세요.';
+
+  @override
+  String playtimeMinutes(int minutes) {
+    return '플레이 시간 $minutes분';
+  }
+
+  @override
+  String playtimeHours(int hours, int minutes) {
+    return '플레이 시간 $hours시간 $minutes분';
+  }
+
+  @override
+  String savedOn(String date) {
+    return '$date 저장';
+  }
+
+  @override
+  String get saveCannotLoad => '이 저장은 불러올 수 없어요.';
 }

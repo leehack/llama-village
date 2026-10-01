@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:flutter/rendering.dart';
@@ -142,20 +143,30 @@ class StoryCamera {
 
   Future<void> _take(Village v, String kind, int weight, int day, int minute, List<String> who) async {
     if (!v.album.wouldKeep(day, kind, weight)) return;
-    final box = boundary.currentContext?.findRenderObject();
-    if (box is! RenderRepaintBoundary || !box.hasSize || box.size.width <= 0) return;
     _busy = true;
     try {
-      final image = await box.toImage(pixelRatio: width / box.size.width);
-      final data = await image.toByteData(format: ui.ImageByteFormat.png);
-      image.dispose();
-      if (data == null) return;
-      final kept = v.album.add(StoryShot(v.album.newId(), day, minute, kind, weight, data.buffer.asUint8List(), who: who));
-      log?.call('STORYSHOT $kind day=$day w=$weight ${data.lengthInBytes ~/ 1024} KB kept=$kept');
+      final png = await captureScene(boundary, width);
+      if (png == null) return;
+      final kept = v.album.add(StoryShot(v.album.newId(), day, minute, kind, weight, png, who: who));
+      log?.call('STORYSHOT $kind day=$day w=$weight ${png.length ~/ 1024} KB kept=$kept');
     } catch (e) {
       log?.call('STORYSHOT failed: $e');
     } finally {
       _busy = false;
     }
+  }
+}
+
+/// A PNG [width] pixels wide of what [boundary] (the 3D view alone) shows,
+/// or null before it is laid out.
+Future<Uint8List?> captureScene(GlobalKey boundary, double width) async {
+  final box = boundary.currentContext?.findRenderObject();
+  if (box is! RenderRepaintBoundary || !box.hasSize || box.size.width <= 0) return null;
+  final image = await box.toImage(pixelRatio: width / box.size.width);
+  try {
+    final data = await image.toByteData(format: ui.ImageByteFormat.png);
+    return data?.buffer.asUint8List();
+  } finally {
+    image.dispose();
   }
 }

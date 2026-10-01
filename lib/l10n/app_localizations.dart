@@ -2900,6 +2900,36 @@ abstract class L10n {
   /// In en, this message translates to:
   /// **'A quiet day: the llamas went about their work.'**
   String get sayQuietDay;
+
+  /// No description provided for @pickSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick a save to load.'**
+  String get pickSave;
+
+  /// Real time played in a saved game, under an hour.
+  ///
+  /// In en, this message translates to:
+  /// **'Played {minutes} min'**
+  String playtimeMinutes(int minutes);
+
+  /// Real time played in a saved game.
+  ///
+  /// In en, this message translates to:
+  /// **'Played {hours} h {minutes} min'**
+  String playtimeHours(int hours, int minutes);
+
+  /// When a save was written; date is a short date and time.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved {date}'**
+  String savedOn(String date);
+
+  /// No description provided for @saveCannotLoad.
+  ///
+  /// In en, this message translates to:
+  /// **'This save cannot be loaded.'**
+  String get saveCannotLoad;
 }
 
 class _L10nDelegate extends LocalizationsDelegate<L10n> {

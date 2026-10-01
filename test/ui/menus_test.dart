@@ -7,6 +7,7 @@ import 'package:llama_village/sim/influence.dart';
 import 'package:llama_village/ui/ko_text.dart';
 import 'package:llama_village/ui/menus/gallery.dart';
 import 'package:llama_village/ui/menus/pause_menu.dart';
+import 'package:llama_village/ui/menus/save_picker.dart';
 import 'package:llama_village/ui/menus/start_menu.dart';
 import 'package:llama_village/ui/menus/week_end.dart';
 
@@ -74,6 +75,60 @@ void main() {
     await tester.pumpAndSettle();
     expect(saved, ['slot3']);
     expect(find.textContaining('✓ saved'), findsOneWidget);
+  });
+
+  testWidgets('the save picker lists every slot and loads only the ones that load', (tester) async {
+    tester.view
+      ..physicalSize = const Size(1440, 900)
+      ..devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final picked = <String>[];
+    var closed = 0;
+    final auto = SaveInfo('autosave', savedAt: DateTime(2026, 10, 1, 6), day: 3, time: '06:00', playtime: const Duration(minutes: 74));
+    final slot2 = SaveInfo('slot2', savedAt: DateTime(2026, 9, 30, 21), day: 1, time: '14:20', playtime: const Duration(seconds: 610));
+    await tester.pumpWidget(
+      _host(
+        SavePicker(
+          slots: {
+            'autosave': auto,
+            'slot1': null,
+            'slot2': slot2,
+            'slot3': const SaveInfo('slot3', error: 'damaged save file'),
+          },
+          onPick: (s) => picked.add(s.slot),
+          onClose: () => closed++,
+        ),
+      ),
+    );
+    for (final name in ['Autosave', 'Slot 1', 'Slot 2', 'Slot 3']) {
+      expect(find.text(name), findsOneWidget);
+    }
+    expect(find.text('Day 3, 06:00'), findsOneWidget);
+    expect(find.text('Played 1 h 14 min'), findsOneWidget);
+    expect(find.text('Day 1, 14:20'), findsOneWidget);
+    expect(find.text('Played 10 min'), findsOneWidget);
+    expect(find.text('empty'), findsOneWidget);
+    expect(find.text('damaged'), findsOneWidget);
+    expect(find.text('This save cannot be loaded.'), findsOneWidget);
+
+    await tester.tap(find.text('Slot 1'));
+    await tester.tap(find.text('Slot 3'));
+    expect(picked, isEmpty, reason: 'empty and damaged slots do not load');
+    await tester.tap(find.text('Slot 2'));
+    await tester.tap(find.text('Played 1 h 14 min'));
+    expect(picked, ['slot2', 'autosave']);
+    await tester.tap(find.byTooltip('Close'));
+    expect(closed, 1);
+
+    await tester.pumpWidget(
+      _host(
+        SavePicker(slots: {'autosave': auto, 'slot1': null, 'slot2': slot2, 'slot3': null}, onPick: (_) {}, onClose: () {}),
+        locale: const Locale('ko'),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(_ko('플레이 시간 1시간 14분'), findsOneWidget);
+    expect(_ko('자동 저장'), findsOneWidget);
   });
 
   testWidgets('locked endings show their hint, unlocked ones their title', (tester) async {

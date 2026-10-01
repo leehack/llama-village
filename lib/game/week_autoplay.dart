@@ -11,7 +11,7 @@ import '../sim/village.dart';
 /// first night skip watched to the day card (later ones skipped), the
 /// inspector, the festival, the ending, the epilogue and results, the
 /// storybook (cover, a page turning, two pages and the ending), then the
-/// gallery again.
+/// gallery again and the save picker.
 /// It takes a PNG at each stop; a bot (`VILLAGE_BOT`) plays Dash meanwhile.
 class WeekAutoplay {
   WeekAutoplay(this.home);
@@ -172,6 +172,26 @@ class WeekAutoplay {
           _next();
         }
       case 23:
+        if (_since > 0.5) {
+          home.openPage(MenuPage.saves);
+          _next();
+        }
+      case 24:
+        if (_since > 1.5) {
+          for (final MapEntry(key: slot, value: s) in home.slots.entries) {
+            home.test.log(
+              'SAVE PICKER $slot ${s == null ? 'empty' : '${s.when} played=${s.playtime.inSeconds}s thumb=${s.thumbnail?.length}'}',
+            );
+          }
+          _shot('47_save_picker');
+          _next();
+        }
+      case 25:
+        if (_since > 0.5) {
+          home.closePage();
+          _next();
+        }
+      case 26:
         if (_since > 0.5) {
           if (home.test.replaySeconds != null && !_replay(dt)) return;
           home.test.log('WEEK autoplay done in ${_t.toStringAsFixed(0)} s');

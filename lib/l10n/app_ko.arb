@@ -467,5 +467,10 @@
   "sayEndDashCross": "대부분의 라마가 Dash에게 화가 나 있었어요.",
   "sayEndDashFond": "대부분의 라마가 Dash를 좋아하게 됐어요.",
   "sayEndDashUnsure": "라마들은 Dash를 어떻게 생각해야 할지 몰랐어요.",
-  "sayQuietDay": "조용한 하루였어요. 라마들은 저마다 할 일을 했어요."
+  "sayQuietDay": "조용한 하루였어요. 라마들은 저마다 할 일을 했어요.",
+  "pickSave": "불러올 저장을 골라 주세요.",
+  "playtimeMinutes": "플레이 시간 {minutes}분",
+  "playtimeHours": "플레이 시간 {hours}시간 {minutes}분",
+  "savedOn": "{date} 저장",
+  "saveCannotLoad": "이 저장은 불러올 수 없어요."
 }

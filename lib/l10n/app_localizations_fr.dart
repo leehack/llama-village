@@ -2053,4 +2053,25 @@ class L10nFr extends L10n {
 
   @override
   String get sayQuietDay => 'Une journée tranquille : les lamas vaquaient à leurs occupations.';
+
+  @override
+  String get pickSave => 'Choisis une sauvegarde à charger.';
+
+  @override
+  String playtimeMinutes(int minutes) {
+    return 'Temps de jeu : $minutes min';
+  }
+
+  @override
+  String playtimeHours(int hours, int minutes) {
+    return 'Temps de jeu : $hours h $minutes min';
+  }
+
+  @override
+  String savedOn(String date) {
+    return 'Sauvegardée le $date';
+  }
+
+  @override
+  String get saveCannotLoad => 'Impossible de charger cette sauvegarde.';
 }
