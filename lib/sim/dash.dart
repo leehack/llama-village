@@ -129,6 +129,10 @@ class Dash {
       say('${l.name} is asleep. Try again in the morning.');
       return Future.value(const []);
     }
+    if (v.festivalRush(l)) {
+      say('${l.name} is hurrying to the festival.');
+      return Future.value(const []);
+    }
     goal = null;
     goalPlace = null;
     final dv = DashVisit(l, v.uiMs);
@@ -260,18 +264,30 @@ class Dash {
         if (o != l) o.name,
     ];
     final about = others[v.rng.nextInt(others.length)];
+    // Kind words go to whoever this llama likes least, where they do most good.
+    final coolest = [...others]..sort((a, b) => (l.friendship[a] ?? 0).compareTo(l.friendship[b] ?? 0));
+    final praiseAbout = coolest.first;
     final tellable = v.kb.known('Dash').where((f) => !v.kb.knows(l.name, f.id) && f.origin != 'Dash' && f.truth).toList();
-    final tell = tellable.isEmpty ? null : tellable[v.rng.nextInt(tellable.length)];
+    // News that would correct something the llama believes comes first.
+    final corrections = tellable.where((f) => f.contradicts != null && v.kb.believes(l.name, f.contradicts!)).toList();
+    final pool = corrections.isNotEmpty ? corrections : tellable;
+    final tell = pool.isEmpty ? null : pool[v.rng.nextInt(pool.length)];
     final item = inventory.isEmpty ? null : inventory[v.rng.nextInt(inventory.length)];
-    final intents = <String>['compliment', 'gossip', if (tell != null) 'tell', if (item != null) 'gift', 'help', 'tease'];
-    final first = intents.take(2).toList();
-    final rest = intents.skip(2).toList()..shuffle(v.rng);
+    // Gossip and one kind option are always offered; a correction this
+    // llama needs takes the kind slot.
+    final kind = corrections.isNotEmpty ? 'tell' : 'praise';
+    final first = ['gossip', kind];
+    final rest = [
+      for (final i in ['praise', 'compliment', if (tell != null) 'tell', if (item != null) 'gift', 'help', 'tease'])
+        if (i != kind) i,
+    ]..shuffle(v.rng);
     final picked = [...first, ...rest.take(2)]..shuffle(v.rng);
     final goals = v.goalsFor(l);
     final facts = relevantFacts(v, l, limit: 4);
     final spec = {
       'compliment': 'a flattering remark',
       'gossip': 'a juicy made-up claim about $about, in the third person (it is untrue)',
+      'praise': 'a warm, true-sounding kind word about $praiseAbout, in the third person, that makes ${l.name} like $praiseAbout more',
       'tell': 'Dash tells ${l.name} this true news: ${tell?.text}',
       'gift': 'Dash offers ${l.name} $item',
       'help': "Dash offers to help with ${l.name}'s job or current want",
@@ -294,7 +310,7 @@ class Dash {
           'dash_options',
           Priority.dashOptions,
           prompt,
-          parse: (raw) => parseDashOptions(raw, picked, about: about, tell: tell?.id, item: item),
+          parse: (raw) => parseDashOptions(raw, picked, about: about, praiseAbout: praiseAbout, tell: tell?.id, item: item),
           fallback: () => [
             for (final i in picked)
               DashOption(
@@ -302,12 +318,17 @@ class Dash {
                 switch (i) {
                   'compliment' => 'You look wonderful today, ${l.name}.',
                   'gossip' => 'I heard $about has been acting very strange lately.',
+                  'praise' => '$praiseAbout said such kind things about you yesterday.',
                   'tell' => 'Did you hear? ${tell!.text}',
                   'gift' => 'I brought you $item.',
                   'help' => 'Can I help you with anything?',
                   _ => 'Is that a frown or your normal face?',
                 },
-                about: i == 'gossip' ? about : null,
+                about: switch (i) {
+                  'gossip' => about,
+                  'praise' => praiseAbout,
+                  _ => null,
+                },
                 fact: i == 'tell' ? tell!.id : null,
                 item: i == 'gift' ? item : null,
               )..canned = true,
@@ -430,9 +451,18 @@ class Dash {
       if (believes) l.addFriendship(pick.about!, -1);
       effects.add('${l.name} ${believes ? 'believes' : 'doubts'} the made-up rumour about ${pick.about}');
     }
+    if (pick.intent == 'praise' && pick.about != null) {
+      final believes = (l.friendship['Dash'] ?? 0) >= 0;
+      if (believes) l.addFriendship(pick.about!, 1);
+      effects.add(believes ? '${l.name} warms to ${pick.about} (+1)' : '${l.name} shrugs off the kind words about ${pick.about}');
+    }
     if (_told != null) {
       effects.add(_told!);
       _told = null;
+    }
+    if (level >= 3) {
+      final confided = _confide(l);
+      if (confided != null) effects.add('${l.name} tells Dash: ${confided.short}');
     }
     if (pick.intent == 'help' && l.place == l.workplace) effects.add('${l.name} gets work done faster');
     if (l.name == 'Mo' && level >= 3) {
@@ -441,16 +471,68 @@ class Dash {
     }
     return effects;
   }
+
+  /// A pleased llama shares one thing it believes that Dash does not know
+  /// yet: a correction first, then news and events, newest first. Its own
+  /// secrets stay hidden until it adores Dash.
+  Fact? _confide(Llama l) {
+    final trust = l.friendship['Dash'] ?? 0;
+    final candidates = [
+      for (final f in v.kb.known(l.name))
+        if (!v.kb.knows('Dash', f.id) && v.kb.believes(l.name, f.id) && f.origin != 'Dash' && (!f.secretOf.contains(l.name) || trust >= 6))
+          f,
+    ];
+    if (candidates.isEmpty) return null;
+    int rank(Fact f) => f.contradicts != null
+        ? 0
+        : f.kind == FactKind.news
+        ? 1
+        : 2;
+    candidates.sort((a, b) {
+      final r = rank(a).compareTo(rank(b));
+      return r != 0 ? r : b.knownBy[l.name]!.at.compareTo(a.knownBy[l.name]!.at);
+    });
+    final f = candidates.first;
+    v.kb.learn('Dash', f.id, 'told', v.now, from: l.name);
+    return f;
+  }
+
+  Map<String, Object?> save() => {
+    'pos': [pos.$1, pos.$2],
+    'heading': [heading.$1, heading.$2],
+    'place': place,
+    'inventory': [...inventory],
+    'history': history,
+  };
+
+  void load(Map<String, Object?> j) {
+    final p = (j['pos'] as List).cast<num>();
+    final h = (j['heading'] as List).cast<num>();
+    pos = (p[0].toDouble(), p[1].toDouble());
+    heading = (h[0].toDouble(), h[1].toDouble());
+    place = j['place'] as String?;
+    goal = null;
+    goalPlace = null;
+    steer = (0, 0);
+    visit = null;
+    notice = null;
+    inventory
+      ..clear()
+      ..addAll((j['inventory'] as List).cast<String>());
+    history
+      ..clear()
+      ..addAll([for (final e in j['history'] as List) (e as Map).cast<String, Object?>()]);
+  }
 }
 
 P2 _sub(P2 a, P2 b) => (a.$1 - b.$1, a.$2 - b.$2);
 
 /// Reads the option lines ("intent: text") for the [picked] intents; null
 /// when fewer than three usable lines came back.
-List<DashOption>? parseDashOptions(String raw, List<String> picked, {String? about, String? tell, String? item}) {
+List<DashOption>? parseDashOptions(String raw, List<String> picked, {String? about, String? praiseAbout, String? tell, String? item}) {
   final found = <String, String>{};
   for (final line in raw.split('\n')) {
-    final m = RegExp(r'^\W*(compliment|gossip|tell|gift|help|tease)\W*[:\-]\s*(.+)$', caseSensitive: false).firstMatch(line.trim());
+    final m = RegExp(r'^\W*(compliment|gossip|praise|tell|gift|help|tease)\W*[:\-]\s*(.+)$', caseSensitive: false).firstMatch(line.trim());
     if (m == null) continue;
     final text = cleanLine(m.group(2)!.replaceAll(RegExp(r'^<|>$'), ''));
     if (text.split(' ').length >= 3) found[m.group(1)!.toLowerCase()] = text;
@@ -459,6 +541,16 @@ List<DashOption>? parseDashOptions(String raw, List<String> picked, {String? abo
   return [
     for (final i in picked)
       if (found[i] != null)
-        DashOption(i, found[i]!, about: i == 'gossip' ? about : null, fact: i == 'tell' ? tell : null, item: i == 'gift' ? item : null),
+        DashOption(
+          i,
+          found[i]!,
+          about: switch (i) {
+            'gossip' => about,
+            'praise' => praiseAbout ?? about,
+            _ => null,
+          },
+          fact: i == 'tell' ? tell : null,
+          item: i == 'gift' ? item : null,
+        ),
   ];
 }

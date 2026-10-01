@@ -74,6 +74,9 @@ class Llama {
   final Set<String> searched = {};
   final List<String> reflections = [];
 
+  /// The day whose evening reflection is the last of [reflections].
+  int reflectedDay = 0;
+
   /// Recent one-line thoughts, newest last.
   final List<String> thoughts = [];
 
@@ -363,7 +366,7 @@ void seedFacts(KnowledgeBase kb) {
   );
   add(
     'storm_forecast',
-    'Bramble predicts a big storm will hit the village on the afternoon of day 1.',
+    'Bramble predicts a big storm will hit the village on the afternoon of day $stormDay.',
     "Bramble's storm warning",
     origin: 'Bramble',
     kind: FactKind.news,

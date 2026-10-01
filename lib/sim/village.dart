@@ -12,7 +12,9 @@ import 'laya_roles.dart';
 import 'log.dart';
 import 'model.dart';
 import 'places.dart';
+import 'rng.dart';
 import 'threads.dart';
+import 'week.dart';
 
 const Set<String> _chatty = {'idle', 'work', 'eat', 'linger', 'wait', 'search', 'watch'};
 
@@ -72,11 +74,11 @@ class Village {
     this.maxConversations = 3,
     this.autoAck = false,
   }) : metrics = RunMetrics(),
-       rng = math.Random(seed) {
+       rng = SimRandom(seed) {
     this.chat = ChatRuntime(chat, metrics);
     this.embed = Embedder(embed, metrics);
     seedFacts(kb);
-    threads = [scarf, festival, crush, rumour, storm_];
+    threads = [scarf, festival, crush, rumour, storm_, week];
     kb.onLearn = (t) {
       for (final th in threads) {
         th.onLearn(t, this);
@@ -95,7 +97,7 @@ class Village {
   late final Embedder embed;
   final TopicChooser? laya;
   final RunMetrics metrics;
-  final math.Random rng;
+  final SimRandom rng;
 
   /// Real milliseconds per game minute at 1x speed.
   final int msPerMinute;
@@ -113,6 +115,7 @@ class Village {
   final CrushThread crush = CrushThread();
   final RumourThread rumour = RumourThread();
   final StormThread storm_ = StormThread();
+  final WeekThread week = WeekThread();
   late final List<StoryThread> threads;
 
   GameTime now = const GameTime(1, 6 * 60);
@@ -130,8 +133,15 @@ class Village {
   double _acc = 0;
   bool paused = false;
 
-  /// 1, 2 or 4: game minutes per [msPerMinute].
+  /// 1, 2 or 4 (up to 32 in debug runs): game minutes per [msPerMinute].
   double timeScale = 1;
+
+  /// Scales how long bubbles stay up: above 1 reads slower (text speed).
+  double textPace = 1;
+
+  /// Debug fast-forward: plans and reflections come from the rules and no
+  /// conversations or thoughts start, so whole days can be skipped instantly.
+  bool offline = false;
   bool started = false;
 
   /// True while tomorrow's plans are being written; the clock holds at
@@ -212,6 +222,58 @@ class Village {
     events.emit('begin', {});
   }
 
+  /// Ends conversations at once, without outcomes: all of them, so nobody
+  /// is left talking through a night skip, or those [where] says.
+  void abandonConversations({bool Function(Conversation c)? where, String why = 'say goodnight'}) {
+    for (final c in active.where(where ?? (_) => true).toList()) {
+      c.abandoned = true;
+      active.remove(c);
+      for (final l in [c.a, c.b]) {
+        l.activity = Activity('idle', now, start: now);
+        l.lastConversationEnd = now;
+        speech.remove(l.name);
+      }
+      log.note('${c.a.name} and ${c.b.name} $why.');
+    }
+  }
+
+  /// Twenty-five minutes before the festival, everyone still chatting
+  /// elsewhere breaks off and heads for the hilltop.
+  void _callToFestival() {
+    abandonConversations(where: (c) => c.place != 'hilltop', why: 'break off to hurry to the festival');
+    final visit = dash.visit;
+    if (visit != null && visit.target.place != 'hilltop') {
+      dash.leave();
+      dash.say('${visit.target.name} hurries off to the festival.');
+    }
+  }
+
+  /// The festival has been judged: the week is over.
+  bool get weekOver => festival.state == 'judged' || now.day > festivalDay;
+
+  /// Runs the minute logic up to [target] without real time passing, for
+  /// the night skip. Stops early (returning false) while tomorrow's plans
+  /// are still being written at 05:59.
+  bool skipTo(GameTime target) {
+    while (now.compareTo(target) < 0) {
+      if (_holdForPlans()) return false;
+      now = now.plus(1);
+      _minute();
+    }
+    return true;
+  }
+
+  /// Debug: skips straight to 06:00 on [day] with rule-made plans.
+  Future<void> jumpTo(int day) async {
+    final was = offline;
+    offline = true;
+    final target = GameTime(day, 6 * 60);
+    while (!skipTo(target)) {
+      await Future<void>.delayed(Duration.zero);
+    }
+    offline = was;
+  }
+
   /// Advances the world by [dtMs] real milliseconds.
   void advance(double dtMs) {
     if (!started || paused || _closed) return;
@@ -238,9 +300,44 @@ class Village {
 
   bool _holdForPlans() => now.minute == 5 * 60 + 59 && planning;
 
+  /// The private clock and bookkeeping a save needs.
+  Map<String, Object?> saveCore() => {
+    'now': now.absolute,
+    'storm': storm,
+    'uiMs': uiMs,
+    'acc': _acc,
+    'timeScale': timeScale,
+    'plannedTomorrow': _plannedTomorrow,
+    'reflected': _reflected,
+    'deferred': deferred,
+    'convId': _convId,
+    'speechId': _speechId,
+    'lastThought': {for (final e in _lastThought.entries) e.key: e.value.absolute},
+  };
+
+  void loadCore(Map<String, Object?> j) {
+    now = GameTime.fromAbsolute(j['now'] as int);
+    storm = j['storm'] as bool;
+    uiMs = (j['uiMs'] as num).toDouble();
+    _acc = (j['acc'] as num).toDouble();
+    minuteFrac = _acc;
+    timeScale = (j['timeScale'] as num).toDouble();
+    _plannedTomorrow = j['plannedTomorrow'] as bool;
+    _reflected = j['reflected'] as bool;
+    deferred = j['deferred'] as int;
+    _convId = j['convId'] as int;
+    _speechId = j['speechId'] as int;
+    _lastThought
+      ..clear()
+      ..addAll({for (final e in (j['lastThought'] as Map).entries) e.key as String: GameTime.fromAbsolute(e.value as int)});
+    planning = false;
+    started = true;
+  }
+
   void _minute() {
     if (now.minute == 6 * 60 && now.day > 1) _morning();
     if (now.minute == 22 * 60) _evening();
+    if (now.day == festivalDay && now.minute == festivalMinute - 25) _callToFestival();
     if (now.minute == 4 * 60 + 30 && !_plannedTomorrow) {
       _plannedTomorrow = true;
       planning = true;
@@ -283,6 +380,12 @@ class Village {
       log.raw('- **${t.title}**: ${t.state}');
     }
     for (final l in cast) {
+      if (offline) {
+        l
+          ..reflections.add('What a day.')
+          ..reflectedDay = day;
+        continue;
+      }
       final facts = relevantFacts(this, l, limit: 6);
       final today = l.diary.where((d) => d.$1.day == day).toList().reversed.take(3).toList();
       final prompt = [
@@ -297,7 +400,7 @@ class Village {
       chat
           .text<String>(
             'reflection',
-            Priority.background,
+            Priority.dashOptions,
             prompt,
             parse: (raw) => parseLine(raw, [l.name]),
             fallback: () => 'What a day.',
@@ -305,7 +408,9 @@ class Village {
             seed: rng.nextInt(1 << 30),
           )
           .then((r) {
-            l.reflections.add(r);
+            l
+              ..reflections.add(r)
+              ..reflectedDay = day;
             l.thoughts.add(r);
             log.note('${l.name} lies awake thinking: "$r"');
           });
@@ -359,8 +464,14 @@ class Village {
     }
   }
 
+  /// On festival day nobody starts a chat on the way to the hilltop.
+  bool festivalRush(Llama l) =>
+      now.day == festivalDay && now.minute >= 14 * 60 + 30 && now.minute < festivalMinute + 40 && l.place != 'hilltop';
+
   bool _available(Llama l) =>
+      !offline &&
       !l.asleep &&
+      !festivalRush(l) &&
       _chatty.contains(l.activity.kind) &&
       !(storm && l.outdoors) &&
       !isNight &&
@@ -473,7 +584,7 @@ class Village {
   }
 
   void _generateTurn(Conversation c, int index) {
-    if (_closed) return;
+    if (_closed || c.abandoned) return;
     final s = c.speakerAt(index);
     final o = c.other(s);
     final prompt = turnPrompt(this, c, index);
@@ -493,6 +604,7 @@ class Village {
         .then((text) {
           final fallback = text.startsWith('\u0000');
           final line = Line(c.id, index, s.name, o.name, fallback ? text.substring(1) : text, at, known, uiMs)..fallback = fallback;
+          if (c.abandoned) return;
           c.lines.add(line);
           lines.add(line);
           if (lines.length > 400) lines.removeAt(0);
@@ -509,7 +621,7 @@ class Village {
   }
 
   /// Display time shrinks a little at higher speeds.
-  double displayFor(String text) => displayMs(text) / math.sqrt(timeScale);
+  double displayFor(String text) => displayMs(text) * textPace / math.sqrt(timeScale);
 
   Speech _say(String who, String? text, SpeechKind kind, {String? to}) {
     final s = Speech(++_speechId, who, text, kind, uiMs, to: to);
@@ -599,7 +711,7 @@ class Village {
   /// Now and then an idle llama thinks something out loud, in a thought
   /// bubble; the inspector shows the latest one.
   void _maybeThink() {
-    if (now.minute % 12 != 0 || isNight || chat.queue.depth > 1) return;
+    if (offline || now.minute % 12 != 0 || isNight || chat.queue.depth > 1) return;
     final candidates = cast.where((l) {
       if (l.asleep || l.busyTalking || speech.containsKey(l.name)) return false;
       final last = _lastThought[l.name];
@@ -670,9 +782,14 @@ class Village {
       final facts = relevantFacts(this, l, limit: 6);
       final goals = goalsFor(l)..sort((x, y) => y.weight.compareTo(x.weight));
       final day = now.minute >= 22 * 60 ? now.day + 1 : now.day;
+      final festivalNote = !kb.knows(l.name, 'festival') || day > festivalDay
+          ? ''
+          : day == festivalDay
+          ? ', Berry Festival day (16:00, hilltop)'
+          : ' (${dayLabel(day)})';
       final prompt = [
         'You are ${l.name}, the ${l.job} (${l.traits}). You work at ${l.workplace == l.home ? 'home' : 'the ${l.workplace}'}. Life goal: ${l.lifeGoal}.',
-        'Today is day $day${day == 2 && kb.knows(l.name, 'festival') ? ', Berry Festival day (16:00, hilltop)' : ''}.',
+        'Today is day $day$festivalNote.',
         'What you know:',
         for (final f in facts) '- ${f.text} (${kb.label(l.name, f, now)})',
         if (goals.isNotEmpty) 'What you want: ${goals.take(3).map((g) => g.text).join('; ')}.',
@@ -683,6 +800,15 @@ class Village {
         'Use the hours ${hours.map((h) => h.toString().padLeft(2, '0')).join(', ')}. Place is one of: pond, berry bushes, bakery, hilltop, home. '
             'Activities under 10 words. Include work, meals and seeing specific llamas. End at home.',
       ].join('\n');
+      Map<int, (String, String)> rulePlan() => {
+        for (final h in hours) h: h >= 20 ? ('home', 'rest at home') : (l.workplace == l.home ? 'home' : l.workplace, l.workVerb),
+      };
+      if (offline) {
+        l.schedule
+          ..clear()
+          ..addAll(rulePlan());
+        continue;
+      }
       futures.add(
         chat
             .text<Map<int, (String, String)>>(
@@ -690,9 +816,7 @@ class Village {
               Priority.background,
               prompt,
               parse: (raw) => parseSchedule(raw, hours),
-              fallback: () => {
-                for (final h in hours) h: h >= 20 ? ('home', 'rest at home') : (l.workplace == l.home ? 'home' : l.workplace, l.workVerb),
-              },
+              fallback: rulePlan,
               maxTokens: 160,
               temp: 0.7,
               seed: rng.nextInt(1 << 30),

@@ -9,12 +9,22 @@ import 'palette.dart';
 /// The first time a bubble is drawn it is acknowledged to the sim, which
 /// starts its display time then.
 class BubbleLayer extends StatelessWidget {
-  const BubbleLayer({super.key, required this.village, required this.stage, required this.size, required this.wall});
+  const BubbleLayer({
+    super.key,
+    required this.village,
+    required this.stage,
+    required this.size,
+    required this.wall,
+    this.textScale = 1,
+    this.highContrast = false,
+  });
 
   final Village village;
   final VillageStage stage;
   final Size size;
   final double wall;
+  final double textScale;
+  final bool highContrast;
 
   @override
   Widget build(BuildContext context) {
@@ -47,7 +57,7 @@ class BubbleLayer extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  if (s != null) _Bubble(speech: s, wall: wall),
+                  if (s != null) _Bubble(speech: s, wall: wall, textScale: textScale, highContrast: highContrast),
                   _NameTag(name: name, icon: l == null ? null : activityIcon(l.activity.kind), selected: stage.selected == name),
                 ],
               ),
@@ -96,9 +106,11 @@ class _NameTag extends StatelessWidget {
 }
 
 class _Bubble extends StatelessWidget {
-  const _Bubble({required this.speech, required this.wall});
+  const _Bubble({required this.speech, required this.wall, required this.textScale, required this.highContrast});
   final Speech speech;
   final double wall;
+  final double textScale;
+  final bool highContrast;
 
   @override
   Widget build(BuildContext context) {
@@ -108,31 +120,51 @@ class _Bubble extends StatelessWidget {
     final body = text == null
         ? Text(
             dots.padRight(3),
-            style: const TextStyle(fontSize: 18, height: 0.9, fontWeight: FontWeight.w900, color: ink, letterSpacing: 2),
+            style: TextStyle(
+              fontSize: 18 * textScale,
+              height: 0.9,
+              fontWeight: FontWeight.w900,
+              color: highContrast ? Colors.black : ink,
+              letterSpacing: 2,
+            ),
           )
         : Text(
             text,
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 13,
+              fontSize: 13 * textScale,
               height: 1.25,
-              color: thought ? const Color(0xFF4A4560) : ink,
+              color: highContrast
+                  ? Colors.black
+                  : thought
+                  ? const Color(0xFF4A4560)
+                  : ink,
               fontStyle: thought ? FontStyle.italic : FontStyle.normal,
-              fontWeight: FontWeight.w600,
+              fontWeight: highContrast ? FontWeight.w800 : FontWeight.w600,
             ),
           );
-    final accent = accentOf(speech.who);
+    final accent = highContrast ? Colors.black : accentOf(speech.who);
+    final fill = highContrast
+        ? Colors.white
+        : thought
+        ? const Color(0xF2EEEAFB)
+        : const Color(0xF7FFFFFF);
+    final edge = highContrast
+        ? Colors.black
+        : thought
+        ? const Color(0xFFB9B0E0)
+        : accent;
     return ConstrainedBox(
-      constraints: const BoxConstraints(maxWidth: 250),
+      constraints: BoxConstraints(maxWidth: 250 * textScale),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
-              color: thought ? const Color(0xF2EEEAFB) : const Color(0xF7FFFFFF),
+              color: fill,
               borderRadius: BorderRadius.circular(thought ? 22 : 12),
-              border: Border.all(color: thought ? const Color(0xFFB9B0E0) : accent, width: thought ? 1.5 : 2),
+              border: Border.all(color: edge, width: highContrast ? 3 : (thought ? 1.5 : 2)),
               boxShadow: const [BoxShadow(blurRadius: 10, color: Color(0x40000000), offset: Offset(0, 3))],
             ),
             child: body,
@@ -140,29 +172,30 @@ class _Bubble extends StatelessWidget {
           if (thought)
             Padding(
               padding: const EdgeInsets.only(top: 2),
-              child: Column(children: [_dot(9), const SizedBox(height: 2), _dot(6)]),
+              child: Column(children: [_dot(9, fill, edge), const SizedBox(height: 2), _dot(6, fill, edge)]),
             )
           else
-            CustomPaint(size: const Size(16, 8), painter: _Tail(accent)),
+            CustomPaint(size: const Size(16, 8), painter: _Tail(accent, fill)),
         ],
       ),
     );
   }
 
-  Widget _dot(double d) => Container(
+  Widget _dot(double d, Color fill, Color edge) => Container(
     width: d,
     height: d,
     decoration: BoxDecoration(
-      color: const Color(0xF2EEEAFB),
+      color: fill,
       shape: BoxShape.circle,
-      border: Border.all(color: const Color(0xFFB9B0E0), width: 1.2),
+      border: Border.all(color: edge, width: 1.2),
     ),
   );
 }
 
 class _Tail extends CustomPainter {
-  _Tail(this.color);
+  _Tail(this.color, this.fill);
   final Color color;
+  final Color fill;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -177,9 +210,9 @@ class _Tail extends CustomPainter {
       ..lineTo(size.width - 3, -1)
       ..lineTo(size.width / 2, size.height - 3.5)
       ..close();
-    canvas.drawPath(inner, Paint()..color = const Color(0xF7FFFFFF));
+    canvas.drawPath(inner, Paint()..color = fill);
   }
 
   @override
-  bool shouldRepaint(_Tail old) => old.color != color;
+  bool shouldRepaint(_Tail old) => old.color != color || old.fill != fill;
 }

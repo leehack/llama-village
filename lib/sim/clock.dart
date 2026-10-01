@@ -2,6 +2,9 @@
 class GameTime implements Comparable<GameTime> {
   const GameTime(this.day, this.minute);
 
+  /// The inverse of [absolute].
+  factory GameTime.fromAbsolute(int total) => GameTime((total / 1440).floor() + 1, total % 1440);
+
   final int day;
   final int minute;
 
@@ -41,8 +44,20 @@ class GameTime implements Comparable<GameTime> {
   int compareTo(GameTime other) => absolute.compareTo(other.absolute);
 
   @override
+  bool operator ==(Object other) => other is GameTime && other.absolute == absolute;
+
+  @override
+  int get hashCode => absolute.hashCode;
+
+  @override
   String toString() => label;
 }
+
+/// Festival Week runs for [weekDays] days; the Berry Festival is on the last.
+const int weekDays = 5;
+const int festivalDay = 5;
+const int festivalMinute = 16 * 60;
+const int stormDay = 3;
 
 /// Backstory facts are stamped before day 1.
 const GameTime backstory = GameTime(0, 0);

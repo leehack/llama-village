@@ -14,14 +14,32 @@ import 'package:flutter/widgets.dart';
 /// * `VILLAGE_EXIT=1` quits once the script is done.
 /// * `VILLAGE_MS_PER_MINUTE=n` runs the clock faster for test runs.
 /// * `VILLAGE_FPS=n` caps the frame rate at 30, 60 or 120 for the run.
+/// * `VILLAGE_AUTOPLAY=week` runs the Festival Week script instead (see
+///   `game/week_autoplay.dart`); `VILLAGE_BOT=harmony|drama|quiet` plays
+///   Dash by rules; `VILLAGE_TIME_SCALE=32` and `VILLAGE_JUMP_DAY=5`
+///   compress the week.
+/// * `VILLAGE_SAVE_DIR=dir` keeps saves and the gallery out of the real
+///   profile.
+/// * `VILLAGE_QUIT_AT=menu|cutscene|generation` quits at that moment.
 class SelfTest {
-  SelfTest._(this._env) : capture = _env['VILLAGE_CAPTURE'] == '1', autoplay = _env['VILLAGE_AUTOPLAY'] == '1';
+  SelfTest._(this._env)
+    : capture = _env['VILLAGE_CAPTURE'] == '1',
+      autoplay = _env['VILLAGE_AUTOPLAY'] == '1',
+      weekScript = _env['VILLAGE_AUTOPLAY'] == 'week';
 
   factory SelfTest.fromEnvironment() => SelfTest._(Platform.environment);
 
   final Map<String, String> _env;
   final bool capture;
   final bool autoplay;
+  final bool weekScript;
+
+  /// A debug time scale beyond the 4× of the HUD.
+  double? get timeScale => double.tryParse(_env['VILLAGE_TIME_SCALE'] ?? '');
+  int? get jumpDay => int.tryParse(_env['VILLAGE_JUMP_DAY'] ?? '');
+  String? get bot => _env['VILLAGE_BOT'];
+  String? get saveDir => _env['VILLAGE_SAVE_DIR'];
+  String? get quitAt => _env['VILLAGE_QUIT_AT'];
 
   bool get exitWhenDone => _env['VILLAGE_EXIT'] == '1';
   int? get msPerMinute => int.tryParse(_env['VILLAGE_MS_PER_MINUTE'] ?? '');
@@ -129,7 +147,7 @@ class SelfTest {
   }
 
   void log(String message) {
-    if (capture || autoplay) debugPrint('VILLAGE $message');
+    if (capture || autoplay || weekScript || quitAt != null) debugPrint('VILLAGE $message');
   }
 
   /// Saves the app as `<name>.png` once.

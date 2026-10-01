@@ -6,6 +6,7 @@ import 'facts.dart';
 import 'places.dart';
 import 'model.dart';
 import 'village.dart';
+import 'week.dart';
 
 /// One spoken line, with what the speaker knew when it was generated.
 class Line {
@@ -57,6 +58,9 @@ class Conversation {
   final List<String> notes = [];
   final List<String> bystanders = [];
 
+  /// Cut short (the night skip): no more turns or outcome.
+  bool abandoned = false;
+
   /// The line waiting for the UI to say its bubble is up.
   Line? awaitingAck;
   double ackDeadlineMs = 0;
@@ -66,12 +70,7 @@ class Conversation {
   bool get complete => generationDone && outcomeDone && shown == lines.length;
 }
 
-String _whenLabel(GameTime t) =>
-    'Day ${t.day}${switch (t.day) {
-      1 => ' (the day before the Berry Festival)',
-      2 => ' (Berry Festival day)',
-      _ => '',
-    }}, ${t.hhmm}, ${t.partOfDay}';
+String _whenLabel(GameTime t) => 'Day ${t.day} of festival week (${dayLabel(t.day)}), ${t.hhmm}, ${t.partOfDay}';
 
 /// Up to [limit] facts for a prompt, most relevant first.
 List<Fact> relevantFacts(Village v, Llama l, {Llama? listener, String? topic, int limit = 7}) {

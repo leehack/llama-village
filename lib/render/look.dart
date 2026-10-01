@@ -124,7 +124,11 @@ class FilmSky {
     // The sun crosses from east (06:00) to west (20:40); otherwise the moon.
     final theta = (hour - 5.9) / 14.8 * math.pi;
     final sunUp = theta > 0 && theta < math.pi;
-    final dir = sunUp ? (_c(math.cos(theta), math.sin(theta) * 0.9 + 0.08, 0.42)..normalize()) : (_c(-0.35, 0.8, 0.45)..normalize());
+    // The moon rises in the east at 20:40 and sets in the west at 05:54.
+    final moon = ((hour - 20.7) % 24) / 9.2 * math.pi;
+    final dir = sunUp
+        ? (_c(math.cos(theta), math.sin(theta) * 0.9 + 0.08, 0.42)..normalize())
+        : (_c(math.cos(moon), math.sin(moon) * 0.75 + 0.2, 0.45)..normalize());
     sky.sunDirection = dir;
     final light = _mix3(a.light, b.light, s);
     var intensity = lerp(a.intensity, b.intensity) * (1 - 0.8 * _storm);

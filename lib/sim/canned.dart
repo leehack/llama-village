@@ -11,6 +11,8 @@ class CannedChat implements ChatModel {
   final Duration delay;
   int calls = 0;
 
+  static const List<String> _scripted = ['last page of a storybook', 'Ring your bell and announce', 'Write one line of the song'];
+
   static const List<String> _lines = [
     'Lovely weather for it, is it not?',
     'I have been meaning to ask you about that.',
@@ -44,16 +46,22 @@ class CannedChat implements ChatModel {
       ].join('\n');
     }
     if (user.contains('Write four things Dash could say')) {
-      final intents = RegExp(r'^(compliment|gossip|tell|gift|help|tease): <', multiLine: true).allMatches(user).map((m) => m.group(1)!);
+      final intents = RegExp(
+        r'^(compliment|gossip|praise|tell|gift|help|tease): <',
+        multiLine: true,
+      ).allMatches(user).map((m) => m.group(1)!);
       return [for (final i in intents) '$i: ${_option(i)}'].join('\n');
     }
     if (user.contains('private thought')) return 'I wonder what everyone is up to today.';
+    // Cutscene and epilogue lines fall back to their written defaults.
+    if (_scripted.any(user.contains)) return '';
     return _lines[r.nextInt(_lines.length)];
   }
 
   static String _option(String intent) => switch (intent) {
     'compliment' => 'Your wool looks extra fluffy today, truly.',
     'gossip' => 'Someone told me they saw a fox near the bakery.',
+    'praise' => 'Everyone says your neighbour has a heart of gold.',
     'tell' => 'Did you hear the latest news from the hilltop?',
     'gift' => 'I brought you a little present from my travels.',
     'help' => 'Can I lend you a wing with your work today?',

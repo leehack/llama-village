@@ -14,6 +14,7 @@ dependencies:
   flutter_soloud: 4.1.7
   hooks: ^2.0.0
   llamadart: ^0.9.0
+  path_provider: ^2.1.5
   shared_preferences: 2.5.5
   vector_math: ^2.1.4
 

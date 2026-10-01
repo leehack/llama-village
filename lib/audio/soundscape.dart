@@ -102,6 +102,12 @@ class Soundscape {
     _ambient(v, dt);
   }
 
+  /// Music and birdsong only, for the title screen's background village.
+  void ambience(Village v, double dt) {
+    _music(v, dt);
+    _ambient(v, dt);
+  }
+
   void _music(Village v, double dt) {
     final hour = (v.now.minute + v.minuteFrac) / 60;
     final target = mix(hour, storm: v.storm);
