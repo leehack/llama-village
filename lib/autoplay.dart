@@ -61,7 +61,10 @@ class Autoplay {
         }
       case 2:
         if (_since > 1.6) {
-          _shot('2_conversation');
+          if (!home.test.taken.contains('2_conversation')) {
+            _shot('2_conversation');
+            return;
+          }
           stage.rig.overview();
           _next();
         }
@@ -112,7 +115,10 @@ class Autoplay {
         _next();
       case 7:
         if (_since > 1.5) {
-          _shot('4_inspector');
+          if (!home.test.taken.contains('4_inspector')) {
+            _shot('4_inspector');
+            return;
+          }
           home.select(null);
           stage.rig.overview();
           home.setSpeed(4);
