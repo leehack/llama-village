@@ -143,6 +143,13 @@ class Village {
   final List<Line> lines = [];
   int _convId = 0;
 
+  /// Conversations loaded from a save, picked up on the next [advance].
+  final List<Conversation> _resuming = [];
+
+  /// Real seconds this game has been played, kept in its saves; the app
+  /// counts them.
+  double playtime = 0;
+
   /// Pause-aware real milliseconds; bubbles are timed on it.
   double uiMs = 0;
 
@@ -343,6 +350,7 @@ class Village {
   /// Advances the world by [dtMs] real milliseconds.
   void advance(double dtMs) {
     if (!started || paused || _closed) return;
+    if (_resuming.isNotEmpty) _resume();
     uiMs += dtMs;
     final boost = fastNight ? nightBoost : 1.0;
     _acc += dtMs * timeScale * boost / msPerMinute;
@@ -580,6 +588,27 @@ class Village {
 
   // ------------------------------------------------------------ conversations
 
+  /// Puts [c], loaded from a save, back in progress; its next turn (or its
+  /// outcome) is asked for again on the next [advance].
+  void resumeConversation(Conversation c) {
+    active.add(c);
+    _resuming.add(c);
+  }
+
+  void _resume() {
+    for (final c in _resuming) {
+      if (c.abandoned) continue;
+      if (!c.opened) {
+        unawaited(_openConversation(c));
+      } else if (!c.generationDone) {
+        _generateTurn(c, c.lines.length);
+      } else if (!c.outcomeDone) {
+        _conclude(c);
+      }
+    }
+    _resuming.clear();
+  }
+
   void _startConversation(Llama a, Llama b) {
     final c = Conversation(++_convId, a, b, a.place, now, uiMs);
     active.add(c);
@@ -667,6 +696,7 @@ class Village {
 
   Future<void> _openConversation(Conversation c) async {
     await pickTopic(c);
+    c.opened = true;
     log.talkStarted(c, kb);
     _generateTurn(c, 0);
   }
@@ -703,13 +733,17 @@ class Village {
           if (index + 1 < c.turns) {
             _generateTurn(c, index + 1);
           } else {
-            c.generationDone = true;
-            runOutcome(this, c).then((_) {
-              c.outcomeDone = true;
-              c.outcomeDoneMs = uiMs;
-            });
+            _conclude(c);
           }
         });
+  }
+
+  void _conclude(Conversation c) {
+    c.generationDone = true;
+    runOutcome(this, c).then((_) {
+      c.outcomeDone = true;
+      c.outcomeDoneMs = uiMs;
+    });
   }
 
   /// Display time shrinks a little at higher speeds.

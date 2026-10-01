@@ -44,6 +44,9 @@ class Conversation {
   String? topic;
   String topicSource = 'none';
   String? layaShadowTopic;
+
+  /// The topic is chosen and the start is logged; the turns follow.
+  bool opened = false;
   final List<Line> lines = [];
   int shown = 0;
   double freeAtMs = 0;

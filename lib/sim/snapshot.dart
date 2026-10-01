@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'cast.dart';
 import 'clock.dart';
+import 'dialogue.dart';
 import 'facts.dart';
 import 'log.dart';
 import 'rng.dart';
@@ -21,29 +22,36 @@ class SaveException implements Exception {
   String toString() => 'SaveException: $message';
 }
 
-/// The whole sim as JSON-able data. Conversations, bubbles and a visit in
-/// flight are not saved: their llamas come back idle and pick up from
-/// there.
-Map<String, Object?> snapshotVillage(Village v, {DateTime? at}) => {
-  'game': 'llama_village',
-  'version': saveVersion,
-  'savedAt': (at ?? DateTime.now()).toUtc().toIso8601String(),
-  'day': v.now.day,
-  'time': v.now.hhmm,
-  'rng': v.rng.stateHex,
-  'core': v.saveCore(),
-  'cast': [for (final l in v.cast) _llama(l, v.now)],
-  'kb': _kb(v.kb),
-  'threads': {for (final t in v.threads) t.id: t.save()},
-  'dash': v.dash.save(),
-  'embeddings': {for (final e in v.embed.cache.entries) e.key: _vector(e.value)},
-  'journal': v.journal.save(),
-  'album': v.album.save(),
-  'log': [
-    for (final e in v.log.entries.skip(v.log.entries.length > 300 ? v.log.entries.length - 300 : 0))
-      {'at': e.at.absolute, 'kind': e.kind.name, 'text': e.text, 'who': e.who, if (e.said != null) 'said': e.said!.toJson()},
-  ],
-};
+/// The whole sim as JSON-able data. Conversations in progress are saved
+/// with what has been said so far and carry on after a load. Bubbles and
+/// Dash's visit in flight are not saved: the visited llama comes back idle.
+Map<String, Object?> snapshotVillage(Village v, {DateTime? at}) {
+  final talking = {
+    for (final c in v.active) ...[c.a.name, c.b.name],
+  };
+  return {
+    'game': 'llama_village',
+    'version': saveVersion,
+    'savedAt': (at ?? DateTime.now()).toUtc().toIso8601String(),
+    'day': v.now.day,
+    'time': v.now.hhmm,
+    'playtime': v.playtime,
+    'rng': v.rng.stateHex,
+    'core': v.saveCore(),
+    'cast': [for (final l in v.cast) _llama(l, v.now, talking: talking.contains(l.name))],
+    'talks': [for (final c in v.active) _talk(c)],
+    'kb': _kb(v.kb),
+    'threads': {for (final t in v.threads) t.id: t.save()},
+    'dash': v.dash.save(),
+    'embeddings': {for (final e in v.embed.cache.entries) e.key: _vector(e.value)},
+    'journal': v.journal.save(),
+    'album': v.album.save(),
+    'log': [
+      for (final e in v.log.entries.skip(v.log.entries.length > 300 ? v.log.entries.length - 300 : 0))
+        {'at': e.at.absolute, 'kind': e.kind.name, 'text': e.text, 'who': e.who, if (e.said != null) 'said': e.said!.toJson()},
+    ],
+  };
+}
 
 /// Checks the header of a decoded save; throws [SaveException].
 Map<String, Object?> checkSave(Object? json) {
@@ -100,6 +108,11 @@ void restoreVillage(Village v, Map<String, Object?> j) {
       ]);
     v.speech.clear();
     v.active.clear();
+    // Saves from before these have neither: no playtime and nobody talking.
+    v.playtime = (j['playtime'] as num?)?.toDouble() ?? 0;
+    for (final raw in (j['talks'] as List?) ?? const []) {
+      v.resumeConversation(_untalk(v, (raw as Map).cast<String, Object?>()));
+    }
   } on SaveException {
     rethrow;
   } catch (e) {
@@ -131,9 +144,80 @@ Activity _unactivity(Map<String, Object?> m) => Activity(
   hurry: m['hurry'] as bool? ?? false,
 );
 
-Map<String, Object?> _llama(Llama l, GameTime now) {
+/// A conversation in progress. A line whose bubble is up counts as shown,
+/// so a load does not say it twice.
+Map<String, Object?> _talk(Conversation c) => {
+  'id': c.id,
+  'a': c.a.name,
+  'b': c.b.name,
+  'place': c.place,
+  'start': c.start.absolute,
+  'startMs': c.startMs,
+  'turns': c.turns,
+  'opened': c.opened,
+  'topic': c.topic,
+  'topicSource': c.topicSource,
+  'layaShadowTopic': c.layaShadowTopic,
+  'lines': [
+    for (final l in c.lines) {'speaker': l.speaker, 'listener': l.listener, 'text': l.text, 'at': l.at.absolute, 'fallback': l.fallback},
+  ],
+  'shown': c.shown + (c.awaitingAck == null ? 0 : 1),
+  'generationDone': c.generationDone,
+  'outcomeDone': c.outcomeDone,
+  'friendship': {...c.friendshipDelta},
+  'mood': {...c.moodDelta},
+  'questions': {...c.questions},
+  'answers': {...c.answers},
+  'notes': [for (final n in c.notes) n.toJson()],
+  'bystanders': [...c.bystanders],
+};
+
+Conversation _untalk(Village v, Map<String, Object?> m) {
+  final c =
+      Conversation(
+          m['id'] as int,
+          v.byName(m['a'] as String),
+          v.byName(m['b'] as String),
+          m['place'] as String,
+          GameTime.fromAbsolute(m['start'] as int),
+          (m['startMs'] as num).toDouble(),
+          turns: m['turns'] as int,
+        )
+        ..opened = m['opened'] as bool
+        ..topic = m['topic'] as String?
+        ..topicSource = m['topicSource'] as String
+        ..layaShadowTopic = m['layaShadowTopic'] as String?
+        ..shown = m['shown'] as int
+        ..generationDone = m['generationDone'] as bool
+        ..outcomeDone = m['outcomeDone'] as bool;
+  for (final (i, raw) in (m['lines'] as List).indexed) {
+    final l = (raw as Map).cast<String, Object?>();
+    c.lines.add(
+      Line(
+        c.id,
+        i,
+        l['speaker'] as String,
+        l['listener'] as String,
+        l['text'] as String,
+        GameTime.fromAbsolute(l['at'] as int),
+        const {},
+        0,
+      )..fallback = l['fallback'] as bool,
+    );
+  }
+  c.friendshipDelta.addAll((m['friendship'] as Map).cast<String, int>());
+  c.moodDelta.addAll((m['mood'] as Map).cast<String, int>());
+  c.questions.addAll((m['questions'] as Map).cast<String, String>());
+  c.answers.addAll((m['answers'] as Map).cast<String, bool>());
+  c.notes.addAll([for (final n in m['notes'] as List) Said.fromJson((n as Map).cast<String, Object?>())]);
+  c.bystanders.addAll((m['bystanders'] as List).cast<String>());
+  return c;
+}
+
+Map<String, Object?> _llama(Llama l, GameTime now, {required bool talking}) {
   final a = l.activity;
-  final settled = a.kind == 'talk' ? Activity('idle', now, start: now) : a;
+  // A llama talking with Dash comes back idle; Dash's visit is not saved.
+  final settled = a.kind == 'talk' && !talking ? Activity('idle', now, start: now) : a;
   return {
     'name': l.name,
     'place': l.place,
