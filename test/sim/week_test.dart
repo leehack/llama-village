@@ -122,6 +122,6 @@ void main() {
       ..place = 'bakery'
       ..activity = Activity('idle', v.now);
     expect(await v.dash.talk(mo), isEmpty, reason: 'festival rush');
-    expect(v.dash.notice, contains('hurrying'));
+    expect(v.dash.notice!.english, contains('hurrying'));
   });
 }

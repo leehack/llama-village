@@ -1,4 +1,5 @@
 import 'clock.dart';
+import 'lang.dart';
 
 enum FactKind { secret, event, rumour, deed, news }
 
@@ -57,10 +58,12 @@ class Fact {
 
   final Map<String, Knowing> knownBy = {};
 
+  /// Whether [line] says this fact, in English or (through
+  /// [keywordTranslations]) in Korean or French.
   bool keywordHit(String line) {
     if (keywords.isEmpty) return false;
     final l = line.toLowerCase();
-    return keywords.every((group) => group.any(l.contains));
+    return keywords.every((group) => group.any((k) => l.contains(k) || (keywordTranslations[k]?.any(l.contains) ?? false)));
   }
 
   Map<String, Object?> toJson() => {

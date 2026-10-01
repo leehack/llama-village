@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/app_localizations.dart';
 import '../sim/cast.dart';
 import '../sim/dash.dart';
-import '../sim/laya_roles.dart';
 import '../sim/log.dart';
-import '../sim/places.dart';
 import '../sim/village.dart';
-import '../sim/week.dart';
 import 'palette.dart';
 import 'portrait.dart';
+import 'strings.dart';
 
 TextStyle _t(double size, {FontWeight weight = FontWeight.w600, Color color = Colors.white, FontStyle? style}) =>
     TextStyle(fontSize: size, fontWeight: weight, color: color, fontStyle: style, height: 1.3);
@@ -59,6 +58,7 @@ class TopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = L10n.of(context);
     final now = village.now;
     final weather = village.storm
         ? Icons.thunderstorm
@@ -76,12 +76,12 @@ class TopBar extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text('Day ${now.day}  ${now.hhmm}', style: _t(18, weight: FontWeight.w900)),
-              Text(village.planning ? 'the llamas are planning tomorrow…' : dayLabel(now.day), style: _t(11, color: Colors.white70)),
+              Text(l.dayClock(now.day, now.hhmm), style: _t(18, weight: FontWeight.w900)),
+              Text(village.planning ? l.planningTomorrowLower : l.countdownFor(now.day), style: _t(11, color: Colors.white70)),
             ],
           ),
           const SizedBox(width: 14),
-          _IconButton(icon: village.paused ? Icons.play_arrow : Icons.pause, tip: 'Pause (Space)', onTap: onPause),
+          _IconButton(icon: village.paused ? Icons.play_arrow : Icons.pause, tip: l.tipPause, onTap: onPause),
           const SizedBox(width: 4),
           for (final s in const [1.0, 2.0, 4.0])
             Padding(
@@ -89,21 +89,17 @@ class TopBar extends StatelessWidget {
               child: _Chip(label: '${s.toInt()}×', active: village.timeScale == s && !village.paused, onTap: () => onSpeed(s)),
             ),
           const SizedBox(width: 10),
-          _IconButton(icon: Icons.public, tip: 'Overview (O)', onTap: onOverview),
-          _IconButton(
-            icon: followName == null ? Icons.center_focus_weak : Icons.center_focus_strong,
-            tip: 'Follow the selected llama or Dash (F)',
-            onTap: onFollow,
-          ),
-          _IconButton(icon: Icons.settings, tip: 'Settings', onTap: onSettings),
+          _IconButton(icon: Icons.public, tip: l.tipOverview, onTap: onOverview),
+          _IconButton(icon: followName == null ? Icons.center_focus_weak : Icons.center_focus_strong, tip: l.tipFollow, onTap: onFollow),
+          _IconButton(icon: Icons.settings, tip: l.tipSettings, onTap: onSettings),
           const SizedBox(width: 8),
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(fps == null ? '' : '${fps!.toStringAsFixed(0)} fps', style: _t(10.5, color: Colors.white60)),
+              Text(fps == null ? '' : l.fps(fps!.toStringAsFixed(0)), style: _t(10.5, color: Colors.white60)),
               Text(
-                village.chat.queue.busy ? 'thinking: ${village.chat.queue.runningType ?? ''}' : modelLabel,
+                village.chat.queue.busy ? l.thinking(village.chat.queue.runningType ?? '') : modelLabel,
                 style: _t(10.5, color: village.chat.queue.busy ? gold : Colors.white38),
               ),
             ],
@@ -207,7 +203,7 @@ class _VillageLogState extends State<VillageLog> {
               child: Row(
                 children: [
                   Text(
-                    'Village log',
+                    L10n.of(context).villageLog,
                     style: _t(13, weight: FontWeight.w900, color: gold),
                   ),
                   const Spacer(),
@@ -286,12 +282,13 @@ class OptionsPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final words = L10n.of(context);
     final l = visit.target;
     final options = visit.options;
     final Widget body = switch (visit.stage) {
-      VisitStage.flying => _status(Icons.flight, 'Dash is flying over to ${l.name}…'),
-      VisitStage.waiting => _status(Icons.hourglass_bottom, '${l.name} is busy. Dash waits nearby…'),
-      VisitStage.choosing when options == null => _status(null, 'Dash is thinking of what to say…', spinner: true),
+      VisitStage.flying => _status(Icons.flight, words.dashFlying(l.name)),
+      VisitStage.waiting => _status(Icons.hourglass_bottom, words.dashWaiting(l.name)),
+      VisitStage.choosing when options == null => _status(null, words.dashThinking, spinner: true),
       VisitStage.choosing => Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -322,7 +319,7 @@ class OptionsPanel extends StatelessWidget {
                           child: Text(options[i].text, style: _t(13.5, color: ink)),
                         ),
                         const SizedBox(width: 6),
-                        Text(options[i].intent, style: _t(10.5, color: const Color(0xFF8A8796))),
+                        Text(words.intent(options[i].intent), style: _t(10.5, color: const Color(0xFF8A8796))),
                       ],
                     ),
                   ),
@@ -331,23 +328,23 @@ class OptionsPanel extends StatelessWidget {
             ),
         ],
       ),
-      VisitStage.replying => _status(null, '${l.name} is answering…', spinner: true, dark: true),
+      VisitStage.replying => _status(null, words.llamaAnswering(l.name), spinner: true, dark: true),
       VisitStage.done => Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            '${l.name} is ${reactionLevels[visit.reaction ?? 2]}.',
+            words.reaction(l.name, visit.reaction ?? 2),
             style: _t(14, weight: FontWeight.w900, color: ink),
           ),
           const SizedBox(height: 4),
-          for (final e in visit.effects) Text('• $e', style: _t(12, color: const Color(0xFF55525F))),
+          for (final e in visit.effects) Text('• ${words.effectOf(e)}', style: _t(12, color: const Color(0xFF55525F))),
           const SizedBox(height: 8),
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              TextButton.icon(onPressed: onMore, icon: const Icon(Icons.chat_bubble_outline), label: const Text('Say more')),
+              TextButton.icon(onPressed: onMore, icon: const Icon(Icons.chat_bubble_outline), label: Text(words.sayMore)),
               const SizedBox(width: 6),
-              FilledButton.icon(onPressed: onLeave, icon: const Icon(Icons.flight_takeoff), label: const Text('Fly off')),
+              FilledButton.icon(onPressed: onLeave, icon: const Icon(Icons.flight_takeoff), label: Text(words.flyOff)),
             ],
           ),
         ],
@@ -367,20 +364,20 @@ class OptionsPanel extends StatelessWidget {
                 const Icon(Icons.flutter_dash, color: dashBlue, size: 20),
                 const SizedBox(width: 6),
                 Text(
-                  'Dash and ${l.name}',
+                  words.dashAnd(l.name),
                   style: _t(15, weight: FontWeight.w900, color: ink),
                 ),
                 const SizedBox(width: 8),
                 Flexible(
                   child: Text(
-                    'at ${theP(l.place)} · ${l.moodWord}',
+                    words.atPlaceMood(words.placeName(l.place), words.moodOf(l)),
                     overflow: TextOverflow.ellipsis,
                     style: _t(12, color: const Color(0xFF8A8796)),
                   ),
                 ),
                 const Spacer(),
                 IconButton(
-                  tooltip: 'Leave (Esc)',
+                  tooltip: words.tipLeave,
                   onPressed: onLeave,
                   icon: const Icon(Icons.close, size: 18, color: Color(0xFF8A8796)),
                 ),
@@ -411,14 +408,16 @@ class OptionsPanel extends StatelessWidget {
 // ------------------------------------------------------------ inspector
 
 class Inspector extends StatelessWidget {
-  const Inspector({super.key, required this.data, required this.onClose, required this.onTalk, required this.cast});
+  const Inspector({super.key, required this.data, required this.village, required this.onClose, required this.onTalk, required this.cast});
   final LlamaInspector data;
+  final Village village;
   final VoidCallback onClose;
   final VoidCallback onTalk;
   final List<Llama> cast;
 
   @override
   Widget build(BuildContext context) {
+    final words = L10n.of(context);
     final l = data.llama;
     final accent = accentOf(l.name);
     return _Card(
@@ -445,17 +444,17 @@ class Inspector extends StatelessWidget {
                           l.name,
                           style: _t(22, weight: FontWeight.w900, color: Colors.white).copyWith(shadows: textShadow),
                         ),
-                        Text('the ${l.job}', style: _t(12.5, color: Colors.white)),
+                        Text(words.llamaRole(l.name), style: _t(12.5, color: Colors.white)),
                       ],
                     ),
                   ),
                   IconButton(
-                    tooltip: 'Talk as Dash',
+                    tooltip: words.tipTalkAsDash,
                     onPressed: onTalk,
                     icon: const Icon(Icons.chat, color: Colors.white),
                   ),
                   IconButton(
-                    tooltip: 'Close (Esc)',
+                    tooltip: words.tipCloseEsc,
                     onPressed: onClose,
                     icon: const Icon(Icons.close, color: Colors.white),
                   ),
@@ -467,13 +466,13 @@ class Inspector extends StatelessWidget {
                 padding: const EdgeInsets.fromLTRB(14, 10, 14, 14),
                 children: [
                   Text(
-                    l.traits,
+                    words.llamaTraits(l.name),
                     style: _t(12.5, color: Colors.white70, style: FontStyle.italic),
                   ),
                   const SizedBox(height: 4),
-                  Text('Likes ${l.likes}. Dreams to ${l.lifeGoal}.', style: _t(12, color: Colors.white60)),
-                  _section('Now'),
-                  Text(data.activity, style: _t(13)),
+                  Text(words.llamaBio(l.name), style: _t(12, color: Colors.white60)),
+                  _section(words.sectionNow),
+                  Text(words.activityOf(village, l), style: _t(13)),
                   if (data.thought != null) ...[
                     const SizedBox(height: 4),
                     Row(
@@ -490,24 +489,24 @@ class Inspector extends StatelessWidget {
                       ],
                     ),
                   ],
-                  _section('Mood and needs'),
-                  _bar('Mood: ${l.moodWord}', (l.mood + 5) / 10, const Color(0xFFFFC857), centered: true),
-                  _bar('Fed', 1 - l.hunger, const Color(0xFF7BD389)),
-                  _bar('Energy', l.energy, const Color(0xFF6CB4EE)),
-                  _bar('Wants company', l.social, const Color(0xFFF49AC2)),
-                  if (l.name == 'Mo') _bar('Courage', l.courage, const Color(0xFFFF9F68)),
-                  _section('Friendships'),
+                  _section(words.sectionMoodNeeds),
+                  _bar(words.barMood(words.moodOf(l)), (l.mood + 5) / 10, const Color(0xFFFFC857), centered: true),
+                  _bar(words.barFed, 1 - l.hunger, const Color(0xFF7BD389)),
+                  _bar(words.barEnergy, l.energy, const Color(0xFF6CB4EE)),
+                  _bar(words.barCompany, l.social, const Color(0xFFF49AC2)),
+                  if (l.name == 'Mo') _bar(words.barCourage, l.courage, const Color(0xFFFF9F68)),
+                  _section(words.sectionFriendships),
                   for (final o in [...cast.where((o) => o != l).map((o) => o.name), 'Dash'])
                     _bar(o, ((l.friendship[o] ?? 0) + 10) / 20, accentOf(o), centered: true, value: '${l.friendship[o] ?? 0}'),
-                  if (data.goals.isNotEmpty) ...[_section('Goals'), for (final g in data.goals.take(5)) _bullet(g)],
-                  _section('Why this action'),
+                  if (data.goals.isNotEmpty) ...[_section(words.sectionGoals), for (final g in data.goals.take(5)) _bullet(g)],
+                  _section(words.sectionWhy),
                   if (l.lastDecision == null)
-                    Text('No decision yet.', style: _t(12, color: Colors.white54))
+                    Text(words.noDecision, style: _t(12, color: Colors.white54))
                   else
                     for (final (i, o) in l.lastDecision!.options.take(5).indexed)
-                      _utility(o, i == 0, l.lastDecision!.options.first.utility),
-                  _section('What ${l.name} knows (${data.knows.length})'),
-                  for (final k in data.knows) _fact(k),
+                      _utility(words.choiceOf(o), o, i == 0, l.lastDecision!.options.first.utility),
+                  _section(words.sectionKnows(l.name, data.knows.length)),
+                  for (final k in data.knows) _fact(k, words.howOf(k)),
                 ],
               ),
             ),
@@ -530,7 +529,7 @@ class Inspector extends StatelessWidget {
     child: Row(
       children: [
         SizedBox(
-          width: 118,
+          width: 150,
           child: Text(label, style: _t(12), overflow: TextOverflow.ellipsis),
         ),
         Expanded(
@@ -601,7 +600,7 @@ class Inspector extends StatelessWidget {
     ),
   );
 
-  Widget _utility(DecisionOption o, bool chosen, double top) => Padding(
+  Widget _utility(String label, DecisionOption o, bool chosen, double top) => Padding(
     padding: const EdgeInsets.symmetric(vertical: 2),
     child: Row(
       children: [
@@ -617,7 +616,7 @@ class Inspector extends StatelessWidget {
             TextSpan(
               children: [
                 TextSpan(
-                  text: o.label,
+                  text: label,
                   style: _t(12.5, weight: chosen ? FontWeight.w900 : FontWeight.w600, color: chosen ? Colors.white : Colors.white70),
                 ),
                 if (o.why.isNotEmpty)
@@ -633,12 +632,13 @@ class Inspector extends StatelessWidget {
     ),
   );
 
-  Widget _fact(KnownFact k) {
+  Widget _fact(KnownFact k, String how) {
+    final heard = k.knowing?.how == 'told' || k.knowing?.how == 'overheard';
     final (tag, color) = switch (k.how) {
-      _ when k.secret => ('own secret', const Color(0xFFFF8FA3)),
-      _ when !k.believes => (k.how, const Color(0xFF9A97A6)),
-      final h when h.startsWith('heard') || h.startsWith('overheard') => (h, const Color(0xFFFFC857)),
-      final h => (h, const Color(0xFF9EE6C2)),
+      _ when k.secret => (how, const Color(0xFFFF8FA3)),
+      _ when !k.believes => (how, const Color(0xFF9A97A6)),
+      _ when heard => (how, const Color(0xFFFFC857)),
+      _ => (how, const Color(0xFF9EE6C2)),
     };
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
@@ -687,8 +687,7 @@ class HelpHint extends StatelessWidget {
   Widget build(BuildContext context) => _Card(
     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
     child: Text(
-      'Click a llama: Dash flies over to talk  ·  Right-click: inspect only  ·  Click ground or WASD: fly\n'
-      'Drag: orbit  ·  Right-drag / two fingers: pan  ·  Scroll / pinch: zoom  ·  Space: pause  ·  F: follow  ·  O: overview',
+      L10n.of(context).helpHint,
       textAlign: TextAlign.center,
       style: _t(11, color: Colors.white70),
     ),
@@ -708,6 +707,7 @@ class LoadingCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final words = L10n.of(context);
     final problem = missing != null || error != null;
     return Container(
       decoration: const BoxDecoration(
@@ -723,10 +723,10 @@ class LoadingCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Llama Village',
+                words.appTitle,
                 style: _t(34, weight: FontWeight.w900, color: gold),
               ),
-              Text('Five llamas, their secrets, and one nosy little bird.', style: _t(14, color: Colors.white70)),
+              Text(words.loadingTagline, style: _t(14, color: Colors.white70)),
               const SizedBox(height: 22),
               if (!problem) ...[
                 Text(label, style: _t(14)),
@@ -743,17 +743,17 @@ class LoadingCard extends StatelessWidget {
               ],
               if (missing != null) ...[
                 Text(
-                  'The AI models were not found.',
+                  words.modelsNotFoundTitle,
                   style: _t(17, weight: FontWeight.w900, color: const Color(0xFFFF8FA3)),
                 ),
                 const SizedBox(height: 8),
-                Text('Missing: ${missing!.join(', ')}', style: _t(13)),
+                Text(words.modelsMissing(missing!.join(', ')), style: _t(13)),
                 const SizedBox(height: 6),
                 Text(label, style: _t(12, color: Colors.white70)),
               ],
               if (error != null) ...[
                 Text(
-                  'The models failed to load.',
+                  words.modelsFailedTitle,
                   style: _t(17, weight: FontWeight.w900, color: const Color(0xFFFF8FA3)),
                 ),
                 const SizedBox(height: 8),
@@ -764,9 +764,9 @@ class LoadingCard extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    if (onQuit != null) TextButton(onPressed: onQuit, child: const Text('Quit')),
+                    if (onQuit != null) TextButton(onPressed: onQuit, child: Text(words.quit)),
                     const SizedBox(width: 8),
-                    if (onCanned != null) FilledButton(onPressed: onCanned, child: const Text('Play without AI (canned lines)')),
+                    if (onCanned != null) FilledButton(onPressed: onCanned, child: Text(words.playWithoutAi)),
                   ],
                 ),
               ],

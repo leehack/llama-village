@@ -5,10 +5,63 @@ import 'cast.dart';
 import 'dialogue.dart';
 import 'facts.dart';
 import 'geo.dart';
+import 'lang.dart';
 import 'laya_roles.dart';
 import 'model.dart';
 import 'places.dart';
 import 'village.dart';
+
+/// A note for the player about the visit ("Mo is asleep"); [kind] is
+/// asleep, rush, fellAsleep, catchUp, waitTalk or hurriesOff.
+class DashNotice {
+  const DashNotice(this.kind, this.name);
+  final String kind;
+  final String name;
+
+  String get english => switch (kind) {
+    'asleep' => '$name is asleep. Try again in the morning.',
+    'rush' => '$name is hurrying to the festival.',
+    'fellAsleep' => '$name has fallen asleep.',
+    'catchUp' => 'Catching up with $name…',
+    'waitTalk' => 'Waiting for $name to finish talking…',
+    'hurriesOff' => '$name hurries off to the festival.',
+    _ => '$name: $kind',
+  };
+
+  @override
+  String toString() => english;
+}
+
+/// One consequence of what Dash said, as the options panel lists it:
+/// trust, rumour, praise, knows, confides, work or courage.
+class DashEffect {
+  const DashEffect(this.kind, this.name, {this.delta, this.now, this.mood, this.about, this.believes, this.fact, this.short});
+  final String kind;
+  final String name;
+  final int? delta;
+  final int? now;
+  final int? mood;
+  final String? about;
+  final bool? believes;
+  final String? fact;
+  final String? short;
+
+  String get english => switch (kind) {
+    'trust' => '$name toward Dash ${_signed(delta!)} (now $now), mood ${_signed(mood!)}',
+    'rumour' => '$name ${believes! ? 'believes' : 'doubts'} the made-up rumour about $about',
+    'praise' => believes! ? '$name warms to $about (+1)' : '$name shrugs off the kind words about $about',
+    'knows' => '$name now knows: $short',
+    'confides' => '$name tells Dash: $short',
+    'work' => '$name gets work done faster',
+    'courage' => 'Mo courage $now%',
+    _ => kind,
+  };
+
+  @override
+  String toString() => english;
+}
+
+String _signed(int v) => v >= 0 ? '+$v' : '$v';
 
 class DashOption {
   DashOption(this.intent, this.text, {this.about, this.fact, this.item});
@@ -53,7 +106,7 @@ class DashVisit {
   DashOption? picked;
   String? reply;
   int? reaction;
-  List<String> effects = const [];
+  List<DashEffect> effects = const [];
   Completer<List<DashOption>> ready = Completer<List<DashOption>>();
 }
 
@@ -81,17 +134,17 @@ class Dash {
   DashVisit? visit;
 
   /// A short note for the player ("Mo is asleep"), cleared after a while.
-  String? notice;
+  DashNotice? notice;
   double _noticeUntil = 0;
   final List<Map<String, Object?>> history = [];
-  String? _told;
+  DashEffect? _told;
 
   /// Real-time flying speed in metres per second at 1x.
   static const double speed = 13;
   static const double talkRange = 3.2;
 
-  void say(String text) {
-    notice = text;
+  void say(String kind, String name) {
+    notice = DashNotice(kind, name);
     _noticeUntil = v.uiMs + 3500;
   }
 
@@ -126,11 +179,11 @@ class Dash {
     if (current != null && current.target == l) return current.ready.future;
     leave();
     if (l.asleep) {
-      say('${l.name} is asleep. Try again in the morning.');
+      say('asleep', l.name);
       return Future.value(const []);
     }
     if (v.festivalRush(l)) {
-      say('${l.name} is hurrying to the festival.');
+      say('rush', l.name);
       return Future.value(const []);
     }
     goal = null;
@@ -229,7 +282,7 @@ class Dash {
       case VisitStage.flying || VisitStage.waiting:
         if (!close) return;
         if (l.asleep) {
-          say('${l.name} has fallen asleep.');
+          say('fellAsleep', l.name);
           leave();
           return;
         }
@@ -237,7 +290,7 @@ class Dash {
         if (busy) {
           if (dv.stage != VisitStage.waiting) {
             dv.stage = VisitStage.waiting;
-            say(l.activity.kind == 'walk' ? 'Catching up with ${l.name}…' : 'Waiting for ${l.name} to finish talking…');
+            say(l.activity.kind == 'walk' ? 'catchUp' : 'waitTalk', l.name);
           }
           return;
         }
@@ -293,6 +346,20 @@ class Dash {
       'help': "Dash offers to help with ${l.name}'s job or current want",
       'tease': 'a playful jab',
     };
+    List<DashOption> canned() => [
+      for (final i in picked)
+        DashOption(
+          i,
+          cannedOptionIn(v.lang, i, name: l.name, about: about, praiseAbout: praiseAbout, item: item, tell: tell?.text),
+          about: switch (i) {
+            'gossip' => about,
+            'praise' => praiseAbout,
+            _ => null,
+          },
+          fact: i == 'tell' ? tell!.id : null,
+          item: i == 'gift' ? item : null,
+        )..canned = true,
+    ];
     final prompt = [
       'Dash, a curious little bird new to the village (the player), flies up to ${l.name} at ${theP(l.place)}. '
           'Day ${v.now.day}, ${v.now.hhmm}, ${v.now.partOfDay}.',
@@ -301,40 +368,27 @@ class Dash {
       'What ${l.name} knows lately: ${facts.map((f) => f.text).join(' ')}',
       if (dv.reply != null) '${l.name} just said to Dash: "${dv.reply}"',
       '',
-      'Write four things Dash could say to ${l.name} (Dash speaking, addressing ${l.name}), one per line, each under 20 words, exactly in this format:',
-      for (final i in picked) '$i: <${spec[i]}>',
-      'No other text.',
+      'Write four things Dash could say to ${l.name} (Dash speaking, addressing ${l.name}), each under 20 words, '
+          'as a JSON object with one key per kind of line:',
+      for (final i in picked) '$i: ${spec[i]}',
     ].join('\n');
+    final asked = inLang(prompt, v.lang, json: true);
     v.chat
-        .text<List<DashOption>>(
+        .json(
           'dash_options',
           Priority.dashOptions,
-          prompt,
-          parse: (raw) => parseDashOptions(raw, picked, about: about, praiseAbout: praiseAbout, tell: tell?.id, item: item),
-          fallback: () => [
-            for (final i in picked)
-              DashOption(
-                i,
-                switch (i) {
-                  'compliment' => 'You look wonderful today, ${l.name}.',
-                  'gossip' => 'I heard $about has been acting very strange lately.',
-                  'praise' => '$praiseAbout said such kind things about you yesterday.',
-                  'tell' => 'Did you hear? ${tell!.text}',
-                  'gift' => 'I brought you $item.',
-                  'help' => 'Can I help you with anything?',
-                  _ => 'Is that a frown or your normal face?',
-                },
-                about: switch (i) {
-                  'gossip' => about,
-                  'praise' => praiseAbout,
-                  _ => null,
-                },
-                fact: i == 'tell' ? tell!.id : null,
-                item: i == 'gift' ? item : null,
-              )..canned = true,
-          ],
-          maxTokens: 140,
+          asked,
+          dashOptionSchema(picked),
+          validate: (json) => dashOptionsFrom(json, picked, lang: v.lang) != null,
+          fallback: () => const {},
+          maxTokens: tokensFor(v.lang, 220),
+          temp: 0.85,
           seed: v.rng.nextInt(1 << 30),
+          lang: v.lang,
+        )
+        .then(
+          (json) =>
+              dashOptionsFrom(json, picked, about: about, praiseAbout: praiseAbout, tell: tell?.id, item: item, lang: v.lang) ?? canned(),
         )
         .then((options) {
           if (visit != dv) return;
@@ -371,25 +425,29 @@ class Dash {
     if (pick.intent == 'tell' && pick.fact != null) {
       final believes = (l.friendship['Dash'] ?? 0) >= 0;
       if (v.kb.learn(l.name, pick.fact!, 'told', v.now, from: 'Dash', believes: believes)) {
-        _told = '${l.name} now knows: ${v.kb[pick.fact!].short}';
+        _told = DashEffect('knows', l.name, fact: pick.fact, short: v.kb[pick.fact!].short);
       }
     }
     final facts = relevantFacts(v, l, limit: 4);
     final reply = await v.chat.text<String>(
       'dash_reply',
       Priority.dashReply,
-      [
-        '${l.name}, the ${l.job} (${l.traits}; mood ${l.moodWord}), is at ${theP(l.place)}. Day ${v.now.day}, ${v.now.hhmm}.',
-        'What ${l.name} knows (only these):',
-        for (final f in facts) '- ${f.text} (${v.kb.label(l.name, f, v.now)})',
-        'Dash, a little bird new to the village, says: "${pick.text}"',
-        '${l.name} feels ${reactionLevels[level]} about it.',
-        "Write only ${l.name}'s spoken reply to Dash: one or two sentences, under 30 words, in character. No quotes, no name prefix.",
-      ].join('\n'),
+      inLang(
+        [
+          '${l.name} (${pronounOf(l.name)}), the ${l.job} (${l.traits}; mood ${l.moodWord}), is at ${theP(l.place)}. Day ${v.now.day}, ${v.now.hhmm}.',
+          'What ${l.name} knows (only these):',
+          for (final f in facts) '- ${f.text} (${v.kb.label(l.name, f, v.now)})',
+          'Dash, a little bird new to the village, says: "${pick.text}"',
+          '${l.name} feels ${reactionLevels[level]} about it.',
+          "Write only ${l.name}'s spoken reply to Dash: one or two sentences, under 30 words, in character. No quotes, no name prefix.",
+        ].join('\n'),
+        v.lang,
+      ),
       parse: (raw) => parseLine(raw, [l.name]),
-      fallback: () => level >= 3 ? 'Oh! Well, thank you, Dash.' : 'Hmph. If you say so, Dash.',
-      maxTokens: 60,
+      fallback: () => replyFallbackIn(v.lang, pleased: level >= 3),
+      maxTokens: tokensFor(v.lang, 60),
       seed: v.rng.nextInt(1 << 30),
+      lang: v.lang,
     );
     if (visit != dv) {
       if (v.speech[l.name]?.id == pending.id) v.speech.remove(l.name);
@@ -404,13 +462,16 @@ class Dash {
       ..effects = effects
       ..stage = VisitStage.done
       ..doneMs = v.uiMs;
-    v.log.dash(v.now, l, dv.options!, pick, level, reply, effects);
+    final said = [for (final e in effects) e.english];
+    v.log.dash(v.now, l, dv.options!, pick, level, reply, said);
     v.events.emit('dash_reply', {
       'target': l.name,
       'intent': pick.intent,
+      'about': pick.about,
+      'item': pick.item,
       'reaction': reactionLevels[level],
       'reply': reply,
-      'effects': effects,
+      'effects': said,
     });
     history.add({
       'time': v.now.label,
@@ -418,17 +479,17 @@ class Dash {
       'picked': pick.intent,
       'reaction': reactionLevels[level],
       'reply': reply,
-      'effects': effects,
+      'effects': said,
     });
   }
 
-  List<String> _effects(Llama l, DashOption pick, int level) {
-    final effects = <String>[];
+  List<DashEffect> _effects(Llama l, DashOption pick, int level) {
+    final effects = <DashEffect>[];
     final fd = level - 2 + (pick.intent == 'gift' ? 1 : 0);
     final md = level >= 3 ? 1 : (level <= 1 ? -1 : 0);
     l.addFriendship('Dash', fd);
     l.addMood(md);
-    effects.add('${l.name} toward Dash ${fd >= 0 ? '+' : ''}$fd (now ${l.friendship['Dash']}), mood ${md >= 0 ? '+' : ''}$md');
+    effects.add(DashEffect('trust', l.name, delta: fd, now: l.friendship['Dash'], mood: md));
     if (pick.intent == 'gift' && pick.item != null) {
       inventory.remove(pick.item);
       l.items.add(pick.item!);
@@ -449,12 +510,12 @@ class Dash {
       final believes = (l.friendship['Dash'] ?? 0) >= 1 || l.traits.contains('nosy');
       v.kb.learn(l.name, f.id, 'told', v.now, from: 'Dash', believes: believes);
       if (believes) l.addFriendship(pick.about!, -1);
-      effects.add('${l.name} ${believes ? 'believes' : 'doubts'} the made-up rumour about ${pick.about}');
+      effects.add(DashEffect('rumour', l.name, about: pick.about, believes: believes));
     }
     if (pick.intent == 'praise' && pick.about != null) {
       final believes = (l.friendship['Dash'] ?? 0) >= 0;
       if (believes) l.addFriendship(pick.about!, 1);
-      effects.add(believes ? '${l.name} warms to ${pick.about} (+1)' : '${l.name} shrugs off the kind words about ${pick.about}');
+      effects.add(DashEffect('praise', l.name, about: pick.about, believes: believes));
     }
     if (_told != null) {
       effects.add(_told!);
@@ -462,12 +523,12 @@ class Dash {
     }
     if (level >= 3) {
       final confided = _confide(l);
-      if (confided != null) effects.add('${l.name} tells Dash: ${confided.short}');
+      if (confided != null) effects.add(DashEffect('confides', l.name, fact: confided.id, short: confided.short));
     }
-    if (pick.intent == 'help' && l.place == l.workplace) effects.add('${l.name} gets work done faster');
+    if (pick.intent == 'help' && l.place == l.workplace) effects.add(DashEffect('work', l.name));
     if (l.name == 'Mo' && level >= 3) {
       l.courage = (l.courage + 0.08).clamp(0, 1);
-      effects.add('Mo courage ${(l.courage * 100).round()}%');
+      effects.add(DashEffect('courage', l.name, now: (l.courage * 100).round()));
     }
     return effects;
   }
@@ -527,17 +588,36 @@ class Dash {
 
 P2 _sub(P2 a, P2 b) => (a.$1 - b.$1, a.$2 - b.$2);
 
-/// Reads the option lines ("intent: text") for the [picked] intents; null
-/// when fewer than three usable lines came back.
-List<DashOption>? parseDashOptions(String raw, List<String> picked, {String? about, String? praiseAbout, String? tell, String? item}) {
+/// The grammar for Dash's options: one string per [picked] intent, so the
+/// keys stay in English whatever language the lines are written in.
+Map<String, Object?> dashOptionSchema(List<String> picked) => {
+  'type': 'object',
+  'properties': {
+    for (final i in picked) i: {'type': 'string', 'minLength': 6, 'maxLength': 200},
+  },
+  'required': picked,
+  'additionalProperties': false,
+};
+
+/// The options in [json] for the [picked] intents, in order; null when
+/// fewer than three are usable lines.
+List<DashOption>? dashOptionsFrom(
+  Map<String, dynamic> json,
+  List<String> picked, {
+  String? about,
+  String? praiseAbout,
+  String? tell,
+  String? item,
+  Lang lang = Lang.en,
+}) {
   final found = <String, String>{};
-  for (final line in raw.split('\n')) {
-    final m = RegExp(r'^\W*(compliment|gossip|praise|tell|gift|help|tease)\W*[:\-]\s*(.+)$', caseSensitive: false).firstMatch(line.trim());
-    if (m == null) continue;
-    final text = cleanLine(m.group(2)!.replaceAll(RegExp(r'^<|>$'), ''));
-    if (text.split(' ').length >= 3) found[m.group(1)!.toLowerCase()] = text;
+  for (final i in picked) {
+    final raw = json[i];
+    if (raw is! String) continue;
+    final text = cleanLine(raw.replaceAll(RegExp(r'^<|>$'), ''));
+    if (text.split(' ').length >= 3 && speaksIn(text, lang)) found[i] = text;
   }
-  if (picked.where(found.containsKey).length < 3) return null;
+  if (found.length < 3) return null;
   return [
     for (final i in picked)
       if (found[i] != null)

@@ -23,6 +23,26 @@ enum TextSize {
   final double scale;
 }
 
+/// The language of the menus and of everything the llamas say. [system]
+/// follows the Mac's language when it is one of these, else English.
+enum AppLanguage {
+  system(null),
+  en('en'),
+  ko('ko'),
+  fr('fr');
+
+  const AppLanguage(this.code);
+  final String? code;
+
+  /// What the picker shows: each language in its own words.
+  String? get nativeName => switch (this) {
+    system => null,
+    en => 'English',
+    ko => '한국어',
+    fr => 'Français',
+  };
+}
+
 /// Player settings, persisted with shared_preferences.
 class VillageSettings extends ChangeNotifier {
   VillageSettings._(this._prefs);
@@ -47,6 +67,7 @@ class VillageSettings extends ChangeNotifier {
   bool _reducedMotion = false;
   bool _highContrast = false;
   GraphicsQuality _quality = GraphicsQuality.high;
+  final ValueNotifier<AppLanguage> _language = ValueNotifier(AppLanguage.system);
 
   static Future<VillageSettings> load() async {
     final prefs = await SharedPreferences.getInstance();
@@ -63,6 +84,7 @@ class VillageSettings extends ChangeNotifier {
     s._reducedMotion = prefs.getBool('reducedMotion') ?? false;
     s._highContrast = prefs.getBool('highContrast') ?? false;
     s._quality = GraphicsQuality.parse(prefs.getString('graphicsQuality'));
+    s._language.value = AppLanguage.values.where((e) => e.name == prefs.getString('language')).firstOrNull ?? AppLanguage.system;
     return s;
   }
 
@@ -143,6 +165,18 @@ class VillageSettings extends ChangeNotifier {
     _prefs?.setBool('highContrast', value);
     notifyListeners();
   }
+
+  AppLanguage get language => _language.value;
+  set language(AppLanguage value) {
+    if (value == _language.value) return;
+    _language.value = value;
+    _prefs?.setString('language', value.name);
+    notifyListeners();
+  }
+
+  /// Changes only when the language does, so the app rebuilds its locale
+  /// without rebuilding on every volume change.
+  ValueListenable<AppLanguage> get languageListenable => _language;
 
   GraphicsQuality get quality => _quality;
   set quality(GraphicsQuality value) {

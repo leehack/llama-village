@@ -8,11 +8,13 @@ import 'dash.dart';
 import 'dialogue.dart';
 import 'facts.dart';
 import 'geo.dart';
+import 'lang.dart';
 import 'laya_roles.dart';
 import 'log.dart';
 import 'model.dart';
 import 'places.dart';
 import 'rng.dart';
+import 'story.dart';
 import 'threads.dart';
 import 'week.dart';
 
@@ -39,9 +41,13 @@ class Speech {
 
 /// What a llama knows, as the inspector lists it.
 class KnownFact {
-  const KnownFact(this.text, this.how, {required this.believes, required this.secret});
+  const KnownFact(this.text, this.how, {required this.believes, required this.secret, this.knowing, this.own = false});
   final String text;
   final String how;
+
+  /// How it was learned, for a localised tag; [own]: the llama's own secret.
+  final Knowing? knowing;
+  final bool own;
   final bool believes;
   final bool secret;
 }
@@ -91,6 +97,7 @@ class Village {
         'believes': t.knowing.believes,
       });
     };
+    journal.attach(this);
   }
 
   late final ChatRuntime chat;
@@ -117,6 +124,13 @@ class Village {
   final StormThread storm_ = StormThread();
   final WeekThread week = WeekThread();
   late final List<StoryThread> threads;
+
+  /// The week's notable moments and pictures, for the storybook.
+  final StoryJournal journal = StoryJournal();
+  final StoryAlbum album = StoryAlbum();
+
+  /// The language of everything the llamas say; set from the app's locale.
+  Lang lang = Lang.en;
 
   GameTime now = const GameTime(1, 6 * 60);
   bool storm = false;
@@ -244,7 +258,7 @@ class Village {
     final visit = dash.visit;
     if (visit != null && visit.target.place != 'hilltop') {
       dash.leave();
-      dash.say('${visit.target.name} hurries off to the festival.');
+      dash.say('hurriesOff', visit.target.name);
     }
   }
 
@@ -382,30 +396,21 @@ class Village {
     for (final l in cast) {
       if (offline) {
         l
-          ..reflections.add('What a day.')
+          ..reflections.add(quietEveningIn(lang))
           ..reflectedDay = day;
         continue;
       }
-      final facts = relevantFacts(this, l, limit: 6);
-      final today = l.diary.where((d) => d.$1.day == day).toList().reversed.take(3).toList();
-      final prompt = [
-        'You are ${l.name}, the ${l.job} (${l.traits}). Mood: ${l.moodWord}. It is the night of day $day; you lie down in your hut.',
-        'What you know:',
-        for (final f in facts) '- ${f.text} (${kb.label(l.name, f, now)})',
-        if (today.isNotEmpty) 'Today you talked with: ${today.map((d) => '${d.$2} (${d.$3})').join('; ')}',
-        '',
-        'In first person and in character, write one sentence about one specific thing that happened today (name who or what) '
-            'and how you feel about it. Only mention what you know.',
-      ].join('\n');
+      final prompt = reflectionPrompt(l, day);
       chat
           .text<String>(
             'reflection',
             Priority.dashOptions,
             prompt,
             parse: (raw) => parseLine(raw, [l.name]),
-            fallback: () => 'What a day.',
-            maxTokens: 50,
+            fallback: () => quietEveningIn(lang),
+            maxTokens: tokensFor(lang, 50),
             seed: rng.nextInt(1 << 30),
+            lang: lang,
           )
           .then((r) {
             l
@@ -575,7 +580,9 @@ class Village {
   Future<void> _openConversation(Conversation c) async {
     final tc = topicCase(c.a, c.b);
     if (tc.options.isNotEmpty) {
+      final watch = Stopwatch()..start();
       final (topic, source) = await gatedTopic(laya, tc);
+      if (source == 'laya') metrics.add(CallRecord('topic_laya', watch.elapsedMicroseconds / 1000));
       c.topic = topic;
       c.topicSource = source;
     }
@@ -596,10 +603,14 @@ class Village {
           Priority.dialogue,
           prompt,
           parse: (raw) => parseLine(raw, [s.name, o.name], previous: [for (final l in c.lines) l.text]),
-          fallback: () => '\u0000${fallbackLines[rng.nextInt(fallbackLines.length)]}',
-          maxTokens: 48,
+          fallback: () {
+            final lines = fallbackLinesIn(lang);
+            return '\u0000${lines[rng.nextInt(lines.length)]}';
+          },
+          maxTokens: tokensFor(lang, 48),
           seed: rng.nextInt(1 << 30),
           stop: const ['\n\n'],
+          lang: lang,
         )
         .then((text) {
           final fallback = text.startsWith('\u0000');
@@ -724,20 +735,7 @@ class Village {
   /// Asks the model for one private thought of [l] and shows it.
   void think(Llama l) {
     _lastThought[l.name] = now;
-    final goals = goalsFor(l)..sort((x, y) => y.weight.compareTo(x.weight));
-    final facts = relevantFacts(this, l, limit: 3);
-    final need = l.hunger > 0.6
-        ? 'You are hungry.'
-        : l.energy < 0.3
-        ? 'You are tired.'
-        : '';
-    final prompt = [
-      'You are ${l.name}, the ${l.job} (${l.traits}). Mood: ${l.moodWord}. ${_doing(l)} $need',
-      if (goals.isNotEmpty) 'What you want: ${goals.take(2).map((g) => g.text).join('; ')}.',
-      'On your mind: ${facts.map((f) => f.text).join(' ')}',
-      '',
-      'Write one short private thought, first person, in character, under 14 words. No quotes, no name prefix.',
-    ].join('\n');
+    final prompt = thoughtPrompt(l);
     final pending = _say(l.name, null, SpeechKind.thought);
     chat
         .text<String>(
@@ -746,8 +744,9 @@ class Village {
           prompt,
           parse: (raw) => parseLine(raw, [l.name]),
           fallback: () => '',
-          maxTokens: 32,
+          maxTokens: tokensFor(lang, 32),
           seed: rng.nextInt(1 << 30),
+          lang: lang,
         )
         .then((text) {
           final stillMine = speech[l.name]?.id == pending.id;
@@ -762,6 +761,45 @@ class Village {
             _say(l.name, text, SpeechKind.thought);
           }
         });
+  }
+
+  /// The prompt for one private thought of [l], in [lang].
+  String thoughtPrompt(Llama l) {
+    final goals = goalsFor(l)..sort((x, y) => y.weight.compareTo(x.weight));
+    final facts = relevantFacts(this, l, limit: 3);
+    final need = l.hunger > 0.6
+        ? 'You are hungry.'
+        : l.energy < 0.3
+        ? 'You are tired.'
+        : '';
+    return inLang(
+      [
+        'You are ${l.name} (${pronounOf(l.name)}), the ${l.job} (${l.traits}). Mood: ${l.moodWord}. ${_doing(l)} $need',
+        if (goals.isNotEmpty) 'What you want: ${goals.take(2).map((g) => g.text).join('; ')}.',
+        'On your mind: ${facts.map((f) => f.text).join(' ')}',
+        '',
+        'Write one short private thought, first person, in character, under 14 words. No quotes, no name prefix.',
+      ].join('\n'),
+      lang,
+    );
+  }
+
+  /// The prompt for [l]'s reflection on the evening of [day], in [lang].
+  String reflectionPrompt(Llama l, int day) {
+    final facts = relevantFacts(this, l, limit: 6);
+    final today = l.diary.where((d) => d.$1.day == day).toList().reversed.take(3).toList();
+    return inLang(
+      [
+        'You are ${l.name}, the ${l.job} (${l.traits}). Mood: ${l.moodWord}. It is the night of day $day; you lie down in your hut.',
+        'What you know:',
+        for (final f in facts) '- ${f.text} (${kb.label(l.name, f, now)})',
+        if (today.isNotEmpty) 'Today you talked with: ${today.map((d) => '${d.$2} (${d.$3})').join('; ')}',
+        '',
+        'In first person and in character, write one sentence about one specific thing that happened today (name who or what) '
+            'and how you feel about it. Only mention what you know.',
+      ].join('\n'),
+      lang,
+    );
   }
 
   String _doing(Llama l) {
@@ -870,6 +908,8 @@ class Village {
             howLearned(f.knownBy[l.name]!, own: f.secretOf.contains(l.name)),
             believes: f.knownBy[l.name]!.believes,
             secret: f.secretOf.contains(l.name) && f.knownBy[l.name]!.how == 'own',
+            knowing: f.knownBy[l.name],
+            own: f.secretOf.contains(l.name),
           ),
       ],
       thought: l.thoughts.lastOrNull,

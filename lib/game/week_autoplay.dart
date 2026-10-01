@@ -1,12 +1,16 @@
 import 'dart:async';
 
 import '../app.dart';
+import '../autoplay.dart';
 import '../cutscene/timeline.dart';
+import '../sim/dash.dart';
+import '../sim/village.dart';
 
 /// The env-gated Festival Week script (`VILLAGE_AUTOPLAY=week`): the title
 /// screen and gallery, a new game, the pause menu and a manual save, the
 /// first night skip watched to the day card (later ones skipped), the
-/// festival, the ending, the epilogue and results, then the gallery again.
+/// festival, the ending, the epilogue and results, the storybook (cover,
+/// a page turning, two pages and the ending), then the gallery again.
 /// It takes a PNG at each stop; a bot (`VILLAGE_BOT`) plays Dash meanwhile.
 class WeekAutoplay {
   WeekAutoplay(this.home);
@@ -18,6 +22,8 @@ class WeekAutoplay {
   int _nights = 0;
   String? _scene;
   bool _paused = false;
+  String? _following;
+  double _followFor = 0;
   Future<void>? _shooting;
 
   void start() => home.test.log('WEEK autoplay start');
@@ -81,7 +87,7 @@ class WeekAutoplay {
           _next();
         }
       case 8:
-        if (home.phase == Phase.playing) _play();
+        if (home.phase == Phase.playing) _play(dt);
         if (home.phase == Phase.epilogue) _next();
       case 9:
         final ready = home.epilogue.values.every((l) => l != null);
@@ -90,6 +96,8 @@ class WeekAutoplay {
             _shot('40_epilogue');
             return;
           }
+          final v = home.village;
+          if (v != null) logCalls(home.test, v);
           home.showResults();
           _next();
         }
@@ -100,20 +108,69 @@ class WeekAutoplay {
         }
       case 11:
         if (_since > 1) {
-          unawaited(home.toMenu());
+          home.openStory();
           _next();
         }
       case 12:
+        final book = home.book;
+        if ((book != null && book.complete && _since > 2) || _since > 180) {
+          home.test.log('STORYBOOK ${book?.writtenCount}/${book?.textPages} written after ${_since.toStringAsFixed(0)} s');
+          _shot('43_storybook_cover');
+          _next();
+        }
+      case 13:
+        if (_since > 0.5) {
+          home.storyKey.currentState?.turnTo(1);
+          _next();
+        }
+      case 14:
+        if (_since > 0.3) _shot('44a_storybook_turning');
+        if (_since > 1.4) {
+          _shot('44_storybook_day1');
+          _next();
+        }
+      case 15:
+        if (_since > 0.5) {
+          home.storyKey.currentState?.turnTo(3);
+          _next();
+        }
+      case 16:
+        if (_since > 1.4) {
+          _shot('45_storybook_day3');
+          _next();
+        }
+      case 17:
+        if (_since > 0.5) {
+          final s = home.storyKey.currentState;
+          s?.turnTo(s.count - 1);
+          _next();
+        }
+      case 18:
+        if (_since > 1.4) {
+          _shot('46_storybook_ending');
+          _next();
+        }
+      case 19:
+        if (_since > 0.5) {
+          home.closeStory();
+          _next();
+        }
+      case 20:
+        if (_since > 1) {
+          unawaited(home.toMenu());
+          _next();
+        }
+      case 21:
         if (home.phase == Phase.menu && home.busy == null && _since > 1) {
           home.openPage(MenuPage.endings);
           _next();
         }
-      case 13:
+      case 22:
         if (_since > 1.5) {
           _shot('42_gallery_after');
           _next();
         }
-      case 14:
+      case 23:
         if (_since > 0.5) {
           home.test.log('WEEK autoplay done in ${_t.toStringAsFixed(0)} s');
           _next();
@@ -122,7 +179,7 @@ class WeekAutoplay {
     }
   }
 
-  void _play() {
+  void _play(double dt) {
     final v = home.village;
     final d = home.director;
     if (v == null || d == null) return;
@@ -132,6 +189,12 @@ class WeekAutoplay {
       return;
     }
     _scene = null;
+    _conversation(v, dt);
+    final visit = v.dash.visit;
+    if (visit != null && visit.stage == VisitStage.choosing && visit.options != null && v.uiMs - visit.optionsReadyMs! > 500) {
+      _shot('08_dash_options');
+    }
+    if (visit != null && visit.stage == VisitStage.done && v.uiMs - visit.doneMs! > 600) _shot('09_dash_reply');
     if (!_paused && v.now.day == 1 && v.now.minute >= 9 * 60 && v.now.minute < 20 * 60) {
       _paused = true;
       home.openPause();
@@ -139,6 +202,45 @@ class WeekAutoplay {
       return;
     }
     if (v.now.day == 2 && v.now.minute >= 11 * 60) _shot('10_day2_play');
+  }
+
+  /// Once, after the pause menu: follows a llama mid-conversation and
+  /// photographs the bubbles, then returns to the overview.
+  void _conversation(Village v, double dt) {
+    final stage = home.stage;
+    if (!_paused || _taken('07_conversation')) {
+      if (_following != null && _taken('07_conversation')) {
+        _following = null;
+        stage.rig
+          ..follow = null
+          ..followName = null
+          ..overview();
+      }
+      return;
+    }
+    if (home.pauseMenu) return;
+    if (_following == null) {
+      final c = v.active.where((c) => v.speech[c.a.name]?.text != null || v.speech[c.b.name]?.text != null).firstOrNull;
+      if (c == null) return;
+      final name = v.speech[c.a.name]?.text != null ? c.a.name : c.b.name;
+      _following = name;
+      _followFor = 0;
+      stage.rig
+        ..followName = name
+        ..follow = (() => stage.llamas[name]!.position.clone())
+        ..distance = 22
+        ..pitch = 0.42;
+      return;
+    }
+    _followFor += dt;
+    if (_followFor < 0.7) return;
+    // Bubbles come and go fast in a compressed week: shoot while one is up.
+    final talking = v.active.any((c) => v.speech[c.a.name]?.text != null || v.speech[c.b.name]?.text != null);
+    if (talking) {
+      _shot('07_conversation');
+    } else if (_followFor > 4) {
+      _following = null;
+    }
   }
 
   Future<void> _pauseShots() async {

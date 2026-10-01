@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:llama_village/game/save_store.dart';
+import 'package:llama_village/l10n/app_localizations.dart';
 import 'package:llama_village/sim/endings.dart';
 import 'package:llama_village/sim/influence.dart';
 import 'package:llama_village/ui/menus/gallery.dart';
@@ -8,7 +9,10 @@ import 'package:llama_village/ui/menus/pause_menu.dart';
 import 'package:llama_village/ui/menus/start_menu.dart';
 import 'package:llama_village/ui/menus/week_end.dart';
 
-Widget _host(Widget child) => MaterialApp(
+Widget _host(Widget child, {Locale locale = const Locale('en')}) => MaterialApp(
+  locale: locale,
+  localizationsDelegates: L10n.localizationsDelegates,
+  supportedLocales: L10n.supportedLocales,
   home: Scaffold(body: Center(child: child)),
 );
 
@@ -81,6 +85,17 @@ void main() {
     expect(find.text('Drama Llama'), findsOneWidget);
     expect(find.text('Harmony Festival'), findsNothing);
     expect(find.text(endingInfo[Ending.harmonyFestival]!.hint), findsOneWidget);
+
+    await tester.pumpWidget(
+      _host(
+        EndingsGallery(unlocked: const {Ending.dramaLlama}, onClose: () {}),
+        locale: const Locale('fr'),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('1 sur 3 débloquées'), findsOneWidget);
+    expect(find.text('Lama Drama'), findsOneWidget);
+    expect(find.text('LIVRES D\'HISTOIRES'), findsOneWidget);
   });
 
   testWidgets('the results show the ending, why, and each llama\'s trust', (tester) async {
@@ -103,5 +118,36 @@ void main() {
     expect(find.text('made up'), findsOneWidget);
     expect(find.text('Mo won the Golden Bell'), findsOneWidget);
     expect(find.text('3'), findsNWidgets(5));
+  });
+
+  testWidgets('the results read in Korean, reasons and arcs included', (tester) async {
+    tester.view
+      ..physicalSize = const Size(1440, 900)
+      ..devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final i = Influence(
+      harmony: 0.2,
+      falseBeliefs: const [FalseBelief('bread_rumour', "Mo's bread rumour", 'Pip')],
+      pipMo: PipMoArc.rift,
+      bramble: BrambleArc.secret,
+      dashTrust: {for (final n in llamaNames) n: -1},
+      festivalWinner: 'Pip',
+      festivalHeld: true,
+    );
+    final verdict = decideEnding(i);
+    expect(verdict.ending, Ending.dramaLlama);
+    await tester.pumpWidget(
+      _host(
+        ResultsView(verdict: verdict, influence: i, newlyUnlocked: false, onMenu: () {}),
+        locale: const Locale('ko'),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('드라마 라마'), findsOneWidget);
+    expect(find.text('이유: 우정이 틀어졌어요 (화합 0.2); Pip과 Mo가 사이가 틀어졌어요.'), findsOneWidget);
+    expect(find.text('사이가 틀어졌어요'), findsOneWidget);
+    expect(find.text('Pip: Mo의 빵 소문'), findsOneWidget);
+    expect(find.text('Pip이 황금 종을 받았어요'), findsOneWidget);
+    expect(find.text('타이틀로 돌아가기'), findsOneWidget);
   });
 }

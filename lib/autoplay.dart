@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'app.dart';
+import 'self_test.dart';
 import 'sim/dash.dart';
 import 'sim/village.dart';
 
@@ -160,7 +161,7 @@ class Autoplay {
             'SIM ${v.now.label} conversations=${v.done.length} lines=${v.lines.length} '
             'calls=${v.metrics.calls.length} json=${v.metrics.json}',
           );
-          _calls(v);
+          logCalls(test, v);
           test.log('AUDIO played ${home.sound.played}');
           test.log('AUTOPLAY done in ${_t.toStringAsFixed(0)} s');
           _next();
@@ -168,17 +169,19 @@ class Autoplay {
         }
     }
   }
+}
 
-  void _calls(Village v) {
-    final byType = <String, List<double>>{};
-    for (final c in v.metrics.calls) {
-      byType.putIfAbsent(c.type, () => []).add(c.ms);
-    }
-    for (final e in byType.entries) {
-      final s = e.value..sort();
-      home.test.log('CALLS ${e.key} n=${s.length} p50=${s[s.length ~/ 2].round()} ms max=${s.last.round()} ms');
-    }
-    final lateness = v.lines.where((l) => l.shownMs != null).map((l) => l.shownMs! - l.generatedMs).toList();
-    if (lateness.isNotEmpty) home.test.log('LINES shown n=${lateness.length} max wait ${lateness.reduce(math.max).round()} ms');
+/// Logs each model call type's median and worst latency, and how long shown
+/// lines waited.
+void logCalls(SelfTest test, Village v) {
+  final byType = <String, List<double>>{};
+  for (final c in v.metrics.calls) {
+    byType.putIfAbsent(c.type, () => []).add(c.ms);
   }
+  for (final e in byType.entries) {
+    final s = e.value..sort();
+    test.log('CALLS ${e.key} n=${s.length} p50=${s[s.length ~/ 2].round()} ms max=${s.last.round()} ms');
+  }
+  final lateness = v.lines.where((l) => l.shownMs != null).map((l) => l.shownMs! - l.generatedMs).toList();
+  if (lateness.isNotEmpty) test.log('LINES shown n=${lateness.length} max wait ${lateness.reduce(math.max).round()} ms');
 }

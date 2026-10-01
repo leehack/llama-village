@@ -20,13 +20,25 @@ void main() {
     expect(parseSchedule('06 bakery | bake', [6, 8]), isNull);
   });
 
-  test('parseDashOptions keeps the requested intents in order', () {
-    const raw = 'compliment: You look lovely today, Mo.\ngossip: June hides berries under her bed.\nhelp: <Can I knead some dough?>';
-    final o = parseDashOptions(raw, ['gossip', 'compliment', 'help', 'tease'], about: 'June')!;
+  test('Dash\'s options come from the grammar\'s JSON, in the requested order', () {
+    final picked = ['gossip', 'compliment', 'help', 'tease'];
+    final o = dashOptionsFrom(
+      {
+        'compliment': 'You look lovely today, Mo.',
+        'gossip': 'June hides berries under her bed.',
+        'help': '<Can I knead some dough?>',
+        'tease': 'hi',
+      },
+      picked,
+      about: 'June',
+    )!;
     expect(o.map((x) => x.intent), ['gossip', 'compliment', 'help']);
     expect(o.first.about, 'June');
     expect(o.last.text, 'Can I knead some dough?');
-    expect(parseDashOptions('compliment: hi', ['compliment', 'help', 'tease']), isNull);
+    expect(dashOptionsFrom({'compliment': 'You look lovely today.'}, picked), isNull);
+    final schema = dashOptionSchema(picked);
+    expect(schema['required'], picked);
+    expect((schema['properties'] as Map).keys, picked);
   });
 
   test('believing a disproof drops belief in the rumour, and its owner cannot clear it alone', () {

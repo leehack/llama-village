@@ -11,7 +11,12 @@ class CannedChat implements ChatModel {
   final Duration delay;
   int calls = 0;
 
-  static const List<String> _scripted = ['last page of a storybook', 'Ring your bell and announce', 'Write one line of the song'];
+  static const List<String> _scripted = [
+    'last page of a storybook',
+    'Ring your bell and announce',
+    'Write one line of the song',
+    'fairy-tale picture book',
+  ];
 
   static const List<String> _lines = [
     'Lovely weather for it, is it not?',
@@ -33,6 +38,7 @@ class CannedChat implements ChatModel {
     required int seed,
     List<String> stop = const [],
     Map<String, dynamic>? jsonSchema,
+    void Function(String text)? onText,
   }) async {
     calls++;
     if (delay > Duration.zero) await Future<void>.delayed(delay);
@@ -44,13 +50,6 @@ class CannedChat implements ChatModel {
         for (final h in [6, 8, 10, 12, 14, 16, 18, 20])
           '${h.toString().padLeft(2, '0')} ${h >= 20 ? 'home' : places[r.nextInt(places.length)]} | potter about',
       ].join('\n');
-    }
-    if (user.contains('Write four things Dash could say')) {
-      final intents = RegExp(
-        r'^(compliment|gossip|praise|tell|gift|help|tease): <',
-        multiLine: true,
-      ).allMatches(user).map((m) => m.group(1)!);
-      return [for (final i in intents) '$i: ${_option(i)}'].join('\n');
     }
     if (user.contains('private thought')) return 'I wonder what everyone is up to today.';
     // Cutscene and epilogue lines fall back to their written defaults.
@@ -74,7 +73,7 @@ class CannedChat implements ChatModel {
     return switch (schema['type']) {
       'object' => {
         for (final MapEntry(:key, :value) in (schema['properties'] as Map<String, dynamic>).entries)
-          key: _value(value as Map<String, dynamic>, r),
+          key: value['type'] == 'string' ? _option(key) : _value(value as Map<String, dynamic>, r),
       },
       'array' => <Object?>[],
       'boolean' => r.nextBool(),

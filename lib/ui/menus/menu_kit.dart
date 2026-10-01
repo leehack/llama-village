@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../l10n/app_localizations.dart';
 import '../palette.dart';
 
 TextStyle menuText(double size, {FontWeight weight = FontWeight.w600, Color color = Colors.white, double height = 1.3}) =>
@@ -112,7 +113,7 @@ class MenuHeader extends StatelessWidget {
         ),
       ),
       IconButton(
-        tooltip: 'Close',
+        tooltip: L10n.of(context).close,
         onPressed: onClose,
         icon: const Icon(Icons.close, color: Colors.white70),
       ),

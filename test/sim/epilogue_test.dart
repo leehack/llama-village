@@ -18,6 +18,7 @@ class _Fixed implements ChatModel {
     required int seed,
     List<String> stop = const [],
     Map<String, dynamic>? jsonSchema,
+    void Function(String text)? onText,
   }) async => line;
 }
 
@@ -31,6 +32,7 @@ class _Broken implements ChatModel {
     required int seed,
     List<String> stop = const [],
     Map<String, dynamic>? jsonSchema,
+    void Function(String text)? onText,
   }) async => throw StateError('model gone');
 }
 

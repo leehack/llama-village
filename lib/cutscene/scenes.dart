@@ -2,23 +2,30 @@ import 'dart:math' as math;
 
 import 'package:vector_math/vector_math.dart' as vm;
 
+import '../l10n/app_localizations.dart';
 import '../render/stage.dart';
 import '../sim/cast.dart';
 import '../sim/clock.dart';
 import '../sim/endings.dart';
 import '../sim/geo.dart';
 import '../sim/influence.dart';
+import '../sim/lang.dart';
 import '../sim/model.dart';
 import '../sim/places.dart';
 import '../sim/village.dart';
 import '../sim/week.dart';
+import '../ui/strings.dart';
 import 'timeline.dart';
 
 /// Positions and poses the scene scripts need from the village and stage.
 class SceneContext {
-  SceneContext(this.v, this.stage);
+  SceneContext(this.v, this.stage, this._strings);
   final Village v;
   final VillageStage stage;
+  final L10n Function() _strings;
+
+  /// The words for captions and titles, in the player's language now.
+  L10n get l => _strings();
 
   /// Where the camera is now, so a scene starts from the player's view.
   CameraPose get current {
@@ -59,8 +66,9 @@ class SceneContext {
       return l.isEmpty || l.length > 160 ? null : l;
     },
     fallback: () => fallback,
-    maxTokens: maxTokens,
+    maxTokens: tokensFor(v.lang, maxTokens),
     seed: v.rng.nextInt(1 << 30),
+    lang: v.lang,
   );
 }
 
@@ -122,14 +130,14 @@ Cutscene nightSkipScene(
         future: dream(l),
         hold: true,
         maxWait: 8,
-        fallback: 'Zzz…',
+        fallback: c.l.dreamFallback,
       ),
     );
   }
   keys
     ..add(CameraKey(dawn + 1.5, CameraPose(vm.Vector3(-44, 16, 12), centre + vm.Vector3(16, 4, -2), fov: 0.6)))
     ..add(CameraKey(end, CameraPose(vm.Vector3(-36, 13, 9), centre + vm.Vector3(16, 5, -2), fov: 0.6), ease: Ease.linear));
-  texts.add(TextCue(dawn + 3, 4.5, kind: TextKind.title, text: 'Day $nextDay', subtitle: _dayLine(nextDay)));
+  texts.add(TextCue(dawn + 3, 4.5, kind: TextKind.title, text: c.l.dayTitle(nextDay), subtitle: c.l.dayCardLine(nextDay)));
   return Cutscene(
     name: 'night',
     duration: end,
@@ -142,18 +150,10 @@ Cutscene nightSkipScene(
   );
 }
 
-String _dayLine(int day) => day == festivalDay ? 'The Berry Festival is today at 16:00' : dayLabel(day).replaceFirst('the day', 'The day');
-
 /// Day 1, 07:00: Clover rings her bell and announces the festival.
 Cutscene announcementScene(SceneContext c) {
   final clover = c.llama('Clover'), pip = c.llama('Pip');
   final side = c.outward(clover) + vm.Vector3(0.5, 0, 0.3);
-  final prompt = [
-    'You are Clover, the festival organiser (bossy, ambitious, playful). It is the morning of day 1 of festival week.',
-    'Ring your bell and announce to the whole village: the Berry Festival is on day $festivalDay at 16:00 on the hilltop, '
-        'and the best singer wins the Golden Bell.',
-    'Write only what Clover shouts: one or two short sentences, under 30 words. No quotes, no name prefix.',
-  ].join('\n');
   const end = 15.0;
   return Cutscene(
     name: 'announcement',
@@ -172,16 +172,12 @@ Cutscene announcementScene(SceneContext c) {
         2.4,
         4.4,
         speaker: 'Clover',
-        future: c.line(
-          'announcement',
-          prompt,
-          fallback: 'Hear ye! The Berry Festival is on day $festivalDay at 16:00 on the hilltop. Best singer wins the Golden Bell!',
-        ),
+        future: c.line('announcement', announcementPrompt(c.v.lang), fallback: c.l.announcementFallback(festivalDay)),
         hold: true,
         maxWait: 10,
       ),
-      TextCue(8.2, 2.6, speaker: 'Pip', text: 'Me! Put my name down first. The Golden Bell is mine!'),
-      TextCue(11.2, 3.4, kind: TextKind.title, text: 'The Berry Festival', subtitle: 'Day $festivalDay · 16:00 · on the hilltop'),
+      TextCue(8.2, 2.6, speaker: 'Pip', text: c.l.pipSignsUp),
+      TextCue(11.2, 3.4, kind: TextKind.title, text: c.l.berryFestival, subtitle: c.l.festivalWhen(festivalDay)),
     ],
   );
 }
@@ -202,9 +198,7 @@ Cutscene festivalScene(SceneContext c, {required void Function() judge}) {
     CameraKey(2.5, c.shot(hill + front * 3, front + vm.Vector3(0.5, 0, 0), dist: 17, up: 6, aim: 2)),
     CameraKey(4.2, c.shot(hill + front * 3, front + vm.Vector3(0.3, 0, 0), dist: 15, up: 5, aim: 2), ease: Ease.linear),
   ];
-  final texts = <TextCue>[
-    TextCue(0.8, 3.2, kind: TextKind.title, text: 'The Berry Festival', subtitle: 'Lanterns, berry tarts and a wobbly stage'),
-  ];
+  final texts = <TextCue>[TextCue(0.8, 3.2, kind: TextKind.title, text: c.l.berryFestival, subtitle: c.l.festivalSubtitle)];
   final shakes = <Shake>[];
   for (var i = 0; i < performances.length; i++) {
     final (name, what) = performances[i];
@@ -213,9 +207,17 @@ Cutscene festivalScene(SceneContext c, {required void Function() judge}) {
     keys
       ..add(CameraKey(at + 0.6, c.shot(p, front + vm.Vector3(0.6, 0, 0), dist: 6.5, up: 1.6)))
       ..add(CameraKey(at + per - 0.2, c.shot(p, front + vm.Vector3(0.3, 0, 0), dist: 5.5, up: 1.4), ease: Ease.linear));
-    texts.add(TextCue(at + 0.6, per - 0.8, speaker: name, text: what));
-    if (what.contains('faints')) shakes.add(Shake(at + 1.6, 1.2, 0.25));
-    if (!what.contains('faints')) {
+    final fainted = what.contains('faints');
+    final shown = name == 'Pip'
+        ? c.l.pipSings
+        : fainted
+        ? c.l.moFaints
+        : name == 'Mo'
+        ? c.l.moSings
+        : c.l.llamaSings(name);
+    texts.add(TextCue(at + 0.6, per - 0.8, speaker: name, text: shown));
+    if (fainted) shakes.add(Shake(at + 1.6, 1.2, 0.25));
+    if (!fainted) {
       texts.add(
         TextCue(
           at + 1.2,
@@ -223,14 +225,8 @@ Cutscene festivalScene(SceneContext c, {required void Function() judge}) {
           kind: TextKind.song,
           speaker: name,
           anchor: p + vm.Vector3(0, 3.1, 0),
-          future: c.line(
-            'song',
-            'Write one line of the song ${name == 'Pip' ? 'Pip sings (very off-key)' : '$name sings'} at the Berry Festival, '
-                'about berries or the valley. Under 12 words, no quotes.',
-            fallback: 'Oh, the berries on the hill are sweet as summer...',
-            maxTokens: 24,
-          ),
-          fallback: 'La la laaa...',
+          future: c.line('song', songPrompt(name, v.lang), fallback: c.l.songFallback, maxTokens: 24),
+          fallback: c.l.laLaLa,
         ),
       );
     }
@@ -263,7 +259,7 @@ Cutscene festivalScene(SceneContext c, {required void Function() judge}) {
       Cue(judgeAt, () {
         judge();
         final w = v.festival.winner;
-        winnerTitle.text = w == null ? 'Nobody wins the Golden Bell' : '$w wins the Golden Bell!';
+        winnerTitle.text = w == null ? c.l.nobodyWins : c.l.winsBell(w);
       }, label: 'judge'),
     ],
   );
@@ -272,19 +268,19 @@ Cutscene festivalScene(SceneContext c, {required void Function() judge}) {
 /// The closing scene for [verdict], over the hilltop, the village or the pond.
 Cutscene endingScene(SceneContext c, EndingVerdict verdict, Influence i) {
   final v = c.v;
-  final info = endingInfo[verdict.ending]!;
+  final l = c.l;
+  final title = l.endingName(verdict.ending);
   const end = 17.0;
   final hill = c.place('hilltop'), front = c.facing('hilltop');
   final pond = c.place('pond');
   switch (verdict.ending) {
     case Ending.harmonyFestival:
       final lines = [
-        'The lanterns came on, one by one, all the way up the hill.',
-        if (i.pipMo == PipMoArc.reconciled) 'Pip and Mo shared the last berry tart, and the scarf, for a while.',
-        if (i.bramble == BrambleArc.accepted) 'June read Bramble\'s poems out loud, and did not mind who heard.',
-        if (i.pipMo != PipMoArc.reconciled && i.bramble != BrambleArc.accepted)
-          'Not one rumour was left standing. Everyone sang the last song.',
-        'And a small blue bird fell asleep in the bunting.',
+        l.harmonyLanterns,
+        if (i.pipMo == PipMoArc.reconciled) l.harmonyPipMo,
+        if (i.bramble == BrambleArc.accepted) l.harmonyJune,
+        if (i.pipMo != PipMoArc.reconciled && i.bramble != BrambleArc.accepted) l.harmonyNoRumour,
+        l.harmonyDash,
       ];
       return Cutscene(
         name: 'ending',
@@ -298,17 +294,13 @@ Cutscene endingScene(SceneContext c, EndingVerdict verdict, Influence i) {
         letterbox: _bars(end + 1),
         texts: [
           for (var k = 0; k < lines.length; k++) TextCue(1.6 + k * 3.2, 3.0, text: lines[k]),
-          TextCue(end - 3.6, 3.6, kind: TextKind.title, text: info.title, subtitle: 'Ending'),
+          TextCue(end - 3.6, 3.6, kind: TextKind.title, text: title, subtitle: l.endingWord),
         ],
         onFrame: (t) => c.stage.hourOverride = 17.5 + (20.9 - 17.5) * applyEase(Ease.inOut, t / 6),
       );
     case Ending.dramaLlama:
       final names = llamaNames;
-      final lines = [
-        'By sunset, nobody was speaking to anybody.',
-        ...verdict.reasons.take(2).map((r) => '${r[0].toUpperCase()}${r.substring(1)}.'),
-        'Somewhere, a little blue bird whistled innocently.',
-      ];
+      final lines = [l.dramaSilence, ...verdict.why.take(2).map((r) => _sentence(l.reasonOf(r))), l.dramaWhistle];
       final keys = <CameraKey>[CameraKey(0, c.current)];
       for (var k = 0; k < names.length; k++) {
         final p = c.llama(names[k]);
@@ -327,17 +319,13 @@ Cutscene endingScene(SceneContext c, EndingVerdict verdict, Influence i) {
         shakes: const [Shake(1.4, 0.6, 0.18), Shake(6.2, 0.6, 0.18), Shake(11, 0.8, 0.25)],
         texts: [
           for (var k = 0; k < lines.length; k++) TextCue(1.4 + k * 3.2, 3.0, text: lines[k]),
-          TextCue(end - 3.6, 3.6, kind: TextKind.title, text: info.title, subtitle: 'Ending'),
+          TextCue(end - 3.6, 3.6, kind: TextKind.title, text: title, subtitle: l.endingWord),
         ],
         cues: [Cue(0.2, () => v.storm = true, label: 'thunder')],
         onFrame: (t) => c.stage.hourOverride = 18.4 + 1.4 * (t / end),
       );
     case Ending.quietValley:
-      final lines = [
-        'The festival came and went, the way festivals do.',
-        'Mo baked. June picked berries. Bramble watched the clouds.',
-        'The valley kept its secrets, and its peace.',
-      ];
+      final lines = [l.quietCame, l.quietWork, l.quietSecrets];
       final across = c.facing('pond');
       return Cutscene(
         name: 'ending',
@@ -351,11 +339,18 @@ Cutscene endingScene(SceneContext c, EndingVerdict verdict, Influence i) {
         letterbox: _bars(end + 1),
         texts: [
           for (var k = 0; k < lines.length; k++) TextCue(2 + k * 3.6, 3.4, text: lines[k]),
-          TextCue(end - 3.6, 3.6, kind: TextKind.title, text: info.title, subtitle: 'Ending'),
+          TextCue(end - 3.6, 3.6, kind: TextKind.title, text: title, subtitle: l.endingWord),
         ],
         onFrame: (t) => c.stage.hourOverride = 18.2 + 1.2 * (t / end),
       );
   }
+}
+
+/// [s] as a caption: a capital first letter and a full stop.
+String _sentence(String s) {
+  if (s.isEmpty) return s;
+  final t = '${s[0].toUpperCase()}${s.substring(1)}';
+  return RegExp(r'[.!?。]$').hasMatch(t) ? t : '$t.';
 }
 
 /// [l]'s reflection on the evening of [day], written at 22:00 on the model

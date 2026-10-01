@@ -26,6 +26,10 @@ class PlayerBot {
   int visits = 0;
   final List<String> picks = [];
 
+  /// How long to look at the options before choosing (real ms); the
+  /// self-test sets it so the options can be photographed.
+  double thinkMs = 0;
+
   static const double _gapMs = 2500;
   static const double _giveUpMs = 45000;
 
@@ -51,6 +55,7 @@ class PlayerBot {
       case VisitStage.choosing:
         final options = visit.options;
         if (options == null || options.isEmpty) return;
+        if (v.uiMs - (visit.optionsReadyMs ?? v.uiMs) < thinkMs) return;
         final i = _pick(v, visit.target, options);
         picks.add('${visit.target.name}:${options[i].intent}');
         dash.choose(i);

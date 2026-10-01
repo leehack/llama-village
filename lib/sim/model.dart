@@ -2,10 +2,13 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:math' as math;
 
+import 'lang.dart';
+
 /// A text generator. The app backs it with llamadart; tests with a script.
 abstract interface class ChatModel {
   /// Completes [user] under [system]. When [jsonSchema] is set the output is
-  /// grammar-constrained to it.
+  /// grammar-constrained to it. [onText], when set, gets the text written so
+  /// far as it streams in.
   Future<String> complete(
     String system,
     String user, {
@@ -14,6 +17,7 @@ abstract interface class ChatModel {
     required int seed,
     List<String> stop,
     Map<String, dynamic>? jsonSchema,
+    void Function(String text)? onText,
   });
 }
 
@@ -141,24 +145,39 @@ class ChatRuntime {
       'Keep every line short, concrete and in character. Characters only mention things listed '
       'as known to them; they never invent other secrets. Never use emojis. Never mention being an AI.';
 
+  /// [system], plus the language the player reads for calls in [lang].
+  static String systemIn(Lang lang) => lang == Lang.en ? system : '$system ${writeIn(lang)}';
+
   Future<String> _generate(
     String type,
     String user,
     double queueMs, {
+    Lang lang = Lang.en,
     required int maxTokens,
     required double temp,
     required int seed,
     List<String> stop = const [],
     Map<String, dynamic>? jsonSchema,
+    void Function(String text)? onText,
   }) async {
     final watch = Stopwatch()..start();
-    final out = await model.complete(system, user, maxTokens: maxTokens, temp: temp, seed: seed, stop: stop, jsonSchema: jsonSchema);
+    final out = await model.complete(
+      systemIn(lang),
+      user,
+      maxTokens: maxTokens,
+      temp: temp,
+      seed: seed,
+      stop: stop,
+      jsonSchema: jsonSchema,
+      onText: onText == null ? null : (t) => onText(polish(t, lang)),
+    );
     metrics.add(CallRecord(type, watch.elapsedMicroseconds / 1000, queueMs: queueMs));
-    return out;
+    return polish(out, lang);
   }
 
   /// Free text, parsed by [parse]; one retry with another seed, then
-  /// [fallback]. A model error goes straight to the fallback.
+  /// [fallback]. A model error goes straight to the fallback. [onText]
+  /// streams each attempt's text as it is written.
   Future<T> text<T>(
     String type,
     int priority,
@@ -169,6 +188,8 @@ class ChatRuntime {
     double temp = 0.85,
     required int seed,
     List<String> stop = const [],
+    void Function(String text)? onText,
+    Lang lang = Lang.en,
   }) {
     return queue.submit(type, priority, (queueMs) async {
       for (var attempt = 0; attempt < 2; attempt++) {
@@ -182,11 +203,15 @@ class ChatRuntime {
             temp: temp,
             seed: seed + attempt * 7919,
             stop: stop,
+            onText: onText,
+            lang: lang,
           );
         } catch (_) {
           break;
         }
-        final value = parse(raw);
+        var value = parse(raw);
+        // An answer in the wrong language is retried like one that does not parse.
+        if (value is String && !speaksIn(value, lang)) value = null;
         if (value != null) {
           metrics.count(type, attempt == 0 ? 'first_try' : 'after_retry');
           return value;
@@ -209,6 +234,7 @@ class ChatRuntime {
     int maxTokens = 120,
     double temp = 0.4,
     required int seed,
+    Lang lang = Lang.en,
   }) {
     return queue.submit(type, priority, (queueMs) async {
       for (var attempt = 0; attempt < 2; attempt++) {
@@ -221,6 +247,7 @@ class ChatRuntime {
             temp: temp,
             seed: seed + attempt * 7919,
             jsonSchema: schema,
+            lang: lang,
           );
           final value = jsonDecode(raw.trim());
           if (value is Map<String, dynamic> && validate(value)) {
@@ -258,7 +285,7 @@ String cleanLine(String s, {List<String> names = const []}) {
   for (final n in names) {
     out = out.replaceFirst(RegExp('^\\s*$n\\s*(\\(.*?\\))?\\s*:\\s*', caseSensitive: false), '');
   }
-  out = out.replaceAll(RegExp(r'[“”"]'), '').replaceAll(RegExp(r'\s+'), ' ').trim();
+  out = out.replaceAll(RegExp(r'[“”"«»]'), '').replaceAll(RegExp(r'\s+'), ' ').trim();
   return out;
 }
 
