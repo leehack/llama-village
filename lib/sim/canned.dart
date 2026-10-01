@@ -51,13 +51,6 @@ class CannedChat implements ChatModel {
           '${h.toString().padLeft(2, '0')} ${h >= 20 ? 'home' : places[r.nextInt(places.length)]} | potter about',
       ].join('\n');
     }
-    if (user.contains('Write four things Dash could say')) {
-      final intents = RegExp(
-        r'^(compliment|gossip|praise|tell|gift|help|tease): <',
-        multiLine: true,
-      ).allMatches(user).map((m) => m.group(1)!);
-      return [for (final i in intents) '$i: ${_option(i)}'].join('\n');
-    }
     if (user.contains('private thought')) return 'I wonder what everyone is up to today.';
     // Cutscene and epilogue lines fall back to their written defaults.
     if (_scripted.any(user.contains)) return '';
@@ -80,7 +73,7 @@ class CannedChat implements ChatModel {
     return switch (schema['type']) {
       'object' => {
         for (final MapEntry(:key, :value) in (schema['properties'] as Map<String, dynamic>).entries)
-          key: _value(value as Map<String, dynamic>, r),
+          key: value['type'] == 'string' ? _option(key) : _value(value as Map<String, dynamic>, r),
       },
       'array' => <Object?>[],
       'boolean' => r.nextBool(),

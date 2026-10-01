@@ -5,6 +5,7 @@ import 'clock.dart';
 import 'endings.dart';
 import 'epilogue.dart';
 import 'influence.dart';
+import 'lang.dart';
 import 'model.dart';
 import 'story.dart';
 import 'village.dart';
@@ -144,15 +145,21 @@ List<String> pageFacts(Village v, StoryPage page, {EndingVerdict? verdict, Influ
 /// The model prompt for one page, grounded only in [pageFacts].
 String storyPagePrompt(Village v, StoryPage page, List<String> facts, {String? previous}) {
   final day = page.day;
+  final (once, andSo) = switch (v.lang) {
+    Lang.en => ('Once upon a time', 'And so…'),
+    Lang.ko => ('옛날 옛적에', '그렇게…'),
+    Lang.fr => ('Il était une fois', 'Et c\'est ainsi…'),
+  };
   final where = page.kind == PageKind.day
       ? 'This page tells the ${_ordinal[day! - 1]} day of festival week (${dayLabel(day)}).'
       : 'This is the last page: how the week ended.';
   final opening = day == 1
-      ? 'Begin with "Once upon a time".'
+      ? 'Begin with "$once".'
       : page.kind == PageKind.ending
-      ? 'End with a gentle closing line, like "And so…".'
-      : 'Do not begin with "Once upon a time".';
-  return [
+      ? 'End with a gentle closing line, like "$andSo".'
+      : 'Do not begin with "$once".';
+  final length = v.lang == Lang.ko ? 'four or five sentences' : '80 to 120 words';
+  final prompt = [
     'You are writing a gentle fairy-tale picture book for children called "$storyTitle", one short page at a time.',
     _cast,
     where,
@@ -160,11 +167,12 @@ String storyPagePrompt(Village v, StoryPage page, List<String> facts, {String? p
     ...facts,
     if (previous != null && previous.isNotEmpty) 'The previous page ended: "$previous"',
     '',
-    'Write this page: one paragraph of 80 to 120 words, past tense, in a warm, simple fairy-tale voice. '
+    'Write this page: one paragraph of $length, past tense, in a warm, simple fairy-tale voice. '
         'Retell the facts as a flowing little story, linking them with feelings and small details; you may leave out minor ones. '
         'Never mention clock times or counts; say "that morning" or "by evening" instead. $opening '
         'No title, no lists, no quotes around the text, no emojis.',
   ].join('\n');
+  return inLang(prompt, v.lang, story: true);
 }
 
 /// A page of plain prose, or null when the model's text is unusable. A text
@@ -191,14 +199,30 @@ String? parseStoryPage(String raw) {
 /// A page written by rules from the same facts, for when the model fails.
 String fallbackPageText(Village v, StoryPage page, List<String> facts) {
   final told = [for (final f in facts) f.replaceFirst(RegExp(r'^- (\([^)]*\) )?'), '')];
+  final lang = v.lang;
   if (page.kind == PageKind.day) {
     final day = page.day!;
-    final start = day == 1
-        ? 'Once upon a time, in Berry Valley, a little blue bird called Dash arrived for festival week.'
-        : 'On the ${_ordinal[day - 1]} day of festival week, the valley woke early.';
-    return [start, ...told.take(5), if (day == festivalDay) 'And that evening the lanterns glowed all the way up the hill.'].join(' ');
+    final start = switch ((lang, day == 1)) {
+      (Lang.en, true) => 'Once upon a time, in Berry Valley, a little blue bird called Dash arrived for festival week.',
+      (Lang.en, false) => 'On the ${_ordinal[day - 1]} day of festival week, the valley woke early.',
+      (Lang.ko, true) => '옛날 옛적에, 베리 골짜기에 Dash라는 작은 파랑새가 축제 주간을 맞아 찾아왔어요.',
+      (Lang.ko, false) => '축제 주간 $day일째 아침, 골짜기가 일찍 눈을 떴어요.',
+      (Lang.fr, true) => 'Il était une fois, dans la Vallée des Baies, un petit oiseau bleu nommé Dash, venu pour la semaine de la fête.',
+      (Lang.fr, false) => 'Au jour $day de la semaine de la fête, la vallée s\'éveilla tôt.',
+    };
+    final close = switch (lang) {
+      Lang.en => 'And that evening the lanterns glowed all the way up the hill.',
+      Lang.ko => '그날 저녁, 언덕 꼭대기까지 등불이 환하게 빛났어요.',
+      Lang.fr => 'Et ce soir-là, les lanternes brillèrent tout le long de la colline.',
+    };
+    return [start, ...told.take(5), if (day == festivalDay) close].join(' ');
   }
-  return ['And so festival week came to an end.', ...told.take(4), 'Dash tucked his head under his wing, and the valley slept.'].join(' ');
+  final (begin, end) = switch (lang) {
+    Lang.en => ('And so festival week came to an end.', 'Dash tucked his head under his wing, and the valley slept.'),
+    Lang.ko => ('그렇게 축제 주간이 끝났어요.', 'Dash는 날개 밑에 머리를 묻었고, 골짜기는 잠이 들었답니다.'),
+    Lang.fr => ('Et c\'est ainsi que la semaine de la fête prit fin.', 'Dash glissa la tête sous son aile, et la vallée s\'endormit.'),
+  };
+  return [begin, ...told.take(4), end].join(' ');
 }
 
 /// Writes a storybook's pages in the background, one model call per page,
@@ -235,7 +259,8 @@ class StoryWriter {
       storyPagePrompt(v, page, facts, previous: previous),
       parse: parseStoryPage,
       fallback: () => null,
-      maxTokens: 260,
+      maxTokens: tokensFor(v.lang, 260),
+      lang: v.lang,
       temp: 0.8,
       seed: 777 + (page.day ?? 9),
       onText: (t) {
@@ -291,12 +316,13 @@ void illustrate(Storybook book, StoryAlbum album) {
 }
 
 /// A new book for the week [v] just finished, its pages unwritten.
-Storybook newStorybook(Village v, EndingVerdict verdict, {required String id, DateTime? at}) {
+Storybook newStorybook(Village v, EndingVerdict verdict, {required String id, String title = storyTitle, DateTime? at}) {
   final book = Storybook(
     id: id,
-    title: storyTitle,
+    title: title,
     ending: verdict.ending,
     finishedAt: at ?? DateTime.now(),
+    language: v.lang.name,
     pages: [
       StoryPage(PageKind.cover),
       for (var d = 1; d <= festivalDay; d++) StoryPage(PageKind.day, day: d),

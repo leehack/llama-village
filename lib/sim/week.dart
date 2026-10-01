@@ -1,6 +1,7 @@
 import 'cast.dart';
 import 'clock.dart';
 import 'facts.dart';
+import 'lang.dart';
 import 'threads.dart';
 import 'village.dart';
 
@@ -11,6 +12,24 @@ String dayLabel(int day) => switch (festivalDay - day) {
   < 0 => 'after the festival',
   final n => '$n days to the festival',
 };
+
+/// Clover's festival announcement, for the day-1 cutscene.
+String announcementPrompt(Lang lang) => inLang(
+  [
+    'You are Clover, the festival organiser (bossy, ambitious, playful). It is the morning of day 1 of festival week.',
+    'Ring your bell and announce to the whole village: the Berry Festival is on day $festivalDay at 16:00 on the hilltop, '
+        'and the best singer wins the Golden Bell.',
+    'Write only what Clover shouts: one or two short sentences, under 30 words. No quotes, no name prefix.',
+  ].join('\n'),
+  lang,
+);
+
+/// One line of [name]'s festival song.
+String songPrompt(String name, Lang lang) => inLang(
+  'Write one line of the song ${name == 'Pip' ? 'Pip sings (very off-key)' : '$name sings'} at the Berry Festival, '
+  'about berries or the valley. Write the lyric itself, not a description of it. Under 12 words, no quotes.',
+  lang,
+);
 
 /// The small set pieces that make each day of the week different. The big
 /// threads (scarf, festival, crush, rumour, storm) are spread over the week

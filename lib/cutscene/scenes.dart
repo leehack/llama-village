@@ -8,6 +8,7 @@ import '../sim/clock.dart';
 import '../sim/endings.dart';
 import '../sim/geo.dart';
 import '../sim/influence.dart';
+import '../sim/lang.dart';
 import '../sim/model.dart';
 import '../sim/places.dart';
 import '../sim/village.dart';
@@ -59,8 +60,9 @@ class SceneContext {
       return l.isEmpty || l.length > 160 ? null : l;
     },
     fallback: () => fallback,
-    maxTokens: maxTokens,
+    maxTokens: tokensFor(v.lang, maxTokens),
     seed: v.rng.nextInt(1 << 30),
+    lang: v.lang,
   );
 }
 
@@ -148,12 +150,6 @@ String _dayLine(int day) => day == festivalDay ? 'The Berry Festival is today at
 Cutscene announcementScene(SceneContext c) {
   final clover = c.llama('Clover'), pip = c.llama('Pip');
   final side = c.outward(clover) + vm.Vector3(0.5, 0, 0.3);
-  final prompt = [
-    'You are Clover, the festival organiser (bossy, ambitious, playful). It is the morning of day 1 of festival week.',
-    'Ring your bell and announce to the whole village: the Berry Festival is on day $festivalDay at 16:00 on the hilltop, '
-        'and the best singer wins the Golden Bell.',
-    'Write only what Clover shouts: one or two short sentences, under 30 words. No quotes, no name prefix.',
-  ].join('\n');
   const end = 15.0;
   return Cutscene(
     name: 'announcement',
@@ -174,7 +170,7 @@ Cutscene announcementScene(SceneContext c) {
         speaker: 'Clover',
         future: c.line(
           'announcement',
-          prompt,
+          announcementPrompt(c.v.lang),
           fallback: 'Hear ye! The Berry Festival is on day $festivalDay at 16:00 on the hilltop. Best singer wins the Golden Bell!',
         ),
         hold: true,
@@ -223,13 +219,7 @@ Cutscene festivalScene(SceneContext c, {required void Function() judge}) {
           kind: TextKind.song,
           speaker: name,
           anchor: p + vm.Vector3(0, 3.1, 0),
-          future: c.line(
-            'song',
-            'Write one line of the song ${name == 'Pip' ? 'Pip sings (very off-key)' : '$name sings'} at the Berry Festival, '
-                'about berries or the valley. Under 12 words, no quotes.',
-            fallback: 'Oh, the berries on the hill are sweet as summer...',
-            maxTokens: 24,
-          ),
+          future: c.line('song', songPrompt(name, v.lang), fallback: 'Oh, the berries on the hill are sweet as summer...', maxTokens: 24),
           fallback: 'La la laaa...',
         ),
       );

@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'cast.dart';
 import 'clock.dart';
 import 'facts.dart';
+import 'lang.dart';
 import 'places.dart';
 import 'model.dart';
 import 'village.dart';
@@ -100,7 +101,7 @@ String personaBlock(Village v, Llama l, Llama listener, {String? topic}) {
   final facts = relevantFacts(v, l, listener: listener, topic: topic);
   final memory = [for (final d in l.diary.reversed.where((d) => d.$2 == listener.name).take(1)) '${v.now.relative(d.$1)}: ${d.$3}'];
   return [
-    'You are ${l.name}, the ${l.job}: ${l.traits}. Mood: ${l.moodWord}. You ${feelingWord(l.friendship[listener.name] ?? 0)} ${listener.name}.',
+    'You are ${l.name} (${pronounOf(l.name)}), the ${l.job}: ${l.traits}. Mood: ${l.moodWord}. You ${feelingWord(l.friendship[listener.name] ?? 0)} ${listener.name}.',
     if (l.items.contains("Pip's red scarf")) "You are carrying Pip's red scarf, which you found.",
     if (goals.isNotEmpty) 'What you want: ${goals.take(2).map((g) => g.text).join('; ')}.',
     'What you know (only these; you know nothing else about anyone\'s secrets):',
@@ -126,7 +127,7 @@ String turnPrompt(Village v, Conversation c, int index) {
       : index == c.turns - 1
       ? 'Reply to ${o.name} and close the conversation.'
       : 'Reply to what ${o.name} just said.';
-  return [
+  final prompt = [
     '${_whenLabel(v.now)}, at ${theP(c.place)}. Weather: ${v.storm ? 'a storm is raging' : 'clear'}.'
         '${nearby.isEmpty ? '' : ' Also here: ${nearby.join(', ')}.'}',
     personaBlock(v, s, o, topic: c.topic),
@@ -136,6 +137,7 @@ String turnPrompt(Village v, Conversation c, int index) {
     if (c.lines.isNotEmpty) '',
     '$instruction Write only ${s.name}\'s next spoken line: one or two short sentences, under 25 words, no name prefix, no quotes.',
   ].join('\n');
+  return inLang(prompt, v.lang);
 }
 
 String? parseLine(String raw, List<String> names, {List<String> previous = const []}) {
@@ -146,17 +148,10 @@ String? parseLine(String raw, List<String> names, {List<String> previous = const
   final sentences = RegExp(r'[^.!?]+[.!?]*').allMatches(line).map((m) => m.group(0)!.trim()).where((x) => x.isNotEmpty).toList();
   if (sentences.length > 2) line = sentences.take(2).join(' ');
   if (line.length > 200) line = '${line.substring(0, 197).trimRight()}...';
-  String norm(String x) => x.toLowerCase().replaceAll(RegExp(r'[^a-z ]'), '').trim();
+  String norm(String x) => x.toLowerCase().replaceAll(RegExp(r'[^\p{L}\p{N} ]', unicode: true), '').trim();
   if (previous.any((p) => norm(p) == norm(line))) return null;
   return line;
 }
-
-const List<String> fallbackLines = [
-  'Hmm. Well, I suppose so.',
-  'I have a lot on my mind today.',
-  'Let us talk about it later.',
-  'Oh! Is that so?',
-];
 
 /// A possible transfer: [teller] knew [fact], the other did not.
 class Candidate {

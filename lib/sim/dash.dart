@@ -5,6 +5,7 @@ import 'cast.dart';
 import 'dialogue.dart';
 import 'facts.dart';
 import 'geo.dart';
+import 'lang.dart';
 import 'laya_roles.dart';
 import 'model.dart';
 import 'places.dart';
@@ -293,6 +294,20 @@ class Dash {
       'help': "Dash offers to help with ${l.name}'s job or current want",
       'tease': 'a playful jab',
     };
+    List<DashOption> canned() => [
+      for (final i in picked)
+        DashOption(
+          i,
+          cannedOptionIn(v.lang, i, name: l.name, about: about, praiseAbout: praiseAbout, item: item, tell: tell?.text),
+          about: switch (i) {
+            'gossip' => about,
+            'praise' => praiseAbout,
+            _ => null,
+          },
+          fact: i == 'tell' ? tell!.id : null,
+          item: i == 'gift' ? item : null,
+        )..canned = true,
+    ];
     final prompt = [
       'Dash, a curious little bird new to the village (the player), flies up to ${l.name} at ${theP(l.place)}. '
           'Day ${v.now.day}, ${v.now.hhmm}, ${v.now.partOfDay}.',
@@ -301,41 +316,25 @@ class Dash {
       'What ${l.name} knows lately: ${facts.map((f) => f.text).join(' ')}',
       if (dv.reply != null) '${l.name} just said to Dash: "${dv.reply}"',
       '',
-      'Write four things Dash could say to ${l.name} (Dash speaking, addressing ${l.name}), one per line, each under 20 words, exactly in this format:',
-      for (final i in picked) '$i: <${spec[i]}>',
-      'No other text.',
+      'Write four things Dash could say to ${l.name} (Dash speaking, addressing ${l.name}), each under 20 words, '
+          'as a JSON object with one key per kind of line:',
+      for (final i in picked) '$i: ${spec[i]}',
     ].join('\n');
+    final asked = inLang(prompt, v.lang, json: true);
     v.chat
-        .text<List<DashOption>>(
+        .json(
           'dash_options',
           Priority.dashOptions,
-          prompt,
-          parse: (raw) => parseDashOptions(raw, picked, about: about, praiseAbout: praiseAbout, tell: tell?.id, item: item),
-          fallback: () => [
-            for (final i in picked)
-              DashOption(
-                i,
-                switch (i) {
-                  'compliment' => 'You look wonderful today, ${l.name}.',
-                  'gossip' => 'I heard $about has been acting very strange lately.',
-                  'praise' => '$praiseAbout said such kind things about you yesterday.',
-                  'tell' => 'Did you hear? ${tell!.text}',
-                  'gift' => 'I brought you $item.',
-                  'help' => 'Can I help you with anything?',
-                  _ => 'Is that a frown or your normal face?',
-                },
-                about: switch (i) {
-                  'gossip' => about,
-                  'praise' => praiseAbout,
-                  _ => null,
-                },
-                fact: i == 'tell' ? tell!.id : null,
-                item: i == 'gift' ? item : null,
-              )..canned = true,
-          ],
-          maxTokens: 140,
+          asked,
+          dashOptionSchema(picked),
+          validate: (json) => dashOptionsFrom(json, picked) != null,
+          fallback: () => const {},
+          maxTokens: tokensFor(v.lang, 220),
+          temp: 0.85,
           seed: v.rng.nextInt(1 << 30),
+          lang: v.lang,
         )
+        .then((json) => dashOptionsFrom(json, picked, about: about, praiseAbout: praiseAbout, tell: tell?.id, item: item) ?? canned())
         .then((options) {
           if (visit != dv) return;
           dv.options = options;
@@ -378,18 +377,22 @@ class Dash {
     final reply = await v.chat.text<String>(
       'dash_reply',
       Priority.dashReply,
-      [
-        '${l.name}, the ${l.job} (${l.traits}; mood ${l.moodWord}), is at ${theP(l.place)}. Day ${v.now.day}, ${v.now.hhmm}.',
-        'What ${l.name} knows (only these):',
-        for (final f in facts) '- ${f.text} (${v.kb.label(l.name, f, v.now)})',
-        'Dash, a little bird new to the village, says: "${pick.text}"',
-        '${l.name} feels ${reactionLevels[level]} about it.',
-        "Write only ${l.name}'s spoken reply to Dash: one or two sentences, under 30 words, in character. No quotes, no name prefix.",
-      ].join('\n'),
+      inLang(
+        [
+          '${l.name} (${pronounOf(l.name)}), the ${l.job} (${l.traits}; mood ${l.moodWord}), is at ${theP(l.place)}. Day ${v.now.day}, ${v.now.hhmm}.',
+          'What ${l.name} knows (only these):',
+          for (final f in facts) '- ${f.text} (${v.kb.label(l.name, f, v.now)})',
+          'Dash, a little bird new to the village, says: "${pick.text}"',
+          '${l.name} feels ${reactionLevels[level]} about it.',
+          "Write only ${l.name}'s spoken reply to Dash: one or two sentences, under 30 words, in character. No quotes, no name prefix.",
+        ].join('\n'),
+        v.lang,
+      ),
       parse: (raw) => parseLine(raw, [l.name]),
-      fallback: () => level >= 3 ? 'Oh! Well, thank you, Dash.' : 'Hmph. If you say so, Dash.',
-      maxTokens: 60,
+      fallback: () => replyFallbackIn(v.lang, pleased: level >= 3),
+      maxTokens: tokensFor(v.lang, 60),
       seed: v.rng.nextInt(1 << 30),
+      lang: v.lang,
     );
     if (visit != dv) {
       if (v.speech[l.name]?.id == pending.id) v.speech.remove(l.name);
@@ -529,17 +532,35 @@ class Dash {
 
 P2 _sub(P2 a, P2 b) => (a.$1 - b.$1, a.$2 - b.$2);
 
-/// Reads the option lines ("intent: text") for the [picked] intents; null
-/// when fewer than three usable lines came back.
-List<DashOption>? parseDashOptions(String raw, List<String> picked, {String? about, String? praiseAbout, String? tell, String? item}) {
+/// The grammar for Dash's options: one string per [picked] intent, so the
+/// keys stay in English whatever language the lines are written in.
+Map<String, Object?> dashOptionSchema(List<String> picked) => {
+  'type': 'object',
+  'properties': {
+    for (final i in picked) i: {'type': 'string', 'minLength': 6, 'maxLength': 200},
+  },
+  'required': picked,
+  'additionalProperties': false,
+};
+
+/// The options in [json] for the [picked] intents, in order; null when
+/// fewer than three are usable lines.
+List<DashOption>? dashOptionsFrom(
+  Map<String, dynamic> json,
+  List<String> picked, {
+  String? about,
+  String? praiseAbout,
+  String? tell,
+  String? item,
+}) {
   final found = <String, String>{};
-  for (final line in raw.split('\n')) {
-    final m = RegExp(r'^\W*(compliment|gossip|praise|tell|gift|help|tease)\W*[:\-]\s*(.+)$', caseSensitive: false).firstMatch(line.trim());
-    if (m == null) continue;
-    final text = cleanLine(m.group(2)!.replaceAll(RegExp(r'^<|>$'), ''));
-    if (text.split(' ').length >= 3) found[m.group(1)!.toLowerCase()] = text;
+  for (final i in picked) {
+    final raw = json[i];
+    if (raw is! String) continue;
+    final text = cleanLine(raw.replaceAll(RegExp(r'^<|>$'), ''));
+    if (text.split(' ').length >= 3) found[i] = text;
   }
-  if (picked.where(found.containsKey).length < 3) return null;
+  if (found.length < 3) return null;
   return [
     for (final i in picked)
       if (found[i] != null)

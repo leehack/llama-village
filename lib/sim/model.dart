@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:math' as math;
 
+import 'lang.dart';
+
 /// A text generator. The app backs it with llamadart; tests with a script.
 abstract interface class ChatModel {
   /// Completes [user] under [system]. When [jsonSchema] is set the output is
@@ -143,10 +145,14 @@ class ChatRuntime {
       'Keep every line short, concrete and in character. Characters only mention things listed '
       'as known to them; they never invent other secrets. Never use emojis. Never mention being an AI.';
 
+  /// [system], plus the language the player reads for calls in [lang].
+  static String systemIn(Lang lang) => lang == Lang.en ? system : '$system ${writeIn(lang)}';
+
   Future<String> _generate(
     String type,
     String user,
     double queueMs, {
+    Lang lang = Lang.en,
     required int maxTokens,
     required double temp,
     required int seed,
@@ -156,17 +162,17 @@ class ChatRuntime {
   }) async {
     final watch = Stopwatch()..start();
     final out = await model.complete(
-      system,
+      systemIn(lang),
       user,
       maxTokens: maxTokens,
       temp: temp,
       seed: seed,
       stop: stop,
       jsonSchema: jsonSchema,
-      onText: onText,
+      onText: onText == null ? null : (t) => onText(polish(t, lang)),
     );
     metrics.add(CallRecord(type, watch.elapsedMicroseconds / 1000, queueMs: queueMs));
-    return out;
+    return polish(out, lang);
   }
 
   /// Free text, parsed by [parse]; one retry with another seed, then
@@ -183,6 +189,7 @@ class ChatRuntime {
     required int seed,
     List<String> stop = const [],
     void Function(String text)? onText,
+    Lang lang = Lang.en,
   }) {
     return queue.submit(type, priority, (queueMs) async {
       for (var attempt = 0; attempt < 2; attempt++) {
@@ -197,6 +204,7 @@ class ChatRuntime {
             seed: seed + attempt * 7919,
             stop: stop,
             onText: onText,
+            lang: lang,
           );
         } catch (_) {
           break;
@@ -224,6 +232,7 @@ class ChatRuntime {
     int maxTokens = 120,
     double temp = 0.4,
     required int seed,
+    Lang lang = Lang.en,
   }) {
     return queue.submit(type, priority, (queueMs) async {
       for (var attempt = 0; attempt < 2; attempt++) {
@@ -236,6 +245,7 @@ class ChatRuntime {
             temp: temp,
             seed: seed + attempt * 7919,
             jsonSchema: schema,
+            lang: lang,
           );
           final value = jsonDecode(raw.trim());
           if (value is Map<String, dynamic> && validate(value)) {
@@ -273,7 +283,7 @@ String cleanLine(String s, {List<String> names = const []}) {
   for (final n in names) {
     out = out.replaceFirst(RegExp('^\\s*$n\\s*(\\(.*?\\))?\\s*:\\s*', caseSensitive: false), '');
   }
-  out = out.replaceAll(RegExp(r'[“”"]'), '').replaceAll(RegExp(r'\s+'), ' ').trim();
+  out = out.replaceAll(RegExp(r'[“”"«»]'), '').replaceAll(RegExp(r'\s+'), ' ').trim();
   return out;
 }
 
