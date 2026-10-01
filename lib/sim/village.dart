@@ -354,7 +354,9 @@ class Village {
     }
     for (final l in cast) {
       if (offline) {
-        l.reflections.add('What a day.');
+        l
+          ..reflections.add('What a day.')
+          ..reflectedDay = day;
         continue;
       }
       final facts = relevantFacts(this, l, limit: 6);
@@ -371,7 +373,7 @@ class Village {
       chat
           .text<String>(
             'reflection',
-            Priority.background,
+            Priority.dashOptions,
             prompt,
             parse: (raw) => parseLine(raw, [l.name]),
             fallback: () => 'What a day.',
@@ -379,7 +381,9 @@ class Village {
             seed: rng.nextInt(1 << 30),
           )
           .then((r) {
-            l.reflections.add(r);
+            l
+              ..reflections.add(r)
+              ..reflectedDay = day;
             l.thoughts.add(r);
             log.note('${l.name} lies awake thinking: "$r"');
           });

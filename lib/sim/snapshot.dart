@@ -146,6 +146,7 @@ Map<String, Object?> _llama(Llama l, GameTime now) {
     ],
     'searched': [...l.searched],
     'reflections': [...l.reflections],
+    'reflectedDay': l.reflectedDay,
     'thoughts': [...l.thoughts],
   };
 }
@@ -160,6 +161,7 @@ void _loadLlama(Llama l, Map<String, Object?> m) {
     ..courage = (m['courage'] as num).toDouble()
     ..activity = _unactivity((m['activity'] as Map).cast<String, Object?>())
     ..lastConversationEnd = GameTime.fromAbsolute(m['lastConversationEnd'] as int)
+    ..reflectedDay = m['reflectedDay'] as int
     ..lastDecision = null;
   l.friendship
     ..clear()

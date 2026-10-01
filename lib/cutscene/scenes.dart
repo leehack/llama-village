@@ -358,14 +358,12 @@ Cutscene endingScene(SceneContext c, EndingVerdict verdict, Influence i) {
   }
 }
 
-/// [l]'s next evening reflection: the one written at 22:00 tonight, or the
-/// latest when tonight's is already in. Polls, since reflections land on the
-/// model queue; gives up (empty) after [timeout].
-Future<String> nextReflection(Llama l, {required bool tonightPending, Duration timeout = const Duration(seconds: 40)}) async {
-  final want = l.reflections.length + (tonightPending ? 1 : 0);
+/// [l]'s reflection on the evening of [day], written at 22:00 on the model
+/// queue. Polls until it lands; gives up (empty) after [timeout].
+Future<String> reflectionOf(Llama l, int day, {Duration timeout = const Duration(seconds: 40)}) async {
   final watch = Stopwatch()..start();
-  while (l.reflections.length < want || want == 0) {
-    if (watch.elapsed > timeout || want == 0) return '';
+  while (l.reflectedDay < day) {
+    if (watch.elapsed > timeout) return '';
     await Future<void>.delayed(const Duration(milliseconds: 100));
   }
   return l.reflections.last;

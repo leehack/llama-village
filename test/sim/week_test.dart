@@ -46,7 +46,7 @@ void main() {
     await settle();
     expect(v.skipTo(dawn), isTrue);
     expect(v.now, dawn);
-    expect(v.cast.every((l) => l.reflections.length == 1), isTrue);
+    expect(v.cast.every((l) => l.reflections.length == 1 && l.reflectedDay == 1), isTrue);
     expect(v.log.entries.any((e) => e.text.contains('Morning of day 2')), isTrue);
   });
 

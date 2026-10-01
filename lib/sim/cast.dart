@@ -74,6 +74,9 @@ class Llama {
   final Set<String> searched = {};
   final List<String> reflections = [];
 
+  /// The day whose evening reflection is the last of [reflections].
+  int reflectedDay = 0;
+
   /// Recent one-line thoughts, newest last.
   final List<String> thoughts = [];
 

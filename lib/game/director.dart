@@ -94,7 +94,7 @@ class Director {
 
   Cutscene _night() {
     final dawn = dawnAfter(v.now);
-    final tonightPending = v.now.minute >= 6 * 60 && v.now.minute < 22 * 60;
+    final evening = dawn.day - 1;
     return nightSkipScene(
       _c,
       nextDay: dawn.day,
@@ -103,7 +103,7 @@ class Director {
       startNight: () => v.skipTo(GameTime(dawn.day, 4 * 60 + 31)),
       startDawn: () => _dawn = dawn,
       dawnReady: () => _dawn == null,
-      dream: (l) => nextReflection(l, tonightPending: tonightPending),
+      dream: (l) => reflectionOf(l, evening),
     );
   }
 
