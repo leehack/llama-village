@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../../game/save_store.dart';
+import '../../l10n/app_localizations.dart';
 import '../palette.dart';
+import '../strings.dart';
 import 'menu_kit.dart';
 
 /// The pause menu (Esc): resume, save to a slot, settings, back to the
@@ -48,49 +50,52 @@ class _PauseMenuState extends State<PauseMenu> {
   }
 
   @override
-  Widget build(BuildContext context) => MenuCard(
-    width: 400,
-    child: Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Text(
-          'Paused',
-          style: menuText(30, weight: FontWeight.w900, color: gold),
-        ),
-        Text(widget.when, style: menuText(13, color: Colors.white70)),
-        const SizedBox(height: 16),
-        MenuButton(label: 'Resume', icon: Icons.play_arrow_rounded, primary: true, autofocus: true, onTap: widget.onResume),
-        const SizedBox(height: 8),
-        Text(
-          'SAVE GAME',
-          style: menuText(11, weight: FontWeight.w900, color: gold).copyWith(letterSpacing: 1.2),
-        ),
-        for (final MapEntry(key: slot, value: info) in widget.slots.entries)
-          MenuButton(
-            label: 'Slot ${slot.substring(4)}${_saved == slot ? '  ✓ saved' : ''}',
-            icon: Icons.save_outlined,
-            detail: info == null ? 'empty' : info.when,
-            onTap: _saving ? null : () => _save(slot),
+  Widget build(BuildContext context) {
+    final l = L10n.of(context);
+    return MenuCard(
+      width: 400,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            l.paused,
+            style: menuText(30, weight: FontWeight.w900, color: gold),
           ),
-        const SizedBox(height: 8),
-        MenuButton(label: 'Settings', icon: Icons.tune, onTap: widget.onSettings),
-        MenuButton(
-          label: 'Save and quit to menu',
-          icon: Icons.home_outlined,
-          detail: 'Saves to the autosave slot',
-          onTap: _saving ? null : widget.onSaveAndQuit,
-        ),
-        MenuButton(label: 'Quit game', icon: Icons.logout, onTap: widget.onQuit),
-        const SizedBox(height: 4),
-        Text(
-          'Esc resumes',
-          textAlign: TextAlign.center,
-          style: menuText(11, color: Colors.white38),
-        ),
-      ],
-    ),
-  );
+          Text(widget.when, style: menuText(13, color: Colors.white70)),
+          const SizedBox(height: 16),
+          MenuButton(label: l.resume, icon: Icons.play_arrow_rounded, primary: true, autofocus: true, onTap: widget.onResume),
+          const SizedBox(height: 8),
+          Text(
+            l.saveGame.toUpperCase(),
+            style: menuText(11, weight: FontWeight.w900, color: gold).copyWith(letterSpacing: 1.2),
+          ),
+          for (final MapEntry(key: slot, value: info) in widget.slots.entries)
+            MenuButton(
+              label: '${l.slotN(int.parse(slot.substring(4)))}${_saved == slot ? '  ${l.savedMark}' : ''}',
+              icon: Icons.save_outlined,
+              detail: info == null ? l.empty : l.saveWhen(info),
+              onTap: _saving ? null : () => _save(slot),
+            ),
+          const SizedBox(height: 8),
+          MenuButton(label: l.settings, icon: Icons.tune, onTap: widget.onSettings),
+          MenuButton(
+            label: l.saveAndQuit,
+            icon: Icons.home_outlined,
+            detail: l.saveAndQuitDetail,
+            onTap: _saving ? null : widget.onSaveAndQuit,
+          ),
+          MenuButton(label: l.quitGame, icon: Icons.logout, onTap: widget.onQuit),
+          const SizedBox(height: 4),
+          Text(
+            l.escResumes,
+            textAlign: TextAlign.center,
+            style: menuText(11, color: Colors.white38),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 /// A small banner that fades away, for "Saved to Slot 2".

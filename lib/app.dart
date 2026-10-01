@@ -23,6 +23,7 @@ import 'game/director.dart';
 import 'game/save_store.dart';
 import 'game/story_camera.dart';
 import 'game/week_autoplay.dart';
+import 'l10n/app_localizations.dart';
 import 'render_tour.dart';
 import 'render/stage.dart';
 import 'self_test.dart';
@@ -34,6 +35,7 @@ import 'sim/endings.dart';
 import 'sim/epilogue.dart';
 import 'sim/geo.dart';
 import 'sim/influence.dart';
+import 'sim/lang.dart';
 import 'sim/snapshot.dart';
 import 'sim/storybook.dart';
 import 'sim/village.dart';
@@ -48,17 +50,25 @@ import 'ui/menus/storybook.dart';
 import 'ui/menus/week_end.dart';
 import 'ui/panels.dart';
 import 'ui/settings_panel.dart';
+import 'ui/strings.dart';
 
 class VillageApp extends StatelessWidget {
-  const VillageApp({super.key, required this.test});
+  const VillageApp({super.key, required this.test, required this.settings});
   final SelfTest test;
+  final VillageSettings settings;
 
   @override
-  Widget build(BuildContext context) => MaterialApp(
-    title: 'Llama Village',
-    debugShowCheckedModeBanner: false,
-    theme: ThemeData(useMaterial3: true, colorSchemeSeed: const Color(0xFF3E8EF0)),
-    home: VillageHome(test: test),
+  Widget build(BuildContext context) => ValueListenableBuilder<AppLanguage>(
+    valueListenable: settings.languageListenable,
+    builder: (context, language, _) => MaterialApp(
+      onGenerateTitle: (context) => L10n.of(context).appTitle,
+      debugShowCheckedModeBanner: false,
+      locale: language.code == null ? null : Locale(language.code!),
+      localizationsDelegates: L10n.localizationsDelegates,
+      supportedLocales: L10n.supportedLocales,
+      theme: ThemeData(useMaterial3: true, colorSchemeSeed: const Color(0xFF3E8EF0)),
+      home: VillageHome(test: test, settings: settings),
+    ),
   );
 }
 
@@ -71,8 +81,9 @@ enum Phase { loading, menu, playing, epilogue, results, failed }
 enum MenuPage { none, settings, credits, endings }
 
 class VillageHome extends StatefulWidget {
-  const VillageHome({super.key, required this.test});
+  const VillageHome({super.key, required this.test, required this.settings});
   final SelfTest test;
+  final VillageSettings settings;
 
   @override
   State<VillageHome> createState() => VillageHomeState();
@@ -91,7 +102,7 @@ class VillageHomeState extends State<VillageHome> with SingleTickerProviderState
   /// The 3D view alone (no HUD), for the storybook's pictures.
   final GlobalKey _sceneShotKey = GlobalKey();
   RenderObject? _scenePaint;
-  VillageSettings settings = VillageSettings.ephemeral();
+  VillageSettings get settings => widget.settings;
   bool showSettings = false;
   final SoloudOut _audio = SoloudOut();
   late final Soundscape sound = Soundscape(_audio, onPlay: (name, volume) => test.log('AUDIO $name vol=${volume.toStringAsFixed(2)}'));
@@ -104,12 +115,12 @@ class VillageHomeState extends State<VillageHome> with SingleTickerProviderState
 
   Phase phase = Phase.loading;
   MenuPage page = MenuPage.none;
-  String label = 'Building the village…';
+  String Function(L10n l) label = (l) => l.buildingVillage;
   double progress = 0.02;
   String? error;
 
   /// The models' state for the title screen.
-  String modelStatus = '';
+  String Function(L10n l) modelStatus = (_) => '';
   ModelConfig? config;
   VillageModels? models;
   bool _modelsFailed = false;
@@ -126,7 +137,7 @@ class VillageHomeState extends State<VillageHome> with SingleTickerProviderState
   Set<Ending> unlocked = {};
 
   /// Set while a game is starting, for the title screen.
-  String? busy;
+  String Function(L10n l)? busy;
   bool pauseMenu = false;
   bool _pausedBefore = false;
   Map<String, SaveInfo?> slots = {};
@@ -154,7 +165,12 @@ class VillageHomeState extends State<VillageHome> with SingleTickerProviderState
   bool newlyUnlocked = false;
 
   bool _sceneReady = false;
-  String modelLabel = '';
+
+  /// The models' description for the HUD; null with canned lines.
+  String? modelLabel;
+
+  /// The language the llamas speak, from the app's locale.
+  Lang lang = Lang.en;
   double _wall = 0;
   double _slowAcc = 0;
   double? fps;
@@ -190,6 +206,16 @@ class VillageHomeState extends State<VillageHome> with SingleTickerProviderState
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final now = Lang.fromCode(Localizations.localeOf(context).languageCode);
+    if (now == lang) return;
+    lang = now;
+    village?.lang = now;
+    test.log('LANGUAGE ${now.name}');
+  }
+
+  @override
   void dispose() {
     _lifecycle.dispose();
     _vsync.dispose();
@@ -204,8 +230,6 @@ class VillageHomeState extends State<VillageHome> with SingleTickerProviderState
   // ------------------------------------------------------------ boot
 
   Future<void> _boot() async {
-    final fps = test.fps;
-    settings = fps != null ? (VillageSettings.ephemeral()..fps = fps) : await VillageSettings.load();
     _applySettings();
     settings.addListener(_applySettings);
     unawaited(
@@ -221,7 +245,7 @@ class VillageHomeState extends State<VillageHome> with SingleTickerProviderState
       debugPrint('SCENE FAILED: $e\n$st');
       setState(() {
         phase = Phase.failed;
-        error = 'The 3D scene failed to load: $e';
+        error = '$e';
       });
       return;
     }
@@ -250,24 +274,23 @@ class VillageHomeState extends State<VillageHome> with SingleTickerProviderState
   void _loadModels() {
     final cfg = config = ModelConfig.resolve();
     if (test.canned) {
-      modelStatus = 'Playing with canned lines (no AI).';
+      modelStatus = (l) => l.statusCanned;
       return;
     }
     if (!cfg.hasRequired) {
       test.log('MODELS missing ${cfg.missing.join(', ')}');
-      modelStatus =
-          'AI models not found (${cfg.missing.join(', ')}; looked in ${cfg.searched.first}). '
-          'New games use canned lines. See README: VILLAGE_CHAT_MODEL, VILLAGE_EMBED_MODEL.';
+      final files = cfg.missing.join(', '), dir = cfg.searched.first;
+      modelStatus = (l) => l.statusMissing(files, dir);
       return;
     }
-    modelStatus = 'Loading the AI models…';
+    modelStatus = (l) => l.statusLoading;
     final watch = Stopwatch()..start();
     final loading = _loading = VillageModels.load(
       cfg,
-      onProgress: (l, f) {
+      onProgress: (stage, f) {
         if (!mounted) return;
         setState(() {
-          modelStatus = '$l ${(f * 100).round()}%';
+          modelStatus = (l) => l.loadProgress(stage, (f * 100).round());
           progress = f;
         });
       },
@@ -278,12 +301,12 @@ class VillageHomeState extends State<VillageHome> with SingleTickerProviderState
         models = m;
         modelLabel = m.description;
         test.log('MODELS loaded in ${watch.elapsedMilliseconds} ms: ${m.description}');
-        if (mounted) setState(() => modelStatus = 'Ready: ${m.description}');
+        if (mounted) setState(() => modelStatus = (l) => l.statusReady(m.description));
       },
       onError: (Object e, StackTrace st) {
         debugPrint('MODELS FAILED: $e\n$st');
         _modelsFailed = true;
-        if (mounted) setState(() => modelStatus = 'The AI models failed to load ($e). New games use canned lines.');
+        if (mounted) setState(() => modelStatus = (l) => l.statusFailed('$e'));
       },
     );
   }
@@ -338,7 +361,7 @@ class VillageHomeState extends State<VillageHome> with SingleTickerProviderState
   Village _newVillage(int seed) {
     final m = models;
     final pace = test.msPerMinute ?? 500;
-    return m != null
+    final v = m != null
         ? Village(chat: m, embed: m, laya: m.hasLaya ? m : null, seed: seed, msPerMinute: pace)
         : Village(
             chat: CannedChat(delay: const Duration(milliseconds: 250)),
@@ -346,6 +369,7 @@ class VillageHomeState extends State<VillageHome> with SingleTickerProviderState
             seed: seed,
             msPerMinute: pace,
           );
+    return v..lang = lang;
   }
 
   /// Waits for a model load in progress, so a game does not start on canned
@@ -353,7 +377,7 @@ class VillageHomeState extends State<VillageHome> with SingleTickerProviderState
   Future<void> _awaitModels() async {
     final loading = _loading;
     if (loading == null || models != null || _modelsFailed) return;
-    setState(() => busy = 'Waiting for the AI models…');
+    setState(() => busy = (l) => l.busyWaitingModels);
     try {
       await loading;
     } catch (_) {
@@ -366,15 +390,15 @@ class VillageHomeState extends State<VillageHome> with SingleTickerProviderState
     sound.click();
     await _awaitModels();
     if (!mounted || _shutdown != null) return;
-    modelLabel = models?.description ?? 'canned lines (no AI)';
+    modelLabel = models?.description;
     final v = _newVillage(test.seed ?? DateTime.now().millisecondsSinceEpoch);
-    setState(() => busy = 'The llamas are planning their day…');
+    setState(() => busy = (l) => l.busyPlanning);
     final watch = Stopwatch()..start();
     await v.begin();
     test.log('PLANS ready in ${watch.elapsedMilliseconds} ms');
     final jump = test.jumpDay;
     if (jump != null && jump > 1) {
-      setState(() => busy = 'Skipping ahead to day $jump…');
+      setState(() => busy = (l) => l.busySkipping(jump));
       await v.jumpTo(jump);
       test.log('JUMP to ${v.now}');
     }
@@ -389,25 +413,25 @@ class VillageHomeState extends State<VillageHome> with SingleTickerProviderState
     final s = store, info = continueSave;
     if (s == null || info == null || busy != null) return;
     sound.click();
-    setState(() => busy = 'Loading ${info.when}…');
+    setState(() => busy = (l) => l.busyLoading(l.saveWhen(info)));
     final Map<String, Object?> json;
     try {
       json = await s.read(info.slot);
     } on SaveException catch (e) {
-      _toast('That save cannot be loaded: ${e.message}');
+      _toast((l) => l.toastCannotLoad(e.message));
       setState(() => busy = null);
       await _refreshSaves();
       return;
     }
     await _awaitModels();
     if (!mounted || _shutdown != null) return;
-    modelLabel = models?.description ?? 'canned lines (no AI)';
+    modelLabel = models?.description;
     final v = _newVillage(1);
     try {
       restoreVillage(v, json);
     } on SaveException catch (e) {
       v.close();
-      _toast('That save cannot be loaded: ${e.message}');
+      _toast((l) => l.toastCannotLoad(e.message));
       setState(() => busy = null);
       return;
     }
@@ -441,8 +465,9 @@ class VillageHomeState extends State<VillageHome> with SingleTickerProviderState
               onDawn: (day) => unawaited(_autosave(day)),
               onWeekOver: _weekOver,
               onEnding: _startStory,
+              strings: () => L10n.of(context),
             );
-      bot = preset == null ? null : PlayerBot(preset);
+      bot = preset == null ? null : (PlayerBot(preset)..thinkMs = test.capture ? 1500 : 0);
       phase = Phase.playing;
       page = MenuPage.none;
       pauseMenu = false;
@@ -468,15 +493,17 @@ class VillageHomeState extends State<VillageHome> with SingleTickerProviderState
     try {
       await s.write(slot, snapshotVillage(v));
       if (!quiet) {
-        _toast('Saved to ${slot == SaveStore.autoSlot ? 'the autosave' : 'slot ${slot.substring(4)}'}: day ${v.now.day}, ${v.now.hhmm}');
+        _toast((l) => l.toastSaved(slot == SaveStore.autoSlot ? 'auto' : slot.substring(4), v.now.day, v.now.hhmm));
       }
     } catch (e) {
-      _toast('Could not save: $e');
+      _toast((l) => l.toastSaveFailed('$e'));
     }
     await _refreshSaves();
   }
 
-  void _toast(String text) {
+  void _toast(String Function(L10n l) say) {
+    if (!mounted) return;
+    final text = say(L10n.of(context));
     toast = text;
     _toastUntil = _wall + 3;
     test.log('TOAST $text');
@@ -488,7 +515,7 @@ class VillageHomeState extends State<VillageHome> with SingleTickerProviderState
   void _startStory(EndingVerdict verdict, Influence i) {
     final v = village;
     if (v == null) return;
-    final b = book = newStorybook(v, verdict, id: 'week-${DateTime.now().millisecondsSinceEpoch}');
+    final b = book = newStorybook(v, verdict, id: 'week-${DateTime.now().millisecondsSinceEpoch}', title: L10n.of(context).storyTitle);
     _bookSaved = false;
     final writer = _writer = StoryWriter(v, b, verdict: verdict, influence: i, onChange: () => _storyChanged(b));
     test.log('STORYBOOK start (${v.journal.beats.length} beats, ${v.album.shots.length} pictures)');
@@ -609,7 +636,7 @@ class VillageHomeState extends State<VillageHome> with SingleTickerProviderState
       stage.selected = null;
       phase = Phase.menu;
       page = MenuPage.none;
-      busy = 'Tidying up…';
+      busy = (l) => l.busyTidying;
       phaseTime = 0;
     });
     await _quiesce(v);
@@ -1011,7 +1038,7 @@ class VillageHomeState extends State<VillageHome> with SingleTickerProviderState
                             newlyUnlocked: newlyUnlocked,
                             onMenu: () => unawaited(toMenu()),
                             onStory: b == null ? null : openStory,
-                            storyStatus: b == null || b.complete ? null : '${b.writtenCount} of ${b.textPages} pages written…',
+                            storyStatus: b == null || b.complete ? null : L10n.of(context).storyProgress(b.writtenCount, b.textPages),
                           );
                         },
                       ),
@@ -1029,9 +1056,9 @@ class VillageHomeState extends State<VillageHome> with SingleTickerProviderState
                     ),
                   if (phase == Phase.loading || phase == Phase.failed)
                     LoadingCard(
-                      label: label,
+                      label: label(L10n.of(context)),
                       progress: progress,
-                      error: phase == Phase.failed ? error : null,
+                      error: phase == Phase.failed && error != null ? L10n.of(context).sceneFailed(error!) : null,
                       onQuit: phase == Phase.failed ? quit : null,
                     ),
                   if (toast != null)
@@ -1061,8 +1088,8 @@ class VillageHomeState extends State<VillageHome> with SingleTickerProviderState
   List<Widget> _menu() => [
     StartMenu(
       save: continueSave,
-      status: modelStatus,
-      busy: busy,
+      status: modelStatus(L10n.of(context)),
+      busy: busy?.call(L10n.of(context)),
       onNew: () => unawaited(newGame()),
       onContinue: () => unawaited(continueGame()),
       onEndings: () => openPage(MenuPage.endings),
@@ -1182,7 +1209,7 @@ class VillageHomeState extends State<VillageHome> with SingleTickerProviderState
             onOverview: _clicky(() => setState(stage.rig.overview)),
             onFollow: _clicky(follow),
             followName: stage.rig.followName,
-            modelLabel: modelLabel,
+            modelLabel: modelLabel ?? L10n.of(context).cannedLabel,
             onSettings: _clicky(() => setState(() => showSettings = !showSettings)),
           ),
         ),
@@ -1215,6 +1242,7 @@ class VillageHomeState extends State<VillageHome> with SingleTickerProviderState
             valueListenable: slow,
             builder: (context, _, _) => Inspector(
               data: v.inspect(stage.selected!),
+              village: v,
               cast: v.cast,
               onClose: _clicky(() => select(null)),
               onTalk: _clicky(() => talkTo(stage.selected!)),
@@ -1245,13 +1273,15 @@ class VillageHomeState extends State<VillageHome> with SingleTickerProviderState
           child: ValueListenableBuilder<int>(
             valueListenable: slow,
             builder: (context, _, _) {
-              final n =
-                  v.dash.notice ??
-                  ((d?.waitingForDawn ?? false)
-                      ? 'The llamas are planning tomorrow…'
-                      : v.paused && !pauseMenu
-                      ? 'Paused'
-                      : null);
+              final l = L10n.of(context);
+              final notice = v.dash.notice;
+              final n = notice != null
+                  ? l.noticeOf(notice)
+                  : (d?.waitingForDawn ?? false)
+                  ? l.noticePlanningTomorrow
+                  : v.paused && !pauseMenu
+                  ? l.noticePaused
+                  : null;
               return n == null ? const SizedBox.shrink() : Notice(text: n);
             },
           ),
@@ -1267,7 +1297,7 @@ class VillageHomeState extends State<VillageHome> with SingleTickerProviderState
                   maxHeight: _panelHeight,
                 )
               : PauseMenu(
-                  when: 'Day ${v.now.day}, ${v.now.hhmm}',
+                  when: L10n.of(context).dayAndTime(v.now.day, v.now.hhmm),
                   slots: slots,
                   onResume: closePause,
                   onSave: saveTo,

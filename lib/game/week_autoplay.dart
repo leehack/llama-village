@@ -3,6 +3,8 @@ import 'dart:async';
 import '../app.dart';
 import '../autoplay.dart';
 import '../cutscene/timeline.dart';
+import '../sim/dash.dart';
+import '../sim/village.dart';
 
 /// The env-gated Festival Week script (`VILLAGE_AUTOPLAY=week`): the title
 /// screen and gallery, a new game, the pause menu and a manual save, the
@@ -20,6 +22,8 @@ class WeekAutoplay {
   int _nights = 0;
   String? _scene;
   bool _paused = false;
+  String? _following;
+  double _followFor = 0;
   Future<void>? _shooting;
 
   void start() => home.test.log('WEEK autoplay start');
@@ -83,7 +87,7 @@ class WeekAutoplay {
           _next();
         }
       case 8:
-        if (home.phase == Phase.playing) _play();
+        if (home.phase == Phase.playing) _play(dt);
         if (home.phase == Phase.epilogue) _next();
       case 9:
         final ready = home.epilogue.values.every((l) => l != null);
@@ -175,7 +179,7 @@ class WeekAutoplay {
     }
   }
 
-  void _play() {
+  void _play(double dt) {
     final v = home.village;
     final d = home.director;
     if (v == null || d == null) return;
@@ -185,6 +189,12 @@ class WeekAutoplay {
       return;
     }
     _scene = null;
+    _conversation(v, dt);
+    final visit = v.dash.visit;
+    if (visit != null && visit.stage == VisitStage.choosing && visit.options != null && v.uiMs - visit.optionsReadyMs! > 500) {
+      _shot('08_dash_options');
+    }
+    if (visit != null && visit.stage == VisitStage.done && v.uiMs - visit.doneMs! > 600) _shot('09_dash_reply');
     if (!_paused && v.now.day == 1 && v.now.minute >= 9 * 60 && v.now.minute < 20 * 60) {
       _paused = true;
       home.openPause();
@@ -192,6 +202,37 @@ class WeekAutoplay {
       return;
     }
     if (v.now.day == 2 && v.now.minute >= 11 * 60) _shot('10_day2_play');
+  }
+
+  /// Once, after the pause menu: follows a llama mid-conversation and
+  /// photographs the bubbles, then returns to the overview.
+  void _conversation(Village v, double dt) {
+    final stage = home.stage;
+    if (!_paused || _taken('07_conversation')) {
+      if (_following != null && _taken('07_conversation')) {
+        _following = null;
+        stage.rig
+          ..follow = null
+          ..followName = null
+          ..overview();
+      }
+      return;
+    }
+    if (_following == null) {
+      final c = v.active.where((c) => v.speech[c.a.name]?.text != null || v.speech[c.b.name]?.text != null).firstOrNull;
+      if (c == null) return;
+      final name = v.speech[c.a.name]?.text != null ? c.a.name : c.b.name;
+      _following = name;
+      _followFor = 0;
+      stage.rig
+        ..followName = name
+        ..follow = (() => stage.llamas[name]!.position.clone())
+        ..distance = 22
+        ..pitch = 0.42;
+      return;
+    }
+    _followFor += dt;
+    if (_followFor > 1.4) _shot('07_conversation');
   }
 
   Future<void> _pauseShots() async {

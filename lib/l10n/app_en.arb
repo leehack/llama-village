@@ -1,0 +1,1280 @@
+{
+  "@@locale": "en",
+  "appTitle": "Llama Village",
+  "@appTitle": {
+    "description": "The game title."
+  },
+  "appSubtitle": "Festival Week",
+  "@appSubtitle": {
+    "description": "Subtitle on the title screen."
+  },
+  "titleTagline": "Five llamas, five days, one nosy little bird.",
+  "@titleTagline": {
+    "description": "Tagline on the title screen."
+  },
+  "loadingTagline": "Five llamas, their secrets, and one nosy little bird.",
+  "@loadingTagline": {
+    "description": "Tagline on the loading card."
+  },
+  "buildingVillage": "Building the village…",
+  "@buildingVillage": {
+    "description": "Loading label while the 3D scene builds."
+  },
+  "sceneFailed": "The 3D scene failed to load: {error}",
+  "@sceneFailed": {
+    "description": "The 3D scene could not load.",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "modelsNotFoundTitle": "The AI models were not found.",
+  "@modelsNotFoundTitle": {},
+  "modelsMissing": "Missing: {files}",
+  "@modelsMissing": {
+    "placeholders": {
+      "files": {
+        "type": "String"
+      }
+    }
+  },
+  "modelsFailedTitle": "The models failed to load.",
+  "@modelsFailedTitle": {},
+  "quit": "Quit",
+  "@quit": {
+    "description": "Quit button."
+  },
+  "playWithoutAi": "Play without AI (canned lines)",
+  "@playWithoutAi": {},
+  "statusCanned": "Playing with canned lines (no AI).",
+  "@statusCanned": {
+    "description": "Model status on the title screen."
+  },
+  "statusMissing": "AI models not found ({files}; looked in {dir}). New games use canned lines. See README: VILLAGE_CHAT_MODEL, VILLAGE_EMBED_MODEL.",
+  "@statusMissing": {
+    "placeholders": {
+      "files": {
+        "type": "String"
+      },
+      "dir": {
+        "type": "String"
+      }
+    }
+  },
+  "statusLoading": "Loading the AI models…",
+  "@statusLoading": {},
+  "loadProgress": "{stage, select, dialogue{Loading the dialogue model (gemma-4-E2B)…} embedding{Loading the embedding model (EmbeddingGemma)…} laya{Loading Laya for casual topics…} other{Warming up…}} {percent}%",
+  "@loadProgress": {
+    "description": "A model loading step and its percentage.",
+    "placeholders": {
+      "stage": {
+        "type": "String"
+      },
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "statusReady": "Ready: {models}",
+  "@statusReady": {
+    "placeholders": {
+      "models": {
+        "type": "String"
+      }
+    }
+  },
+  "statusFailed": "The AI models failed to load ({error}). New games use canned lines.",
+  "@statusFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "cannedLabel": "canned lines (no AI)",
+  "@cannedLabel": {
+    "description": "Shown in the HUD instead of the model name."
+  },
+  "busyWaitingModels": "Waiting for the AI models…",
+  "@busyWaitingModels": {},
+  "busyPlanning": "The llamas are planning their day…",
+  "@busyPlanning": {},
+  "busySkipping": "Skipping ahead to day {day}…",
+  "@busySkipping": {
+    "placeholders": {
+      "day": {
+        "type": "int"
+      }
+    }
+  },
+  "busyLoading": "Loading {when}…",
+  "@busyLoading": {
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "busyTidying": "Tidying up…",
+  "@busyTidying": {},
+  "toastCannotLoad": "That save cannot be loaded: {reason}",
+  "@toastCannotLoad": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "toastSaved": "{slot, select, auto{Saved to the autosave} other{Saved to slot {slot}}}: day {day}, {time}",
+  "@toastSaved": {
+    "description": "slot is \"auto\" or the slot number.",
+    "placeholders": {
+      "slot": {
+        "type": "String"
+      },
+      "day": {
+        "type": "int"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "toastSaveFailed": "Could not save: {error}",
+  "@toastSaveFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "noticePlanningTomorrow": "The llamas are planning tomorrow…",
+  "@noticePlanningTomorrow": {},
+  "noticePaused": "Paused",
+  "@noticePaused": {},
+  "dayClock": "Day {day}  {time}",
+  "@dayClock": {
+    "description": "Top bar clock.",
+    "placeholders": {
+      "day": {
+        "type": "int"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "dayAndTime": "Day {day}, {time}",
+  "@dayAndTime": {
+    "placeholders": {
+      "day": {
+        "type": "int"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "countdown": "{days, plural, =0{Berry Festival day} =1{the day before the festival} other{{days} days to the festival}}",
+  "@countdown": {
+    "description": "Days until the festival, lower case in a sentence.",
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "countdownTitle": "{days, plural, =0{The Berry Festival is today at 16:00} =1{The day before the festival} other{{days} days to the festival}}",
+  "@countdownTitle": {
+    "description": "Days until the festival, as a subtitle.",
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "afterFestival": "after the festival",
+  "@afterFestival": {},
+  "planningTomorrowLower": "the llamas are planning tomorrow…",
+  "@planningTomorrowLower": {},
+  "dayTitle": "Day {day}",
+  "@dayTitle": {
+    "description": "The card at dawn.",
+    "placeholders": {
+      "day": {
+        "type": "int"
+      }
+    }
+  },
+  "tipPause": "Pause (Space)",
+  "@tipPause": {},
+  "tipOverview": "Overview (O)",
+  "@tipOverview": {},
+  "tipFollow": "Follow the selected llama or Dash (F)",
+  "@tipFollow": {},
+  "tipSettings": "Settings",
+  "@tipSettings": {},
+  "fps": "{fps} fps",
+  "@fps": {
+    "placeholders": {
+      "fps": {
+        "type": "String"
+      }
+    }
+  },
+  "thinking": "thinking: {job, select, dialogue{a line} thought{a thought} dash_options{Dash's options} dash_reply{a reply} outcome{how it went} schedule{plans} reflection{a dream} storybook{the storybook} epilogue{an epilogue} announcement{an announcement} song{a song} other{…}}",
+  "@thinking": {
+    "description": "What the dialogue model is writing now.",
+    "placeholders": {
+      "job": {
+        "type": "String"
+      }
+    }
+  },
+  "villageLog": "Village log",
+  "@villageLog": {},
+  "helpHint": "Click a llama: Dash flies over to talk  ·  Right-click: inspect only  ·  Click ground or WASD: fly\nDrag: orbit  ·  Right-drag / two fingers: pan  ·  Scroll / pinch: zoom  ·  Space: pause  ·  F: follow  ·  O: overview",
+  "@helpHint": {
+    "description": "Controls hint at the bottom of the screen."
+  },
+  "dashFlying": "Dash is flying over to {name}…",
+  "@dashFlying": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "dashWaiting": "{name} is busy. Dash waits nearby…",
+  "@dashWaiting": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "dashThinking": "Dash is thinking of what to say…",
+  "@dashThinking": {},
+  "llamaAnswering": "{name} is answering…",
+  "@llamaAnswering": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "reactionLine": "{name} is {reaction, select, offended{offended} annoyed{annoyed} indifferent{indifferent} pleased{pleased} delighted{delighted} other{{reaction}}}.",
+  "@reactionLine": {
+    "description": "How the llama took what Dash said.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "reaction": {
+        "type": "String"
+      }
+    }
+  },
+  "sayMore": "Say more",
+  "@sayMore": {},
+  "flyOff": "Fly off",
+  "@flyOff": {},
+  "tipLeave": "Leave (Esc)",
+  "@tipLeave": {},
+  "dashAnd": "Dash and {name}",
+  "@dashAnd": {
+    "description": "Options panel title.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "atPlaceMood": "at {place} · {mood}",
+  "@atPlaceMood": {
+    "placeholders": {
+      "place": {
+        "type": "String"
+      },
+      "mood": {
+        "type": "String"
+      }
+    }
+  },
+  "intent": "{intent, select, compliment{compliment} gossip{gossip} praise{praise} tell{news} gift{gift} help{help} tease{tease} other{{intent}}}",
+  "@intent": {
+    "description": "The kind of thing Dash says.",
+    "placeholders": {
+      "intent": {
+        "type": "String"
+      }
+    }
+  },
+  "place": "{place, select, pond{the pond} berryBushes{the berry bushes} bakery{the bakery} hilltop{the hilltop} other{{place}}}",
+  "@place": {
+    "description": "A place, as used after \"at\" or \"to\".",
+    "placeholders": {
+      "place": {
+        "type": "String"
+      }
+    }
+  },
+  "hut": "{name}'s hut",
+  "@hut": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "mood": "{mood, select, miserable{miserable} grumpy{grumpy} calm{calm} cheerful{cheerful} elated{elated} other{{mood}}}",
+  "@mood": {
+    "placeholders": {
+      "mood": {
+        "type": "String"
+      }
+    }
+  },
+  "effectTrust": "{name} toward Dash {delta} (now {now}), mood {mood}",
+  "@effectTrust": {
+    "description": "delta and mood come with their sign.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "delta": {
+        "type": "String"
+      },
+      "now": {
+        "type": "int"
+      },
+      "mood": {
+        "type": "String"
+      }
+    }
+  },
+  "effectRumourBelieved": "{name} believes the made-up rumour about {about}",
+  "@effectRumourBelieved": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "about": {
+        "type": "String"
+      }
+    }
+  },
+  "effectRumourDoubted": "{name} doubts the made-up rumour about {about}",
+  "@effectRumourDoubted": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "about": {
+        "type": "String"
+      }
+    }
+  },
+  "effectWarms": "{name} warms to {about} (+1)",
+  "@effectWarms": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "about": {
+        "type": "String"
+      }
+    }
+  },
+  "effectShrugs": "{name} shrugs off the kind words about {about}",
+  "@effectShrugs": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "about": {
+        "type": "String"
+      }
+    }
+  },
+  "effectNowKnows": "{name} now knows: {fact}",
+  "@effectNowKnows": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "fact": {
+        "type": "String"
+      }
+    }
+  },
+  "effectConfides": "{name} tells Dash: {fact}",
+  "@effectConfides": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "fact": {
+        "type": "String"
+      }
+    }
+  },
+  "effectWork": "{name} gets work done faster",
+  "@effectWork": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "effectCourage": "Mo courage {percent}%",
+  "@effectCourage": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "noticeAsleep": "{name} is asleep. Try again in the morning.",
+  "@noticeAsleep": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "noticeRush": "{name} is hurrying to the festival.",
+  "@noticeRush": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "noticeCatchUp": "Catching up with {name}…",
+  "@noticeCatchUp": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "noticeWaitTalk": "Waiting for {name} to finish talking…",
+  "@noticeWaitTalk": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "noticeFellAsleep": "{name} has fallen asleep.",
+  "@noticeFellAsleep": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "noticeHurriesOff": "{name} hurries off to the festival.",
+  "@noticeHurriesOff": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "factPipTune": "Pip's secret singing",
+  "@factPipTune": {},
+  "factMoScarf": "Mo's scarf accident",
+  "@factMoScarf": {},
+  "factScarfWhere": "where the scarf is",
+  "@factScarfWhere": {},
+  "factJuneRumour": "who started the bread rumour",
+  "@factJuneRumour": {},
+  "factBreadRumour": "Mo's bread rumour",
+  "@factBreadRumour": {},
+  "factBreadTruth": "the bread rumour is false",
+  "@factBreadTruth": {},
+  "factBramblePoems": "Bramble's poems for June",
+  "@factBramblePoems": {},
+  "factWildflowers": "the mystery wildflowers",
+  "@factWildflowers": {},
+  "factCloverDeal": "Clover's Golden Bell deal",
+  "@factCloverDeal": {},
+  "factStormForecast": "Bramble's storm warning",
+  "@factStormForecast": {},
+  "factMoVoice": "Mo's singing voice",
+  "@factMoVoice": {},
+  "factHoneyLoaf": "Mo's honey loaf",
+  "@factHoneyLoaf": {},
+  "factRehearsal": "the rehearsal",
+  "@factRehearsal": {},
+  "factLanterns": "the lanterns",
+  "@factLanterns": {},
+  "factScarfMissing": "the missing scarf",
+  "@factScarfMissing": {},
+  "factScarfFound": "the scarf was found",
+  "@factScarfFound": {},
+  "factScarfReturned": "the scarf came back",
+  "@factScarfReturned": {},
+  "factFestival": "the Berry Festival",
+  "@factFestival": {},
+  "factMoFainted": "Mo fainting",
+  "@factMoFainted": {},
+  "factFestivalWinner": "the festival winner",
+  "@factFestivalWinner": {},
+  "factAnonPoem": "the anonymous love poem",
+  "@factAnonPoem": {},
+  "factBrambleFlowers": "Bramble and the wildflowers",
+  "@factBrambleFlowers": {},
+  "factStormHit": "the storm",
+  "@factStormHit": {},
+  "factBrambleRight": "Bramble being right",
+  "@factBrambleRight": {},
+  "factStormPassed": "the rainbow",
+  "@factStormPassed": {},
+  "factSigned": "{name} entering the contest",
+  "@factSigned": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "factArgument": "{a} and {b} arguing",
+  "@factArgument": {
+    "placeholders": {
+      "a": {
+        "type": "String"
+      },
+      "b": {
+        "type": "String"
+      }
+    }
+  },
+  "factDashGift": "Dash's gift to {name}",
+  "@factDashGift": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "factDashRumour": "what Dash said about {name}",
+  "@factDashRumour": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "llamaRole": "{name, select, Pip{the scarf knitter} Mo{the baker} June{the berry farmer} Bramble{the weather watcher} Clover{the festival organiser} other{a llama}}",
+  "@llamaRole": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "llamaTraits": "{name, select, Pip{vain, dramatic, fashionable, secretly insecure} Mo{shy, kind, anxious, has a golden singing voice} June{nosy, chatty, cheerful, loves a scandal} Bramble{grumpy, old, proud, secretly romantic} Clover{bossy, ambitious, playful, impatient} other{}}",
+  "@llamaTraits": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "llamaBio": "{name, select, Pip{Likes her red scarf, ribbons and compliments. Dreams to win the Golden Bell for best singer at the Berry Festival.} Mo{Likes warm bread, quiet mornings and honest praise. Dreams to find the courage to sing at the festival without fainting.} June{Likes gossip, sweet berries and being asked for news. Dreams to be the first llama to know every secret in the village.} Bramble{Likes clouds, poetry and being right. Dreams to be taken seriously when he predicts a storm.} Clover{Likes clipboards, applause and things going to plan. Dreams to run a perfect Berry Festival and be elected village mayor.} other{}}",
+  "@llamaBio": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tipTalkAsDash": "Talk as Dash",
+  "@tipTalkAsDash": {},
+  "tipCloseEsc": "Close (Esc)",
+  "@tipCloseEsc": {},
+  "sectionNow": "Now",
+  "@sectionNow": {
+    "description": "Inspector section."
+  },
+  "sectionMoodNeeds": "Mood and needs",
+  "@sectionMoodNeeds": {},
+  "sectionFriendships": "Friendships",
+  "@sectionFriendships": {},
+  "sectionGoals": "Goals",
+  "@sectionGoals": {},
+  "sectionWhy": "Why this action",
+  "@sectionWhy": {},
+  "sectionKnows": "What {name} knows ({count})",
+  "@sectionKnows": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "barMood": "Mood: {mood}",
+  "@barMood": {
+    "placeholders": {
+      "mood": {
+        "type": "String"
+      }
+    }
+  },
+  "barFed": "Fed",
+  "@barFed": {},
+  "barEnergy": "Energy",
+  "@barEnergy": {},
+  "barCompany": "Wants company",
+  "@barCompany": {},
+  "barCourage": "Courage",
+  "@barCourage": {},
+  "noDecision": "No decision yet.",
+  "@noDecision": {},
+  "howOwnSecret": "own secret",
+  "@howOwnSecret": {
+    "description": "How a llama learned a fact."
+  },
+  "howKnows": "knows it",
+  "@howKnows": {},
+  "howSaw": "saw it",
+  "@howSaw": {},
+  "howAnnounced": "announced",
+  "@howAnnounced": {},
+  "howOverheardDoubt": "overheard from {name}; does not believe it",
+  "@howOverheardDoubt": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "howOverheard": "overheard from {name}; maybe untrue",
+  "@howOverheard": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "howHeardDoubt": "heard from {name}; does not believe it",
+  "@howHeardDoubt": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "howHeard": "heard from {name}; maybe untrue",
+  "@howHeard": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "activityWalk": "walking to {place}",
+  "@activityWalk": {
+    "placeholders": {
+      "place": {
+        "type": "String"
+      }
+    }
+  },
+  "activityTalk": "talking with {name} at {place}",
+  "@activityTalk": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "place": {
+        "type": "String"
+      }
+    }
+  },
+  "activitySleep": "asleep in {place}",
+  "@activitySleep": {
+    "placeholders": {
+      "place": {
+        "type": "String"
+      }
+    }
+  },
+  "activityIdle": "standing at {place}",
+  "@activityIdle": {
+    "placeholders": {
+      "place": {
+        "type": "String"
+      }
+    }
+  },
+  "activityAt": "{kind, select, eat{eating} work{working} nap{napping} search{searching} watch{watching} wait{waiting} practise{practising} flowers{leaving flowers} linger{lingering} other{{kind}}} at {place}",
+  "@activityAt": {
+    "description": "Doing something somewhere.",
+    "placeholders": {
+      "kind": {
+        "type": "String"
+      },
+      "place": {
+        "type": "String"
+      }
+    }
+  },
+  "choice": "{kind, select, walk{walk} talk{talk} eat{eat} work{work} nap{nap} sleep{sleep} search{search} watch{watch} wait{wait} practise{practise} flowers{leave flowers} linger{linger} idle{stay} other{{kind}}}",
+  "@choice": {
+    "description": "One option the llama weighed.",
+    "placeholders": {
+      "kind": {
+        "type": "String"
+      }
+    }
+  },
+  "choiceTo": "{kind} to {place}",
+  "@choiceTo": {
+    "placeholders": {
+      "kind": {
+        "type": "String"
+      },
+      "place": {
+        "type": "String"
+      }
+    }
+  },
+  "newGame": "New game",
+  "@newGame": {},
+  "continueGame": "Continue",
+  "@continueGame": {},
+  "noSave": "No saved game yet",
+  "@noSave": {},
+  "saveDetail": "{when} · {name}",
+  "@saveDetail": {
+    "placeholders": {
+      "when": {
+        "type": "String"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "endings": "Endings",
+  "@endings": {},
+  "settings": "Settings",
+  "@settings": {},
+  "credits": "Credits",
+  "@credits": {},
+  "autosave": "Autosave",
+  "@autosave": {},
+  "slotN": "Slot {n}",
+  "@slotN": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "damaged": "damaged",
+  "@damaged": {
+    "description": "A save that cannot be loaded."
+  },
+  "paused": "Paused",
+  "@paused": {},
+  "resume": "Resume",
+  "@resume": {},
+  "saveGame": "Save game",
+  "@saveGame": {
+    "description": "Section heading."
+  },
+  "savedMark": "✓ saved",
+  "@savedMark": {},
+  "empty": "empty",
+  "@empty": {
+    "description": "An empty save slot."
+  },
+  "saveAndQuit": "Save and quit to menu",
+  "@saveAndQuit": {},
+  "saveAndQuitDetail": "Saves to the autosave slot",
+  "@saveAndQuitDetail": {},
+  "quitGame": "Quit game",
+  "@quitGame": {},
+  "escResumes": "Esc resumes",
+  "@escResumes": {},
+  "close": "Close",
+  "@close": {},
+  "unlockedCount": "{count} of {total} unlocked",
+  "@unlockedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "lockedTitle": "? ? ?",
+  "@lockedTitle": {},
+  "storybooksSection": "Storybooks",
+  "@storybooksSection": {},
+  "noStorybooks": "Finish a week to keep its storybook here.",
+  "@noStorybooks": {},
+  "endingTitle": "{ending, select, harmonyFestival{Harmony Festival} dramaLlama{Drama Llama} quietValley{Quiet Valley} other{{ending}}}",
+  "@endingTitle": {
+    "placeholders": {
+      "ending": {
+        "type": "String"
+      }
+    }
+  },
+  "endingBlurb": "{ending, select, harmonyFestival{Every rumour put right, every llama on the hilltop, and the lanterns burn till dawn.} dramaLlama{Whispers, feuds and a festival nobody will forget, for all the wrong reasons.} quietValley{The week passed gently. Dash watched, and the valley mostly minded its own business.} other{}}",
+  "@endingBlurb": {
+    "placeholders": {
+      "ending": {
+        "type": "String"
+      }
+    }
+  },
+  "endingHint": "{ending, select, harmonyFestival{Win the llamas over, set the record straight, and bring them closer.} dramaLlama{A little bird with a loose beak can stir up a lot.} quietValley{Sometimes the valley is happiest left alone.} other{}}",
+  "@endingHint": {
+    "placeholders": {
+      "ending": {
+        "type": "String"
+      }
+    }
+  },
+  "creditsSubtitle": "Llama Village: Festival Week",
+  "@creditsSubtitle": {},
+  "creditsModels": "Models (all run on this Mac, nothing is downloaded)",
+  "@creditsModels": {},
+  "creditsGemma": "Google DeepMind. Dialogue, plans, thoughts, Dash's options, epilogues and the storybook. Used under the Gemma 4 licence (Apache License 2.0), ai.google.dev/gemma/docs/gemma_4_license.",
+  "@creditsGemma": {},
+  "creditsEmbedding": "Google DeepMind. Checks which facts were actually said. Gemma is provided under and subject to the Gemma Terms of Use found at ai.google.dev/gemma/terms.",
+  "@creditsEmbedding": {},
+  "creditsLayaName": "Laya decision model (optional)",
+  "@creditsLayaName": {},
+  "creditsLaya": "Picks casual conversation topics when it is installed.",
+  "@creditsLaya": {},
+  "creditsEngines": "Engines and libraries",
+  "@creditsEngines": {},
+  "creditsLlamadart": "MIT License, © 2024 Jhin Lee. Runs llama.cpp (MIT License, © the ggml authors) on Metal.",
+  "@creditsLlamadart": {},
+  "creditsScene": "MIT License, © 2023 Brandon DeRosier. The 3D village, on Flutter GPU.",
+  "@creditsScene": {},
+  "creditsSoloud": "MIT License, © 2024 the flutter_soloud authors, with the SoLoud engine (zlib/libpng licence, © Jari Komppa).",
+  "@creditsSoloud": {},
+  "creditsFlutter": "BSD 3-Clause License, © the Flutter authors.",
+  "@creditsFlutter": {},
+  "creditsSound": "Sound",
+  "@creditsSound": {},
+  "creditsSynth": "Music and sounds synthesized in code",
+  "@creditsSynth": {},
+  "creditsSynthNote": "tool/audio/gen_audio.py: additive synthesis, shaped noise and an FFT reverb. Nothing is sampled or downloaded.",
+  "@creditsSynthNote": {},
+  "afterTheFestival": "After the festival…",
+  "@afterTheFestival": {
+    "description": "Epilogue heading."
+  },
+  "remembering": "The llamas are remembering…",
+  "@remembering": {},
+  "seeWeek": "See how the week went",
+  "@seeWeek": {},
+  "endingUnlocked": "Ending unlocked",
+  "@endingUnlocked": {},
+  "endingAlready": "Ending (already unlocked)",
+  "@endingAlready": {},
+  "why": "Why: {reasons}.",
+  "@why": {
+    "placeholders": {
+      "reasons": {
+        "type": "String"
+      }
+    }
+  },
+  "reasonFalseBeliefs": "{count} false beliefs still going round",
+  "@reasonFalseBeliefs": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "reasonSoured": "friendships soured (harmony {value})",
+  "@reasonSoured": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "reasonRift": "Pip and Mo fell out",
+  "@reasonRift": {},
+  "reasonCrushExposed": "Bramble's crush was aired by someone else, and June said no",
+  "@reasonCrushExposed": {},
+  "reasonNoWinner": "the festival had no winner",
+  "@reasonNoWinner": {},
+  "reasonCrowned": "the festival crowned {name}",
+  "@reasonCrowned": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "reasonAllRight": "every false rumour was put right",
+  "@reasonAllRight": {},
+  "reasonHarmony": "harmony {value}",
+  "@reasonHarmony": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "reasonTrust": "the llamas trust Dash ({value})",
+  "@reasonTrust": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "reasonBeliefsLeft": "{count, plural, =1{1 false belief left} other{{count} false beliefs left}}",
+  "@reasonBeliefsLeft": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "reasonHarmonyOnly": "harmony only {value}",
+  "@reasonHarmonyOnly": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "reasonTrustOnly": "trust in Dash only {value}",
+  "@reasonTrustOnly": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "statHarmony": "Harmony",
+  "@statHarmony": {},
+  "harmonyValue": "{value} / 10",
+  "@harmonyValue": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "harmonyNote": "mean friendship among the five",
+  "@harmonyNote": {},
+  "statTruth": "Truth",
+  "@statTruth": {},
+  "noFalseBeliefs": "no false beliefs",
+  "@noFalseBeliefs": {},
+  "falseBeliefs": "{count, plural, =1{1 false belief} other{{count} false beliefs}}",
+  "@falseBeliefs": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "everyRumourRight": "every rumour was put right",
+  "@everyRumourRight": {},
+  "moreBeliefs": "+{count} more",
+  "@moreBeliefs": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "statPipMo": "Pip and Mo",
+  "@statPipMo": {},
+  "pipMoArc": "{arc, select, reconciled{made up} rift{fell out} other{left unsaid}}",
+  "@pipMoArc": {
+    "placeholders": {
+      "arc": {
+        "type": "String"
+      }
+    }
+  },
+  "pipMoNote": "the scarf, the bread rumour and the Golden Bell",
+  "@pipMoNote": {},
+  "statBramble": "Bramble's poems",
+  "@statBramble": {},
+  "brambleArc": "{arc, select, accepted{confessed, and June said yes} declined{confessed; June let him down gently} exposedDeclined{exposed by gossip; June said no} revealed{out in the open, still unanswered} other{still a secret}}",
+  "@brambleArc": {
+    "placeholders": {
+      "arc": {
+        "type": "String"
+      }
+    }
+  },
+  "brambleNote": "his secret crush on June",
+  "@brambleNote": {},
+  "statFestival": "Festival",
+  "@statFestival": {},
+  "noWinner": "no winner",
+  "@noWinner": {},
+  "wonBell": "{name} won the Golden Bell",
+  "@wonBell": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "statTrust": "Trust in Dash",
+  "@statTrust": {},
+  "trustNote": "how each llama feels about you, -10 to 10",
+  "@trustNote": {},
+  "backToTitle": "Back to the title",
+  "@backToTitle": {},
+  "readStory": "Read the story",
+  "@readStory": {},
+  "storyProgress": "{done} of {total} pages written…",
+  "@storyProgress": {
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "sectionGraphics": "Graphics",
+  "@sectionGraphics": {},
+  "frameRate": "Frame rate",
+  "@frameRate": {},
+  "fpsChoice": "{fps} fps",
+  "@fpsChoice": {
+    "placeholders": {
+      "fps": {
+        "type": "int"
+      }
+    }
+  },
+  "promotionNote": "120 fps needs a ProMotion display.",
+  "@promotionNote": {},
+  "graphicsQuality": "Graphics quality",
+  "@graphicsQuality": {},
+  "quality": "{quality, select, low{Low} medium{Medium} other{High}}",
+  "@quality": {
+    "placeholders": {
+      "quality": {
+        "type": "String"
+      }
+    }
+  },
+  "sectionAudio": "Audio",
+  "@sectionAudio": {},
+  "music": "Music",
+  "@music": {},
+  "soundEffects": "Sound effects",
+  "@soundEffects": {},
+  "muteAll": "Mute all",
+  "@muteAll": {},
+  "sectionGameplay": "Gameplay",
+  "@sectionGameplay": {},
+  "textSpeed": "Text speed",
+  "@textSpeed": {},
+  "speedName": "{speed, select, slow{Slow} fast{Fast} other{Normal}}",
+  "@speedName": {
+    "placeholders": {
+      "speed": {
+        "type": "String"
+      }
+    }
+  },
+  "startingSpeed": "Starting time speed",
+  "@startingSpeed": {},
+  "speedChoice": "{n}×",
+  "@speedChoice": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "sectionAccessibility": "Accessibility",
+  "@sectionAccessibility": {},
+  "textSize": "Text size",
+  "@textSize": {},
+  "sizeName": "{size, select, large{Large} larger{Larger} other{Normal}}",
+  "@sizeName": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "reducedMotion": "Reduced motion",
+  "@reducedMotion": {},
+  "reducedMotionNote": "Shorter camera moves in cutscenes, no camera shake, a slower menu flyover, calmer animals and fewer particles.",
+  "@reducedMotionNote": {},
+  "highContrast": "High-contrast bubbles",
+  "@highContrast": {},
+  "sectionLanguage": "Language",
+  "@sectionLanguage": {},
+  "languageSystem": "System default",
+  "@languageSystem": {
+    "description": "Follow the system language."
+  },
+  "languageNote": "Menus, and everything the llamas say and write, switch at once. The sim keeps its facts in English.",
+  "@languageNote": {},
+  "skipHint": "Esc / Space / click to skip",
+  "@skipHint": {},
+  "llamasThinking": "the llamas are thinking",
+  "@llamasThinking": {},
+  "dreams": "{name} dreams…",
+  "@dreams": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "dreamFallback": "Zzz…",
+  "@dreamFallback": {},
+  "announcementFallback": "Hear ye! The Berry Festival is on day {day} at 16:00 on the hilltop. Best singer wins the Golden Bell!",
+  "@announcementFallback": {
+    "placeholders": {
+      "day": {
+        "type": "int"
+      }
+    }
+  },
+  "pipSignsUp": "Me! Put my name down first. The Golden Bell is mine!",
+  "@pipSignsUp": {},
+  "berryFestival": "The Berry Festival",
+  "@berryFestival": {},
+  "festivalWhen": "Day {day} · 16:00 · on the hilltop",
+  "@festivalWhen": {
+    "placeholders": {
+      "day": {
+        "type": "int"
+      }
+    }
+  },
+  "festivalSubtitle": "Lanterns, berry tarts and a wobbly stage",
+  "@festivalSubtitle": {},
+  "pipSings": "Pip sings with enormous feeling and almost no tune.",
+  "@pipSings": {},
+  "moFaints": "Mo opens his mouth, sways, and faints into the berry tarts.",
+  "@moFaints": {},
+  "moSings": "Mo sings, and the hilltop goes completely silent, then roars.",
+  "@moSings": {},
+  "llamaSings": "{name} sings a cheerful berry-picking song.",
+  "@llamaSings": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "songFallback": "Oh, the berries on the hill are sweet as summer...",
+  "@songFallback": {},
+  "laLaLa": "La la laaa...",
+  "@laLaLa": {},
+  "nobodyWins": "Nobody wins the Golden Bell",
+  "@nobodyWins": {},
+  "winsBell": "{name} wins the Golden Bell!",
+  "@winsBell": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "endingWord": "Ending",
+  "@endingWord": {
+    "description": "Subtitle under the ending title."
+  },
+  "harmonyLanterns": "The lanterns came on, one by one, all the way up the hill.",
+  "@harmonyLanterns": {},
+  "harmonyPipMo": "Pip and Mo shared the last berry tart, and the scarf, for a while.",
+  "@harmonyPipMo": {},
+  "harmonyJune": "June read Bramble's poems out loud, and did not mind who heard.",
+  "@harmonyJune": {},
+  "harmonyNoRumour": "Not one rumour was left standing. Everyone sang the last song.",
+  "@harmonyNoRumour": {},
+  "harmonyDash": "And a small blue bird fell asleep in the bunting.",
+  "@harmonyDash": {},
+  "dramaSilence": "By sunset, nobody was speaking to anybody.",
+  "@dramaSilence": {},
+  "dramaWhistle": "Somewhere, a little blue bird whistled innocently.",
+  "@dramaWhistle": {},
+  "quietCame": "The festival came and went, the way festivals do.",
+  "@quietCame": {},
+  "quietWork": "Mo baked. June picked berries. Bramble watched the clouds.",
+  "@quietWork": {},
+  "quietSecrets": "The valley kept its secrets, and its peace.",
+  "@quietSecrets": {},
+  "storyTitle": "The Week Dash Came to Berry Valley",
+  "@storyTitle": {
+    "description": "The storybook title."
+  },
+  "storySeries": "A Llama Village storybook",
+  "@storySeries": {},
+  "storyDayCaption": "Day {day} · {countdown}",
+  "@storyDayCaption": {
+    "placeholders": {
+      "day": {
+        "type": "int"
+      },
+      "countdown": {
+        "type": "String"
+      }
+    }
+  },
+  "storyDayTitle": "{nth, select, first{The First Day} second{The Second Day} third{The Third Day} fourth{The Fourth Day} other{The Fifth Day}}",
+  "@storyDayTitle": {
+    "description": "nth is first to fifth.",
+    "placeholders": {
+      "nth": {
+        "type": "String"
+      }
+    }
+  },
+  "storyEndingTitle": "Happily Ever After",
+  "@storyEndingTitle": {},
+  "theEnd": "The End",
+  "@theEnd": {},
+  "storyStillWriting": "The storyteller is still writing… {done} of {total} pages",
+  "@storyStillWriting": {
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "storyBegin": "Turn the page to begin →",
+  "@storyBegin": {},
+  "storyQuill": "The storyteller is dipping her quill…",
+  "@storyQuill": {},
+  "tipPrevPage": "Previous page (←)",
+  "@tipPrevPage": {},
+  "tipNextPage": "Next page (→)",
+  "@tipNextPage": {},
+  "tipCloseBook": "Close the book (Esc)",
+  "@tipCloseBook": {}
+}

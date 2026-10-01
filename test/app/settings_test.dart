@@ -112,4 +112,22 @@ void main() {
     expect(GraphicsQuality.low.foliage, lessThan(GraphicsQuality.medium.foliage));
     expect(GraphicsQuality.medium.particles, lessThan(GraphicsQuality.high.particles));
   });
+
+  test('the language follows the system by default, persists, and only its own listenable fires on it', () async {
+    SharedPreferences.setMockInitialValues({});
+    final s = await VillageSettings.load();
+    expect(s.language, AppLanguage.system);
+    var language = 0;
+    s.languageListenable.addListener(() => language++);
+    s.musicVolume = 0.1;
+    expect(language, 0);
+    s.language = AppLanguage.ko;
+    expect(language, 1);
+    expect((await SharedPreferences.getInstance()).getString('language'), 'ko');
+    expect((await VillageSettings.load()).language, AppLanguage.ko);
+    expect(AppLanguage.ko.nativeName, '한국어');
+    expect(AppLanguage.fr.code, 'fr');
+    SharedPreferences.setMockInitialValues({'language': 'tlh'});
+    expect((await VillageSettings.load()).language, AppLanguage.system);
+  });
 }

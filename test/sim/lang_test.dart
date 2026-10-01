@@ -108,7 +108,9 @@ void main() {
     expect(polish('모의 빵이 브램블을 아프게 했다고 소문냈지.', Lang.ko), 'Mo의 빵이 Bramble을 아프게 했다고 소문냈지.');
     expect(polish('준, 준비됐어? 모두 모였어.', Lang.ko), 'June, 준비됐어? 모두 모였어.');
     expect(polish('피프는 웃었다. Pip가 노래했다. Mo이 왔다.', Lang.ko), 'Pip은 웃었다. Pip이 노래했다. Mo가 왔다.');
-    expect(polish('Les llamas dansent.', Lang.fr), 'Les lamas dansent.');
+    expect(polish('Clover는 모에게서 들은 이야기를 전했어요.', Lang.ko), 'Clover는 Mo에게서 들은 이야기를 전했어요.');
+    expect(polish('Berry Festival 노래 경연에서 the Golden Bell을 받았어요.', Lang.ko), '베리 축제 노래 경연에서 황금 종을 받았어요.');
+    expect(polish('Les llamas dansent à la Berry Festival.', Lang.fr), 'Les lamas dansent à la fête des Baies.');
     expect(polish('Pip가', Lang.en), 'Pip가');
   });
 

@@ -3,9 +3,9 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../../sim/endings.dart';
+import '../../l10n/app_localizations.dart';
 import '../../sim/storybook.dart';
-import '../../sim/week.dart';
+import '../strings.dart';
 import 'gallery.dart';
 
 const String _display = 'Hoefler Text';
@@ -38,7 +38,7 @@ TextStyle _serif(
   height: height,
 );
 
-const List<String> _dayTitles = ['The First Day', 'The Second Day', 'The Third Day', 'The Fourth Day', 'The Fifth Day'];
+const List<String> _nth = ['first', 'second', 'third', 'fourth', 'fifth'];
 
 /// The storybook: a two-page spread per page (picture left, text right),
 /// turned with ←/→, the arrows or a click on either page; Esc closes it.
@@ -113,65 +113,68 @@ class StorybookViewState extends State<StorybookView> with TickerProviderStateMi
   }
 
   @override
-  Widget build(BuildContext context) => Focus(
-    focusNode: _focus,
-    onKeyEvent: _onKey,
-    child: ColoredBox(
-      color: const Color(0xE6120E16),
-      child: LayoutBuilder(
-        builder: (context, box) {
-          final width = math.min(box.maxWidth - 160, (box.maxHeight - 120) * 1.5).clamp(480.0, 1180.0);
-          final height = width / 1.5;
-          return Stack(
-            children: [
-              Center(
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _Arrow(icon: Icons.chevron_left, tooltip: 'Previous page (←)', onTap: page > 0 ? () => turnTo(page - 1) : null),
-                    const SizedBox(width: 16),
-                    SizedBox(
-                      width: width,
-                      height: height,
-                      child: ListenableBuilder(
-                        listenable: Listenable.merge([_turn, if (widget.changes != null) widget.changes!]),
-                        builder: (context, _) => _spread(width, height),
+  Widget build(BuildContext context) {
+    final l = L10n.of(context);
+    return Focus(
+      focusNode: _focus,
+      onKeyEvent: _onKey,
+      child: ColoredBox(
+        color: const Color(0xE6120E16),
+        child: LayoutBuilder(
+          builder: (context, box) {
+            final width = math.min(box.maxWidth - 160, (box.maxHeight - 120) * 1.5).clamp(480.0, 1180.0);
+            final height = width / 1.5;
+            return Stack(
+              children: [
+                Center(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _Arrow(icon: Icons.chevron_left, tooltip: l.tipPrevPage, onTap: page > 0 ? () => turnTo(page - 1) : null),
+                      const SizedBox(width: 16),
+                      SizedBox(
+                        width: width,
+                        height: height,
+                        child: ListenableBuilder(
+                          listenable: Listenable.merge([_turn, if (widget.changes != null) widget.changes!]),
+                          builder: (context, _) => _spread(l, width, height),
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 16),
-                    _Arrow(icon: Icons.chevron_right, tooltip: 'Next page (→)', onTap: page < count - 1 ? () => turnTo(page + 1) : null),
-                  ],
+                      const SizedBox(width: 16),
+                      _Arrow(icon: Icons.chevron_right, tooltip: l.tipNextPage, onTap: page < count - 1 ? () => turnTo(page + 1) : null),
+                    ],
+                  ),
                 ),
-              ),
-              Positioned(
-                top: 18,
-                right: 18,
-                child: IconButton(
-                  tooltip: 'Close the book (Esc)',
-                  onPressed: widget.onClose,
-                  icon: const Icon(Icons.close, color: Colors.white70, size: 28),
+                Positioned(
+                  top: 18,
+                  right: 18,
+                  child: IconButton(
+                    tooltip: l.tipCloseBook,
+                    onPressed: widget.onClose,
+                    icon: const Icon(Icons.close, color: Colors.white70, size: 28),
+                  ),
                 ),
-              ),
-              Positioned(
-                left: 0,
-                right: 0,
-                bottom: 22,
-                child: _Dots(count: count, page: page, written: [for (final p in widget.book.pages) p.written], onTap: turnTo),
-              ),
-            ],
-          );
-        },
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 22,
+                  child: _Dots(count: count, page: page, written: [for (final p in widget.book.pages) p.written], onTap: turnTo),
+                ),
+              ],
+            );
+          },
+        ),
       ),
-    ),
-  );
+    );
+  }
 
-  Widget _spread(double width, double height) {
+  Widget _spread(L10n l, double width, double height) {
     final half = width / 2;
     final t = Curves.easeInOut.transform(_turn.value);
     final turning = _turn.isAnimating && _from != page;
     final forward = page > _from;
-    Widget left(int i) => _Half(left: true, child: _leftOf(i));
-    Widget right(int i) => _Half(left: false, child: _rightOf(i));
+    Widget left(int i) => _Half(left: true, child: _leftOf(l, i));
+    Widget right(int i) => _Half(left: false, child: _rightOf(l, i));
     // A forward turn lifts the old right page over the spine onto the left;
     // its back is the new left page. A backward turn mirrors it.
     final baseLeft = turning ? (forward ? _from : page) : page;
@@ -247,12 +250,12 @@ class StorybookViewState extends State<StorybookView> with TickerProviderStateMi
     );
   }
 
-  Widget _leftOf(int i) {
+  Widget _leftOf(L10n l, int i) {
     final p = widget.book.pages[i];
     final caption = switch (p.kind) {
-      PageKind.cover => 'A Llama Village storybook',
-      PageKind.day => 'Day ${p.day} · ${dayLabel(p.day!)}',
-      PageKind.ending => endingInfo[widget.book.ending]!.title,
+      PageKind.cover => l.storySeries,
+      PageKind.day => l.storyDayCaption(p.day!, l.countdownFor(p.day!)),
+      PageKind.ending => l.endingName(widget.book.ending),
     };
     return Padding(
       padding: const EdgeInsets.fromLTRB(34, 30, 30, 22),
@@ -276,10 +279,10 @@ class StorybookViewState extends State<StorybookView> with TickerProviderStateMi
     );
   }
 
-  Widget _rightOf(int i) {
+  Widget _rightOf(L10n l, int i) {
     final p = widget.book.pages[i];
-    if (p.kind == PageKind.cover) return _cover();
-    final title = p.kind == PageKind.day ? _dayTitles[p.day! - 1] : 'Happily Ever After';
+    if (p.kind == PageKind.cover) return _cover(l);
+    final title = p.kind == PageKind.day ? l.storyDayTitle(_nth[(p.day! - 1).clamp(0, 4)]) : l.storyEndingTitle;
     return Padding(
       padding: const EdgeInsets.fromLTRB(36, 34, 40, 22),
       child: Column(
@@ -295,11 +298,11 @@ class StorybookViewState extends State<StorybookView> with TickerProviderStateMi
           Expanded(
             child: p.text != null
                 ? SingleChildScrollView(child: DropCapText(p.text!, style: _serif(18.5)))
-                : _Writing(draft: p.draft, pulse: _pulse),
+                : _Writing(draft: p.draft, pulse: _pulse, waiting: l.storyQuill),
           ),
           if (p.kind == PageKind.ending && p.text != null)
             Text(
-              'The End',
+              l.theEnd,
               textAlign: TextAlign.center,
               style: _serif(18, family: _display, style: FontStyle.italic, color: _sepia),
             ),
@@ -310,7 +313,7 @@ class StorybookViewState extends State<StorybookView> with TickerProviderStateMi
     );
   }
 
-  Widget _cover() {
+  Widget _cover(L10n l) {
     final b = widget.book;
     final written = b.writtenCount, total = b.textPages;
     return Padding(
@@ -327,13 +330,13 @@ class StorybookViewState extends State<StorybookView> with TickerProviderStateMi
           const _Flourish(width: 180),
           const SizedBox(height: 16),
           Text(
-            endingInfo[b.ending]!.title,
+            l.endingName(b.ending),
             textAlign: TextAlign.center,
             style: _serif(18, family: _display, color: _sepia),
           ),
           const Spacer(),
           Text(
-            written < total ? 'The storyteller is still writing… $written of $total pages' : 'Turn the page to begin →',
+            written < total ? l.storyStillWriting(written, total) : l.storyBegin,
             textAlign: TextAlign.center,
             style: _serif(14, style: FontStyle.italic, color: _sepia),
           ),
@@ -415,9 +418,10 @@ class DropCapText extends StatelessWidget {
 }
 
 class _Writing extends StatelessWidget {
-  const _Writing({required this.draft, required this.pulse});
+  const _Writing({required this.draft, required this.pulse, required this.waiting});
   final String draft;
   final Animation<double> pulse;
+  final String waiting;
 
   @override
   Widget build(BuildContext context) => AnimatedBuilder(
@@ -447,7 +451,7 @@ class _Writing extends StatelessWidget {
           Icon(Icons.history_edu, size: 44, color: _sepia.withValues(alpha: glow + 0.2)),
           const SizedBox(height: 12),
           Text(
-            'The storyteller is dipping her quill…',
+            waiting,
             textAlign: TextAlign.center,
             style: _serif(16, style: FontStyle.italic, color: _sepia),
           ),

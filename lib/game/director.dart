@@ -2,6 +2,7 @@ import 'package:flutter_scene/scene.dart';
 
 import '../cutscene/scenes.dart';
 import '../cutscene/timeline.dart';
+import '../l10n/app_localizations.dart';
 import '../render/stage.dart';
 import '../settings.dart';
 import '../sim/clock.dart';
@@ -20,6 +21,7 @@ class Director {
     required this.settings,
     required this.onDawn,
     required this.onWeekOver,
+    required this.strings,
     this.onEnding,
     this.log,
   }) {
@@ -38,6 +40,9 @@ class Director {
   final void Function(EndingVerdict verdict, Influence influence)? onEnding;
   final void Function(String)? log;
 
+  /// The words for the scenes' captions, in the player's language.
+  final L10n Function() strings;
+
   CutscenePlayer? player;
   final List<Cutscene Function()> _queue = [];
 
@@ -48,7 +53,7 @@ class Director {
   EndingVerdict? verdict;
   Influence? influence;
 
-  late final SceneContext _c = SceneContext(v, stage);
+  late final SceneContext _c = SceneContext(v, stage, strings);
 
   /// A scene is playing or the night is still being fast-forwarded.
   bool get busy => player != null || _dawn != null;

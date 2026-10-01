@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:llama_village/l10n/app_localizations.dart';
 import 'package:llama_village/sim/endings.dart';
 import 'package:llama_village/sim/storybook.dart';
 import 'package:llama_village/ui/menus/storybook.dart';
@@ -28,6 +29,8 @@ void main() {
     final key = GlobalKey<StorybookViewState>();
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: L10n.localizationsDelegates,
+        supportedLocales: L10n.supportedLocales,
         home: StorybookView(key: key, book: _book(), reducedMotion: true, onClose: () => closed++),
       ),
     );

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 
+import '../../l10n/app_localizations.dart';
 import '../../sim/endings.dart';
 import '../../sim/influence.dart';
 import '../palette.dart';
+import '../strings.dart';
 import 'menu_kit.dart';
 
 /// One card per llama with its epilogue line ("…" while it is written).
@@ -15,12 +17,13 @@ class EpilogueView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = L10n.of(context);
     final dots = '.' * (1 + (wall * 3).floor() % 3);
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(
-          'After the festival…',
+          l.afterTheFestival,
           style: menuText(34, weight: FontWeight.w900, color: gold).copyWith(shadows: textShadow),
         ),
         const SizedBox(height: 18),
@@ -64,7 +67,7 @@ class EpilogueView extends StatelessWidget {
         SizedBox(
           width: 320,
           child: MenuButton(
-            label: onContinue == null ? 'The llamas are remembering…' : 'See how the week went',
+            label: onContinue == null ? l.remembering : l.seeWeek,
             icon: Icons.arrow_forward,
             primary: true,
             onTap: onContinue,
@@ -74,20 +77,6 @@ class EpilogueView extends StatelessWidget {
     );
   }
 }
-
-String pipMoLabel(PipMoArc a) => switch (a) {
-  PipMoArc.reconciled => 'made up',
-  PipMoArc.rift => 'fell out',
-  PipMoArc.unresolved => 'left unsaid',
-};
-
-String brambleLabel(BrambleArc a) => switch (a) {
-  BrambleArc.accepted => 'confessed, and June said yes',
-  BrambleArc.declined => 'confessed; June let him down gently',
-  BrambleArc.exposedDeclined => 'exposed by gossip; June said no',
-  BrambleArc.revealed => 'out in the open, still unanswered',
-  BrambleArc.secret => 'still a secret',
-};
 
 /// The week's numbers, the ending and whether it was newly unlocked.
 class ResultsView extends StatelessWidget {
@@ -113,7 +102,7 @@ class ResultsView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final info = endingInfo[verdict.ending]!;
+    final l = L10n.of(context);
     final i = influence;
     final beliefs = i.falseBeliefs;
     return MenuCard(
@@ -126,18 +115,18 @@ class ResultsView extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
             decoration: BoxDecoration(color: newlyUnlocked ? gold : const Color(0x33FFFFFF), borderRadius: BorderRadius.circular(20)),
             child: Text(
-              newlyUnlocked ? 'ENDING UNLOCKED' : 'ENDING (ALREADY UNLOCKED)',
+              (newlyUnlocked ? l.endingUnlocked : l.endingAlready).toUpperCase(),
               style: menuText(11, weight: FontWeight.w900, color: newlyUnlocked ? ink : Colors.white70).copyWith(letterSpacing: 1.2),
             ),
           ),
           const SizedBox(height: 8),
           Text(
-            info.title,
+            l.endingName(verdict.ending),
             style: menuText(40, weight: FontWeight.w900, color: gold),
           ),
-          Text(info.blurb, style: menuText(14, color: Colors.white70)),
+          Text(l.endingBlurb(verdict.ending.name), style: menuText(14, color: Colors.white70)),
           const SizedBox(height: 6),
-          Text('Why: ${verdict.reasons.join('; ')}.', style: menuText(12.5, color: Colors.white54)),
+          Text(l.why(verdict.why.map(l.reasonOf).join('; ')), style: menuText(12.5, color: Colors.white54)),
           const SizedBox(height: 18),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -146,23 +135,23 @@ class ResultsView extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _Stat('Harmony', '${i.harmony.toStringAsFixed(1)} / 10', 'mean friendship among the five'),
+                    _Stat(l.statHarmony, l.harmonyValue(l.number(i.harmony)), l.harmonyNote),
                     _Meter(value: (i.harmony + 10) / 20),
                     const SizedBox(height: 12),
                     _Stat(
-                      'Truth',
-                      beliefs.isEmpty ? 'no false beliefs' : '${beliefs.length} false belief${beliefs.length == 1 ? '' : 's'}',
+                      l.statTruth,
+                      beliefs.isEmpty ? l.noFalseBeliefs : l.falseBeliefs(beliefs.length),
                       beliefs.isEmpty
-                          ? 'every rumour was put right'
-                          : beliefs.take(3).map((b) => '${b.believer}: ${b.short}').join(' · ') +
-                                (beliefs.length > 3 ? ' · +${beliefs.length - 3} more' : ''),
+                          ? l.everyRumourRight
+                          : beliefs.take(3).map((b) => '${b.believer}: ${l.factLabel(b.factId, b.short)}').join(' · ') +
+                                (beliefs.length > 3 ? ' · ${l.moreBeliefs(beliefs.length - 3)}' : ''),
                     ),
                     const SizedBox(height: 12),
-                    _Stat('Pip and Mo', pipMoLabel(i.pipMo), 'the scarf, the bread rumour and the Golden Bell'),
+                    _Stat(l.statPipMo, l.pipMoArc(i.pipMo.name), l.pipMoNote),
                     const SizedBox(height: 12),
-                    _Stat("Bramble's poems", brambleLabel(i.bramble), 'his secret crush on June'),
+                    _Stat(l.statBramble, l.brambleArc(i.bramble.name), l.brambleNote),
                     const SizedBox(height: 12),
-                    _Stat('Festival', i.festivalWinner == null ? 'no winner' : '${i.festivalWinner} won the Golden Bell', ''),
+                    _Stat(l.statFestival, i.festivalWinner == null ? l.noWinner : l.wonBell(i.festivalWinner!), ''),
                   ],
                 ),
               ),
@@ -171,7 +160,7 @@ class ResultsView extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _Stat('Trust in Dash', i.meanTrust.toStringAsFixed(1), 'how each llama feels about you, -10 to 10'),
+                    _Stat(l.statTrust, l.number(i.meanTrust), l.trustNote),
                     const SizedBox(height: 8),
                     for (final MapEntry(key: n, value: t) in i.dashTrust.entries)
                       Padding(
@@ -211,12 +200,12 @@ class ResultsView extends StatelessWidget {
               if (onStory != null)
                 SizedBox(
                   width: 280,
-                  child: MenuButton(label: 'Read the story', icon: Icons.menu_book, primary: true, detail: storyStatus, onTap: onStory),
+                  child: MenuButton(label: l.readStory, icon: Icons.menu_book, primary: true, detail: storyStatus, onTap: onStory),
                 ),
               const SizedBox(width: 12),
               SizedBox(
                 width: 240,
-                child: MenuButton(label: 'Back to the title', icon: Icons.home_outlined, primary: onStory == null, onTap: onMenu),
+                child: MenuButton(label: l.backToTitle, icon: Icons.home_outlined, primary: onStory == null, onTap: onMenu),
               ),
             ],
           ),

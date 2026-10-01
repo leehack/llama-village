@@ -5,6 +5,8 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 
+import 'settings.dart';
+
 /// Env-gated self-test hooks, inert by default.
 ///
 /// * `VILLAGE_CAPTURE=1` logs frame rates every two seconds (split by
@@ -21,6 +23,8 @@ import 'package:flutter/widgets.dart';
 /// * `VILLAGE_SAVE_DIR=dir` keeps saves and the gallery out of the real
 ///   profile.
 /// * `VILLAGE_QUIT_AT=menu|cutscene|generation` quits at that moment.
+/// * `VILLAGE_LANG=en|ko|fr` sets the language for the run; like
+///   `VILLAGE_FPS`, it makes the run's settings unsaved defaults.
 class SelfTest {
   SelfTest._(this._env)
     : capture = _env['VILLAGE_CAPTURE'] == '1',
@@ -48,6 +52,9 @@ class SelfTest {
 
   /// Frame-rate cap for this run, overriding (and not saving) the setting.
   int? get fps => int.tryParse(_env['VILLAGE_FPS'] ?? '');
+
+  /// VILLAGE_LANG=en|ko|fr: the language for this run.
+  AppLanguage? get language => AppLanguage.values.where((l) => l.code != null && l.code == _env['VILLAGE_LANG']).firstOrNull;
 
   final GlobalKey boundaryKey = GlobalKey();
   final Set<String> taken = {};

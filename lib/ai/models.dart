@@ -71,8 +71,9 @@ class ModelConfig {
   }
 }
 
-/// Loading progress: a label and a 0-1 fraction.
-typedef LoadProgress = void Function(String label, double fraction);
+/// Loading progress: the stage (dialogue, embedding, laya or warmup) and a
+/// 0-1 fraction.
+typedef LoadProgress = void Function(String stage, double fraction);
 
 /// The loaded engines behind the sim's model interfaces. [dispose] frees
 /// every engine; the app awaits it before exiting, because ggml's Metal
@@ -110,15 +111,15 @@ class VillageModels implements ChatModel, EmbedModel, TopicChooser {
     }
 
     try {
-      onProgress?.call('Loading the dialogue model (gemma-4-E2B)…', 0.05);
+      onProgress?.call('dialogue', 0.05);
       // Small prompt micro-batches keep each GPU submission short, so the
       // renderer's frames slip in between them instead of waiting.
       final chat = await open(config.chat!, contextSize: 4096, microBatch: 128);
-      onProgress?.call('Loading the embedding model (EmbeddingGemma)…', 0.55);
+      onProgress?.call('embedding', 0.55);
       final embed = await open(config.embed!, contextSize: 2048, parallel: 8);
       LlamaEngine? laya;
       if (config.hasLaya) {
-        onProgress?.call('Loading Laya for casual topics…', 0.7);
+        onProgress?.call('laya', 0.7);
         try {
           laya = await open(config.layaModel!, contextSize: 512);
           decisions = await DecisionEngine.load(laya, headPath: config.layaHead!);
@@ -141,7 +142,7 @@ class VillageModels implements ChatModel, EmbedModel, TopicChooser {
         decisions,
         'gemma-4-E2B ($backend) · EmbeddingGemma${decisions != null ? ' · Laya' : ''}',
       );
-      onProgress?.call('Warming up…', 0.85);
+      onProgress?.call('warmup', 0.85);
       await models.complete('Reply briefly.', 'Say hello.', maxTokens: 4, temp: 0.1, seed: 1);
       await models.embedBatch(const ['hello']);
       return models;

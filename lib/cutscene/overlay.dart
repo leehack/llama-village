@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../l10n/app_localizations.dart';
 import '../render/stage.dart';
 import '../ui/bubble_layout.dart';
 import '../ui/bubbles.dart';
@@ -40,7 +41,8 @@ class CutsceneOverlay extends StatelessWidget {
     final spacing = _spacing[player] ??= _DreamSpacing();
     final children = <Widget>[];
     final leaders = <(Offset, Offset, Color)>[];
-    final offsets = _stackDreams(spacing, bar, dots);
+    final l = L10n.of(context);
+    final offsets = _stackDreams(spacing, bar, dots, l);
     for (final (cue, alpha) in player.texts) {
       final text = cue.text ?? dots;
       switch (cue.kind) {
@@ -129,7 +131,7 @@ class CutsceneOverlay extends StatelessWidget {
             right: 20,
             bottom: bar > 30 ? bar / 2 - 9 : 14,
             child: Text(
-              player.waiting ? 'the llamas are thinking$dots   ·   Esc / Space / click to skip' : 'Esc / Space / click to skip',
+              player.waiting ? '${l.llamasThinking}$dots   ·   ${l.skipHint}' : l.skipHint,
               style: const TextStyle(fontSize: 12, color: Colors.white54, fontWeight: FontWeight.w600),
             ),
           ),
@@ -141,7 +143,7 @@ class CutsceneOverlay extends StatelessWidget {
   /// Lays out the dream and song bubbles like speech bubbles, so the
   /// festival's singers and the night's dreamers never cover each other or
   /// the subtitle, and stay between the letterbox bars.
-  Map<TextCue, (double, double)> _stackDreams(_DreamSpacing spacing, double bar, String dots) {
+  Map<TextCue, (double, double)> _stackDreams(_DreamSpacing spacing, double bar, String dots, L10n l) {
     final requests = <BubbleRequest>[];
     final byId = <String, TextCue>{};
     final keepClear = <Box>[];
@@ -156,7 +158,7 @@ class CutsceneOverlay extends StatelessWidget {
       final anchor = cue.anchor;
       final at = anchor == null ? null : stage.toScreen(anchor, size);
       if (at == null) continue;
-      final b = spacing.dreamSize(cue, _dreamText(cue, text), textScale, highContrast);
+      final b = spacing.dreamSize(cue, _dreamText(cue, text), textScale, highContrast, _dreamLabel(cue, l));
       final id = '${identityHashCode(cue)}';
       byId[id] = cue;
       requests.add(BubbleRequest(id, Box(at.dx - b.width / 2, at.dy - b.height, b.width, b.height)));
@@ -172,10 +174,17 @@ class CutsceneOverlay extends StatelessWidget {
 
 String _dreamText(TextCue cue, String text) => cue.kind == TextKind.song && cue.text != null ? '♪ $text ♪' : text;
 
+/// The name over a dream or song bubble: "Pip dreams…", or the singer.
+String? _dreamLabel(TextCue cue, L10n l) {
+  final speaker = cue.speaker;
+  if (speaker == null) return null;
+  return cue.kind == TextKind.song ? speaker : l.dreams(speaker);
+}
+
 /// Measured dream, song and subtitle sizes, and the eased dream offsets.
 class _DreamSpacing {
   final BubbleSmoother smoother = BubbleSmoother();
-  final Map<(TextCue, String, double, bool), Size> _dreams = {};
+  final Map<(TextCue, String, double, bool, String?), Size> _dreams = {};
   final Map<(String?, String, double, double), Size> _subtitles = {};
   double? _lastWall;
 
@@ -185,9 +194,9 @@ class _DreamSpacing {
     return dt;
   }
 
-  Size dreamSize(TextCue cue, String text, double scale, bool highContrast) {
+  Size dreamSize(TextCue cue, String text, double scale, bool highContrast, String? label) {
     if (_dreams.length > 64) _dreams.clear();
-    return _dreams.putIfAbsent((cue, text, scale, highContrast), () {
+    return _dreams.putIfAbsent((cue, text, scale, highContrast, label), () {
       final song = cue.kind == TextKind.song;
       final border = highContrast ? 6.0 : 4.0;
       final inner = 300 * scale - 32 - border;
@@ -201,15 +210,14 @@ class _DreamSpacing {
       )..layout(maxWidth: inner);
       var width = body.width, height = body.height;
       body.dispose();
-      final speaker = cue.speaker;
-      if (speaker != null) {
-        final label = TextPainter(
-          text: TextSpan(text: song ? speaker : '$speaker dreams…', style: _speakerStyle(scale)),
+      if (label != null) {
+        final painter = TextPainter(
+          text: TextSpan(text: label, style: _speakerStyle(scale)),
           textDirection: TextDirection.ltr,
         )..layout(maxWidth: inner);
-        width = math.max(width, label.width);
-        height += label.height;
-        label.dispose();
+        width = math.max(width, painter.width);
+        height += painter.height;
+        painter.dispose();
       }
       return Size(width + 32 + border, height + 22 + border + (song ? 0 : 3 + 12 + 3 + 7));
     });
@@ -330,7 +338,10 @@ class _Dream extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               if (speaker != null)
-                Text(song ? speaker! : '$speaker dreams…', style: _speakerStyle(scale).copyWith(color: highContrast ? Colors.black : edge)),
+                Text(
+                  song ? speaker! : L10n.of(context).dreams(speaker!),
+                  style: _speakerStyle(scale).copyWith(color: highContrast ? Colors.black : edge),
+                ),
               Text(
                 text,
                 textAlign: TextAlign.center,

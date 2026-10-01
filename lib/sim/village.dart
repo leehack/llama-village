@@ -41,9 +41,13 @@ class Speech {
 
 /// What a llama knows, as the inspector lists it.
 class KnownFact {
-  const KnownFact(this.text, this.how, {required this.believes, required this.secret});
+  const KnownFact(this.text, this.how, {required this.believes, required this.secret, this.knowing, this.own = false});
   final String text;
   final String how;
+
+  /// How it was learned, for a localised tag; [own]: the llama's own secret.
+  final Knowing? knowing;
+  final bool own;
   final bool believes;
   final bool secret;
 }
@@ -254,7 +258,7 @@ class Village {
     final visit = dash.visit;
     if (visit != null && visit.target.place != 'hilltop') {
       dash.leave();
-      dash.say('${visit.target.name} hurries off to the festival.');
+      dash.say('hurriesOff', visit.target.name);
     }
   }
 
@@ -904,6 +908,8 @@ class Village {
             howLearned(f.knownBy[l.name]!, own: f.secretOf.contains(l.name)),
             believes: f.knownBy[l.name]!.believes,
             secret: f.secretOf.contains(l.name) && f.knownBy[l.name]!.how == 'own',
+            knowing: f.knownBy[l.name],
+            own: f.secretOf.contains(l.name),
           ),
       ],
       thought: l.thoughts.lastOrNull,

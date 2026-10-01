@@ -122,7 +122,7 @@ void main() {
     await v.begin();
     final mo = v.byName('Mo')..activity = Activity('sleep', v.now.plus(600));
     expect(await v.dash.talk(mo), isEmpty);
-    expect(v.dash.notice, contains('asleep'));
+    expect(v.dash.notice!.english, contains('asleep'));
   });
 
   test('the inspector shows persona, needs, knowledge with how it was learned, and decision utilities', () async {

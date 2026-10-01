@@ -10,9 +10,12 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
   flutter_scene: 0.23.0
   flutter_soloud: 4.1.7
   hooks: ^2.0.0
+  intl: any
   llamadart: ^0.9.0
   path_provider: ^2.1.5
   shared_preferences: 2.5.5
@@ -25,6 +28,7 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  generate: true
   assets:
     - flutter_scene_generated/
     - assets/audio/

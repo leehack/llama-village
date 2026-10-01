@@ -36,7 +36,7 @@ String speakIn(Lang lang, {bool json = false, bool story = false}) => switch (la
     if (json) 'JSON 키는 영어 그대로 두고, 값(대사)은 모두 자연스러운 한국어로 쓰세요.' else '반드시 자연스러운 한국어로만 쓰세요.',
     if (story) '"옛날 옛적에"처럼 다정한 동화 말투(…했어요, …했답니다)로, 네다섯 문장으로 쓰세요.',
     '이름은 $_names처럼 영어 철자 그대로 쓰세요(피프, 모, 준처럼 한글로 옮기지 마세요).',
-    '용어: Berry Festival은 베리 축제, Golden Bell은 황금 종, Berry Valley는 베리 골짜기, llama는 라마.',
+    '용어: Berry Festival은 베리 축제, Golden Bell은 황금 종, Berry Valley는 베리 골짜기, lantern은 등불, llama는 라마.',
   ].join(' '),
   Lang.fr => [
     json ? 'Keep the JSON keys in English and write every value in French.' : writeIn(lang),
@@ -46,7 +46,7 @@ String speakIn(Lang lang, {bool json = false, bool story = false}) => switch (la
       'Écris uniquement en français naturel.',
     if (story) 'Prends le ton doux d\'un conte (« Il était une fois… »), au passé simple.',
     'Garde les noms ($_names) tels quels.',
-    'Vocabulaire : Berry Festival = la fête des Baies, Golden Bell = la Cloche d\'or, Berry Valley = la Vallée des Baies, llama = lama.',
+    'Vocabulaire : Berry Festival = la fête des Baies, Golden Bell = la Cloche d\'or, Berry Valley = la Vallée des Baies, lantern = lanterne, llama = lama.',
   ].join(' '),
 };
 
@@ -258,7 +258,7 @@ const Map<String, List<String>> keywordTranslations = {
 };
 
 const Map<String, String> _koNames = {'피프': 'Pip', '핍': 'Pip', '브램블': 'Bramble', '클로버': 'Clover', '대시': 'Dash', '데시': 'Dash'};
-const String _koParticles = '은|는|이|가|을|를|의|에게|한테|과|와|도|만|아|야|이랑|랑|이나|나|에|로|으로|처럼|보다|부터|까지';
+const String _koParticles = '은|는|이|가|을|를|의|에게서|에게|한테서|한테|과|와|도|만|아|야|이랑|랑|이나|나|에|로|으로|처럼|보다|부터|까지|라고|이라고';
 final RegExp _koName = RegExp('(?<![가-힣])(${_koNames.keys.join('|')})(?=($_koParticles)?(?![가-힣]))');
 // 준 and 모 are also common syllables (준비, 모두), so only a lone word or
 // one followed by a particle counts as the name.
@@ -268,14 +268,21 @@ final RegExp _koAfterVowel = RegExp('(Mo|Clover|Dash)(이|은|을|과|이랑)(?!
 
 /// Fixes what the model reliably gets wrong in [lang]: Korean output often
 /// spells the names in Hangul (피프, 준) and picks the particle for the
-/// wrong ending; French writes "llama" for "lama".
+/// wrong ending; both sometimes leave the festival's English names in; French
+/// writes "llama" for "lama".
 String polish(String text, Lang lang) => switch (lang) {
   Lang.en => text,
   Lang.ko =>
     text
+        .replaceAll(RegExp('(the )?Berry Festival', caseSensitive: false), '베리 축제')
+        .replaceAll(RegExp('(the )?Golden Bell', caseSensitive: false), '황금 종')
         .replaceAllMapped(_koName, (m) => _koNames[m.group(1)]!)
         .replaceAllMapped(_koShortName, (m) => m.group(1) == '준' ? 'June' : 'Mo')
         .replaceAllMapped(_koAfterConsonant, (m) => '${m.group(1)}${const {'가': '이', '는': '은', '를': '을', '와': '과', '랑': '이랑'}[m.group(2)]}')
         .replaceAllMapped(_koAfterVowel, (m) => '${m.group(1)}${const {'이': '가', '은': '는', '을': '를', '과': '와', '이랑': '랑'}[m.group(2)]}'),
-  Lang.fr => text.replaceAllMapped(RegExp(r'\b([Ll])lama'), (m) => '${m.group(1)}ama'),
+  Lang.fr =>
+    text
+        .replaceAll(RegExp('(the )?Berry Festival', caseSensitive: false), 'fête des Baies')
+        .replaceAll(RegExp('(the )?Golden Bell', caseSensitive: false), "Cloche d'or")
+        .replaceAllMapped(RegExp(r'\b([Ll])lama'), (m) => '${m.group(1)}ama'),
 };

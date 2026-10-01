@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
+import '../../l10n/app_localizations.dart';
 import '../../sim/endings.dart';
 import '../../sim/storybook.dart';
 import '../palette.dart';
+import '../strings.dart';
 import 'menu_kit.dart';
 
 /// The endings gallery: unlocked endings in colour, locked ones as
@@ -17,47 +20,50 @@ class EndingsGallery extends StatelessWidget {
   final ValueChanged<Storybook>? onOpenBook;
 
   @override
-  Widget build(BuildContext context) => MenuCard(
-    width: 860,
-    child: Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        MenuHeader(title: 'Endings', subtitle: '${unlocked.length} of ${Ending.values.length} unlocked', onClose: onClose),
-        const SizedBox(height: 18),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            for (final e in Ending.values)
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 6),
-                  child: _EndingCard(ending: e, open: unlocked.contains(e)),
+  Widget build(BuildContext context) {
+    final l = L10n.of(context);
+    return MenuCard(
+      width: 860,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          MenuHeader(title: l.endings, subtitle: l.unlockedCount(unlocked.length, Ending.values.length), onClose: onClose),
+          const SizedBox(height: 18),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              for (final e in Ending.values)
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 6),
+                    child: _EndingCard(ending: e, open: unlocked.contains(e)),
+                  ),
                 ),
-              ),
-          ],
-        ),
-        const SizedBox(height: 18),
-        Text(
-          'STORYBOOKS',
-          style: menuText(11, weight: FontWeight.w900, color: gold).copyWith(letterSpacing: 1.2),
-        ),
-        const SizedBox(height: 8),
-        if (books.isEmpty)
-          Text('Finish a week to keep its storybook here.', style: menuText(12.5, color: Colors.white54))
-        else
-          SizedBox(
-            height: 128,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              itemCount: books.length,
-              separatorBuilder: (_, _) => const SizedBox(width: 12),
-              itemBuilder: (context, i) => _BookTile(book: books[i], onTap: onOpenBook == null ? null : () => onOpenBook!(books[i])),
-            ),
+            ],
           ),
-      ],
-    ),
-  );
+          const SizedBox(height: 18),
+          Text(
+            l.storybooksSection.toUpperCase(),
+            style: menuText(11, weight: FontWeight.w900, color: gold).copyWith(letterSpacing: 1.2),
+          ),
+          const SizedBox(height: 8),
+          if (books.isEmpty)
+            Text(l.noStorybooks, style: menuText(12.5, color: Colors.white54))
+          else
+            SizedBox(
+              height: 128,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: books.length,
+                separatorBuilder: (_, _) => const SizedBox(width: 12),
+                itemBuilder: (context, i) => _BookTile(book: books[i], onTap: onOpenBook == null ? null : () => onOpenBook!(books[i])),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
 }
 
 /// One storybook on the gallery shelf: its cover picture, title and ending.
@@ -68,8 +74,8 @@ class _BookTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = L10n.of(context);
     final cover = book.pages.first.shot;
-    final d = book.finishedAt.toLocal();
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(10),
@@ -112,11 +118,8 @@ class _BookTile extends StatelessWidget {
                     style: menuText(13, weight: FontWeight.w800),
                   ),
                   const SizedBox(height: 4),
-                  Text(endingInfo[book.ending]!.title, style: menuText(11.5, color: gold)),
-                  Text(
-                    '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}',
-                    style: menuText(11, color: Colors.white54),
-                  ),
+                  Text(l.endingName(book.ending), style: menuText(11.5, color: gold)),
+                  Text(DateFormat.yMMMd(l.localeName).format(book.finishedAt.toLocal()), style: menuText(11, color: Colors.white54)),
                 ],
               ),
             ),
@@ -140,7 +143,7 @@ class _EndingCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final info = endingInfo[ending]!;
+    final l = L10n.of(context);
     final (top, bottom) = _sky[ending]!;
     return Container(
       height: 300,
@@ -163,12 +166,12 @@ class _EndingCard extends StatelessWidget {
             ),
           ),
           Text(
-            open ? info.title : '? ? ?',
+            open ? l.endingName(ending) : l.lockedTitle,
             style: menuText(20, weight: FontWeight.w900, color: open ? gold : Colors.white38),
           ),
           const SizedBox(height: 4),
           Text(
-            open ? info.blurb : info.hint,
+            open ? l.endingBlurb(ending.name) : l.endingHint(ending.name),
             style: menuText(12.5, color: open ? Colors.white : Colors.white54).copyWith(fontStyle: open ? null : FontStyle.italic),
           ),
         ],

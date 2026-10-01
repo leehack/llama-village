@@ -37,7 +37,8 @@ release build on an M4 Max, from the self-test's per-call metrics (the
 
 Which facts go into a prompt is a rule (`relevantFacts` scores goals,
 recency, secrets and the listener); the embeddings only check what was
-said.
+said. Every job whose output the player reads runs in the chosen language
+(see Languages); plans, outcomes and topic choices stay English.
 
 ### What is not AI, and why
 
@@ -221,8 +222,10 @@ cover each other.
 ## Settings
 
 The **gear** button (and the title and pause menus) opens Settings, in
-four groups:
+five groups:
 
+- **Language**: System default (the Mac's language when it is Korean or
+  French, else English), English, 한국어 or Français; see Languages below.
 - **Graphics**: a frame-rate cap of 30, 60 (default) or 120 fps (120
   only matters on a ProMotion display) and Graphics quality (Low, Medium
   or High, the default; see below). The cap skips scene renders between
@@ -236,6 +239,43 @@ four groups:
   fireflies and falling leaves) and high-contrast bubbles.
 
 Settings are saved with shared_preferences.
+
+## Languages
+
+The game is in English, Korean and French. Every menu, the HUD, the
+inspector's labels, hints, endings, the results, the storybook,
+cutscene captions, credits and loading and error messages come from
+Flutter gen-l10n (`lib/l10n/app_{en,ko,fr}.arb`; a test checks that the
+three have the same keys and placeholders). Switching the language in
+Settings takes effect at once, in the menus and in the game: the next
+line any llama says is in the new language.
+
+What the llamas say and write is generated in the chosen language:
+dialogue, thoughts, evening reflections, Dash's options and the replies,
+the epilogue cards, the cutscene lines and the storybook. The prompts
+stay in English, since the sim's facts, goals and intents are English;
+each one ends with a short instruction in the target language (with the
+game's names for the Berry Festival, the Golden Bell and so on), and the
+call runs under a system prompt that names the language. The names Pip,
+Mo, June, Bramble, Clover and Dash are never translated; Korean output
+that spells them in Hangul (피프, 브램블) gets them back in English
+letters, with the particle fixed to match (Pip이, Mo가). Plans,
+conversation outcomes and Laya's topic choice stay English, and Dash's
+options are grammar-constrained JSON whose keys stay English, so they
+parse in any language. Facts told in Korean or French are still
+recognised as told: the facts' English keywords have Korean and French
+equivalents (`keywordTranslations` in `lib/sim/lang.dart`).
+
+What stays English: the sim's own text, which the player sees in the
+village log, in the inspector's list of what a llama knows and its goals,
+and in a storybook page or epilogue the model failed to write (the rule
+version frames the day's English facts in the chosen language).
+
+Korean and French take more tokens than English, so each call gets a
+larger budget and runs about 1.3 to 1.6 times longer (a dialogue line
+around 0.4 s, a storybook page around 1.8 s). Korean text uses the
+system fonts (Apple SD Gothic Neo in the UI, AppleMyungjo for the
+storybook's serif), so nothing is downloaded.
 
 ## The look and the village's animals
 
@@ -405,7 +445,8 @@ skip (later ones are skipped), the festival, the ending, the epilogue,
 the results, the storybook (the cover, a page turning, two pages and
 the ending) and the gallery again, with a PNG at each stop. Pair it with
 `VILLAGE_BOT=harmony|drama|quiet` (the bot plays Dash toward that
-ending), `VILLAGE_TIME_SCALE=32` (a compressed week) and
+ending), `VILLAGE_LANG=en|ko|fr` (the language for the run, without
+touching the saved settings), `VILLAGE_TIME_SCALE=32` (a compressed week) and
 `VILLAGE_SAVE_DIR=<dir>` (keeps saves and the gallery out of your
 profile); `VILLAGE_JUMP_DAY=5` starts a new game on that morning.
 `VILLAGE_QUIT_AT=menu|cutscene|generation` quits at that moment, through
@@ -437,6 +478,9 @@ hour and the storm, with the model generating and idle. See
   particles, llamas, animals and Dash with flutter_scene.
 - `lib/ambient/` is the pure-Dart life of the animals: their state
   machines, the village layout they use, and when they make sounds.
+- `lib/l10n/` holds the English, Korean and French strings (ARB) and the
+  generated localizations; `lib/ui/strings.dart` says the sim's names and
+  labels in the player's language.
 - `lib/ui/` holds the bubbles, HUD, log, options, inspector and settings;
   `lib/ui/menus/` the title screen, pause menu, credits, gallery,
   epilogue and results.
