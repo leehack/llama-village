@@ -256,7 +256,11 @@ class VillageHomeState extends State<VillageHome> with SingleTickerProviderState
     );
   }
 
+  bool _attractStarting = false;
+
   Future<void> _startAttract() async {
+    if (_attractStarting) return;
+    _attractStarting = true;
     final a = Village(
       chat: CannedChat(delay: const Duration(milliseconds: 250)),
       embed: HashEmbed(),
@@ -267,6 +271,7 @@ class VillageHomeState extends State<VillageHome> with SingleTickerProviderState
     await a.begin();
     attract?.close();
     attract = a;
+    _attractStarting = false;
   }
 
   Future<void> _refreshSaves() async {
@@ -721,7 +726,9 @@ class VillageHomeState extends State<VillageHome> with SingleTickerProviderState
 
   void openPause() {
     final v = village;
-    if (v == null || pauseMenu || inCutscene || phase != Phase.playing) return;
+    // Not while a night skip is still finishing: a save then would lose
+    // the plans being written.
+    if (v == null || pauseMenu || (director?.busy ?? false) || phase != Phase.playing) return;
     sound.click();
     _pausedBefore = v.paused;
     v.paused = true;
