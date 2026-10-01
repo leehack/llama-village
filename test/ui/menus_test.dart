@@ -4,6 +4,7 @@ import 'package:llama_village/game/save_store.dart';
 import 'package:llama_village/l10n/app_localizations.dart';
 import 'package:llama_village/sim/endings.dart';
 import 'package:llama_village/sim/influence.dart';
+import 'package:llama_village/ui/ko_text.dart';
 import 'package:llama_village/ui/menus/gallery.dart';
 import 'package:llama_village/ui/menus/pause_menu.dart';
 import 'package:llama_village/ui/menus/start_menu.dart';
@@ -143,11 +144,14 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    expect(find.text('드라마 라마'), findsOneWidget);
-    expect(find.text('이유: 우정이 틀어졌어요 (화합 0.2); Pip과 Mo가 사이가 틀어졌어요.'), findsOneWidget);
-    expect(find.text('사이가 틀어졌어요'), findsOneWidget);
-    expect(find.text('Pip: Mo의 빵 소문'), findsOneWidget);
-    expect(find.text('Pip이 황금 종을 받았어요'), findsOneWidget);
-    expect(find.text('타이틀로 돌아가기'), findsOneWidget);
+    expect(_ko('드라마 라마'), findsOneWidget);
+    expect(_ko('이유: 우정이 틀어졌어요 (화합 0.2); Pip과 Mo가 사이가 틀어졌어요.'), findsOneWidget);
+    expect(_ko('사이가 틀어졌어요'), findsOneWidget);
+    expect(_ko('Pip: Mo의 빵 소문'), findsOneWidget);
+    expect(_ko('Pip이 황금 종을 받았어요'), findsOneWidget);
+    expect(_ko('타이틀로 돌아가기'), findsOneWidget);
   });
 }
+
+/// Korean text as shown: words kept whole by [keepWords].
+Finder _ko(String text) => find.text(keepWords(text, korean: true));

@@ -5,6 +5,7 @@ import '../../l10n/app_localizations.dart';
 import '../../sim/endings.dart';
 import '../../sim/storybook.dart';
 import '../fonts.dart';
+import '../ko_text.dart';
 import '../palette.dart';
 import '../strings.dart';
 import 'menu_kit.dart';
@@ -44,13 +45,13 @@ class EndingsGallery extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 18),
-          Text(
+          KoText(
             l.storybooksSection.toUpperCase(),
             style: Face.display.of(context, menuText(11, weight: FontWeight.w900, color: gold).copyWith(letterSpacing: 1.2)),
           ),
           const SizedBox(height: 8),
           if (books.isEmpty)
-            Text(l.noStorybooks, style: menuText(12.5, color: Colors.white54))
+            KoText(l.noStorybooks, style: menuText(12.5, color: Colors.white54))
           else
             SizedBox(
               height: 128,
@@ -112,15 +113,15 @@ class _BookTile extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(
+                  KoText(
                     book.title,
                     maxLines: 3,
                     overflow: TextOverflow.ellipsis,
                     style: Face.display.of(context, menuText(13, weight: FontWeight.w800), text: book.title),
                   ),
                   const SizedBox(height: 4),
-                  Text(l.endingName(book.ending), style: menuText(11.5, color: gold)),
-                  Text(DateFormat.yMMMd(l.localeName).format(book.finishedAt.toLocal()), style: menuText(11, color: Colors.white54)),
+                  KoText(l.endingName(book.ending), style: menuText(11.5, color: gold)),
+                  KoText(DateFormat.yMMMd(l.localeName).format(book.finishedAt.toLocal()), style: menuText(11, color: Colors.white54)),
                 ],
               ),
             ),
@@ -166,12 +167,12 @@ class _EndingCard extends StatelessWidget {
               child: CustomPaint(size: const Size(150, 120), painter: LlamaSilhouette(open ? Colors.white : const Color(0xFF0E0D13))),
             ),
           ),
-          Text(
+          KoText(
             open ? l.endingName(ending) : l.lockedTitle,
             style: Face.display.of(context, menuText(20, weight: FontWeight.w900, color: open ? gold : Colors.white38)),
           ),
           const SizedBox(height: 4),
-          Text(
+          KoText(
             open ? l.endingBlurb(ending.name) : l.endingHint(ending.name),
             style: menuText(12.5, color: open ? Colors.white : Colors.white54).copyWith(fontStyle: open ? null : FontStyle.italic),
           ),

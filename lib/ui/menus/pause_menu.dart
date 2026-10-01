@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../game/save_store.dart';
 import '../../l10n/app_localizations.dart';
 import '../fonts.dart';
+import '../ko_text.dart';
 import '../palette.dart';
 import '../strings.dart';
 import 'menu_kit.dart';
@@ -59,15 +60,15 @@ class _PauseMenuState extends State<PauseMenu> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(
+          KoText(
             l.paused,
             style: Face.display.of(context, menuText(30, weight: FontWeight.w900, color: gold)),
           ),
-          Text(widget.when, style: menuText(13, color: Colors.white70)),
+          KoText(widget.when, style: menuText(13, color: Colors.white70)),
           const SizedBox(height: 16),
           MenuButton(label: l.resume, icon: Icons.play_arrow_rounded, primary: true, autofocus: true, onTap: widget.onResume),
           const SizedBox(height: 8),
-          Text(
+          KoText(
             l.saveGame.toUpperCase(),
             style: Face.display.of(context, menuText(11, weight: FontWeight.w900, color: gold).copyWith(letterSpacing: 1.2)),
           ),
@@ -88,7 +89,7 @@ class _PauseMenuState extends State<PauseMenu> {
           ),
           MenuButton(label: l.quitGame, icon: Icons.logout, onTap: widget.onQuit),
           const SizedBox(height: 4),
-          Text(
+          KoText(
             l.escResumes,
             textAlign: TextAlign.center,
             style: menuText(11, color: Colors.white38),
@@ -108,6 +109,6 @@ class Toast extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
     decoration: BoxDecoration(color: panel, borderRadius: BorderRadius.circular(12)),
-    child: Text(text, style: menuText(13.5, weight: FontWeight.w700)),
+    child: KoText(text, style: menuText(13.5, weight: FontWeight.w700)),
   );
 }

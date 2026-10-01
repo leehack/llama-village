@@ -6,6 +6,7 @@ import '../sim/dash.dart';
 import '../sim/log.dart';
 import '../sim/village.dart';
 import 'fonts.dart';
+import 'ko_text.dart';
 import 'palette.dart';
 import 'portrait.dart';
 import 'strings.dart';
@@ -77,8 +78,8 @@ class TopBar extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(l.dayClock(now.day, now.hhmm), style: Face.display.of(context, _t(18, weight: FontWeight.w900))),
-              Text(village.planning ? l.planningTomorrowLower : l.countdownFor(now.day), style: _t(11, color: Colors.white70)),
+              KoText(l.dayClock(now.day, now.hhmm), style: Face.display.of(context, _t(18, weight: FontWeight.w900))),
+              KoText(village.planning ? l.planningTomorrowLower : l.countdownFor(now.day), style: _t(11, color: Colors.white70)),
             ],
           ),
           const SizedBox(width: 14),
@@ -98,8 +99,8 @@ class TopBar extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.end,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(fps == null ? '' : l.fps(fps!.toStringAsFixed(0)), style: _t(10.5, color: Colors.white60)),
-              Text(
+              KoText(fps == null ? '' : l.fps(fps!.toStringAsFixed(0)), style: _t(10.5, color: Colors.white60)),
+              KoText(
                 village.chat.queue.busy ? l.thinking(village.chat.queue.runningType ?? '') : modelLabel,
                 style: _t(10.5, color: village.chat.queue.busy ? gold : Colors.white38),
               ),
@@ -144,7 +145,7 @@ class _Chip extends StatelessWidget {
     child: Container(
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
       decoration: BoxDecoration(color: active ? gold : const Color(0x22FFFFFF), borderRadius: BorderRadius.circular(10)),
-      child: Text(
+      child: KoText(
         label,
         style: _t(13, weight: FontWeight.w900, color: active ? ink : Colors.white),
       ),
@@ -203,7 +204,7 @@ class _VillageLogState extends State<VillageLog> {
               onTap: () => setState(() => _open = !_open),
               child: Row(
                 children: [
-                  Text(
+                  KoText(
                     L10n.of(context).villageLog,
                     style: Face.display.of(context, _t(13, weight: FontWeight.w900, color: gold)),
                   ),
@@ -245,7 +246,7 @@ class _LogRow extends StatelessWidget {
     };
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 1.5),
-      child: Text.rich(
+      child: KoText.rich(
         TextSpan(
           children: [
             TextSpan(
@@ -311,19 +312,19 @@ class OptionsPanel extends StatelessWidget {
                           height: 22,
                           alignment: Alignment.center,
                           decoration: const BoxDecoration(color: dashBlue, shape: BoxShape.circle),
-                          child: Text('${i + 1}', style: _t(12, weight: FontWeight.w900)),
+                          child: KoText('${i + 1}', style: _t(12, weight: FontWeight.w900)),
                         ),
                         const SizedBox(width: 8),
                         Icon(_icons[options[i].intent] ?? Icons.chat, size: 18, color: const Color(0xFF6B6878)),
                         const SizedBox(width: 8),
                         Expanded(
-                          child: Text(
+                          child: KoText(
                             options[i].text,
                             style: Face.display.of(context, _t(13.5, color: ink), text: options[i].text),
                           ),
                         ),
                         const SizedBox(width: 6),
-                        Text(words.intent(options[i].intent), style: _t(10.5, color: const Color(0xFF8A8796))),
+                        KoText(words.intent(options[i].intent), style: _t(10.5, color: const Color(0xFF8A8796))),
                       ],
                     ),
                   ),
@@ -336,19 +337,19 @@ class OptionsPanel extends StatelessWidget {
       VisitStage.done => Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(
+          KoText(
             words.reaction(l.name, visit.reaction ?? 2),
             style: Face.display.of(context, _t(14, weight: FontWeight.w900, color: ink)),
           ),
           const SizedBox(height: 4),
-          for (final e in visit.effects) Text('• ${words.effectOf(e)}', style: _t(12, color: const Color(0xFF55525F))),
+          for (final e in visit.effects) KoText('• ${words.effectOf(e)}', style: _t(12, color: const Color(0xFF55525F))),
           const SizedBox(height: 8),
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              TextButton.icon(onPressed: onMore, icon: const Icon(Icons.chat_bubble_outline), label: Text(words.sayMore)),
+              TextButton.icon(onPressed: onMore, icon: const Icon(Icons.chat_bubble_outline), label: KoText(words.sayMore)),
               const SizedBox(width: 6),
-              FilledButton.icon(onPressed: onLeave, icon: const Icon(Icons.flight_takeoff), label: Text(words.flyOff)),
+              FilledButton.icon(onPressed: onLeave, icon: const Icon(Icons.flight_takeoff), label: KoText(words.flyOff)),
             ],
           ),
         ],
@@ -367,13 +368,13 @@ class OptionsPanel extends StatelessWidget {
               children: [
                 const Icon(Icons.flutter_dash, color: dashBlue, size: 20),
                 const SizedBox(width: 6),
-                Text(
+                KoText(
                   words.dashAnd(l.name),
                   style: Face.display.of(context, _t(15, weight: FontWeight.w900, color: ink)),
                 ),
                 const SizedBox(width: 8),
                 Flexible(
-                  child: Text(
+                  child: KoText(
                     words.atPlaceMood(words.placeName(l.place), words.moodOf(l)),
                     overflow: TextOverflow.ellipsis,
                     style: _t(12, color: const Color(0xFF8A8796)),
@@ -402,7 +403,7 @@ class OptionsPanel extends StatelessWidget {
         if (icon != null) Icon(icon, color: dashBlue, size: 20),
         const SizedBox(width: 10),
         Flexible(
-          child: Text(text, style: _t(14, color: ink)),
+          child: KoText(text, style: _t(14, color: ink)),
         ),
       ],
     ),
@@ -444,14 +445,14 @@ class Inspector extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
+                        KoText(
                           l.name,
                           style: Face.display.of(
                             context,
                             _t(22, weight: FontWeight.w900, color: Colors.white).copyWith(shadows: textShadow),
                           ),
                         ),
-                        Text(words.llamaRole(l.name), style: _t(12.5, color: Colors.white)),
+                        KoText(words.llamaRole(l.name), style: _t(12.5, color: Colors.white)),
                       ],
                     ),
                   ),
@@ -472,14 +473,14 @@ class Inspector extends StatelessWidget {
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(14, 10, 14, 14),
                 children: [
-                  Text(
+                  KoText(
                     words.llamaTraits(l.name),
                     style: _t(12.5, color: Colors.white70, style: FontStyle.italic),
                   ),
                   const SizedBox(height: 4),
-                  Text(words.llamaBio(l.name), style: _t(12, color: Colors.white60)),
+                  KoText(words.llamaBio(l.name), style: _t(12, color: Colors.white60)),
                   _section(context, words.sectionNow),
-                  Text(words.activityOf(village, l), style: _t(13)),
+                  KoText(words.activityOf(village, l), style: _t(13)),
                   if (data.thought != null) ...[
                     const SizedBox(height: 4),
                     Row(
@@ -488,7 +489,7 @@ class Inspector extends StatelessWidget {
                         const Icon(Icons.cloud_outlined, size: 15, color: Color(0xFFB9B0E0)),
                         const SizedBox(width: 6),
                         Expanded(
-                          child: Text(
+                          child: KoText(
                             data.thought!,
                             style: _t(12.5, color: const Color(0xFFDCD6F7), style: FontStyle.italic),
                           ),
@@ -511,7 +512,7 @@ class Inspector extends StatelessWidget {
                   ],
                   _section(context, words.sectionWhy),
                   if (l.lastDecision == null)
-                    Text(words.noDecision, style: _t(12, color: Colors.white54))
+                    KoText(words.noDecision, style: _t(12, color: Colors.white54))
                   else
                     for (final (i, o) in l.lastDecision!.options.take(5).indexed) _utility(words.choiceOf(o), words.say(o.why), o, i == 0),
                   _section(context, words.sectionKnows(l.name, data.knows.length)),
@@ -527,7 +528,7 @@ class Inspector extends StatelessWidget {
 
   Widget _section(BuildContext context, String s) => Padding(
     padding: const EdgeInsets.only(top: 14, bottom: 6),
-    child: Text(
+    child: KoText(
       s.toUpperCase(),
       style: Face.display.of(context, _t(11, weight: FontWeight.w900, color: gold).copyWith(letterSpacing: 1.1)),
     ),
@@ -539,7 +540,7 @@ class Inspector extends StatelessWidget {
       children: [
         SizedBox(
           width: 150,
-          child: Text(label, style: _t(12), overflow: TextOverflow.ellipsis),
+          child: KoText(label, style: _t(12), overflow: TextOverflow.ellipsis),
         ),
         Expanded(
           child: LayoutBuilder(
@@ -588,7 +589,7 @@ class Inspector extends StatelessWidget {
         if (value != null)
           SizedBox(
             width: 28,
-            child: Text(
+            child: KoText(
               value,
               textAlign: TextAlign.right,
               style: _t(11, color: Colors.white60),
@@ -603,8 +604,8 @@ class Inspector extends StatelessWidget {
     child: Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('•  ', style: _t(12.5, color: gold)),
-        Expanded(child: Text(s, style: _t(12.5))),
+        KoText('•  ', style: _t(12.5, color: gold)),
+        Expanded(child: KoText(s, style: _t(12.5))),
       ],
     ),
   );
@@ -615,13 +616,13 @@ class Inspector extends StatelessWidget {
       children: [
         SizedBox(
           width: 44,
-          child: Text(
+          child: KoText(
             o.utility.toStringAsFixed(2),
             style: _t(11.5, weight: FontWeight.w800, color: chosen ? gold : Colors.white60),
           ),
         ),
         Expanded(
-          child: Text.rich(
+          child: KoText.rich(
             TextSpan(
               children: [
                 TextSpan(
@@ -654,7 +655,7 @@ class Inspector extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          KoText(
             text,
             style: _t(
               12.5,
@@ -665,7 +666,7 @@ class Inspector extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
             decoration: BoxDecoration(color: color.withValues(alpha: 0.18), borderRadius: BorderRadius.circular(6)),
-            child: Text(
+            child: KoText(
               tag,
               style: _t(10.5, weight: FontWeight.w800, color: color),
             ),
@@ -685,7 +686,7 @@ class Notice extends StatelessWidget {
   @override
   Widget build(BuildContext context) => _Card(
     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-    child: Text(text, style: _t(13.5, weight: FontWeight.w700)),
+    child: KoText(text, style: _t(13.5, weight: FontWeight.w700)),
   );
 }
 
@@ -695,7 +696,7 @@ class HelpHint extends StatelessWidget {
   @override
   Widget build(BuildContext context) => _Card(
     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-    child: Text(
+    child: KoText(
       L10n.of(context).helpHint,
       textAlign: TextAlign.center,
       style: _t(11, color: Colors.white70),
@@ -731,14 +732,14 @@ class LoadingCard extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
+              KoText(
                 words.appTitle,
                 style: Face.display.of(context, _t(34, weight: FontWeight.w900, color: gold)),
               ),
-              Text(words.loadingTagline, style: _t(14, color: Colors.white70)),
+              KoText(words.loadingTagline, style: _t(14, color: Colors.white70)),
               const SizedBox(height: 22),
               if (!problem) ...[
-                Text(label, style: _t(14)),
+                KoText(label, style: _t(14)),
                 const SizedBox(height: 10),
                 ClipRRect(
                   borderRadius: BorderRadius.circular(6),
@@ -751,31 +752,31 @@ class LoadingCard extends StatelessWidget {
                 ),
               ],
               if (missing != null) ...[
-                Text(
+                KoText(
                   words.modelsNotFoundTitle,
                   style: Face.display.of(context, _t(17, weight: FontWeight.w900, color: const Color(0xFFFF8FA3))),
                 ),
                 const SizedBox(height: 8),
-                Text(words.modelsMissing(missing!.join(', ')), style: _t(13)),
+                KoText(words.modelsMissing(missing!.join(', ')), style: _t(13)),
                 const SizedBox(height: 6),
-                Text(label, style: _t(12, color: Colors.white70)),
+                KoText(label, style: _t(12, color: Colors.white70)),
               ],
               if (error != null) ...[
-                Text(
+                KoText(
                   words.modelsFailedTitle,
                   style: Face.display.of(context, _t(17, weight: FontWeight.w900, color: const Color(0xFFFF8FA3))),
                 ),
                 const SizedBox(height: 8),
-                Text(error!, style: _t(12.5)),
+                KoText(error!, style: _t(12.5)),
               ],
               if (problem) ...[
                 const SizedBox(height: 18),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    if (onQuit != null) TextButton(onPressed: onQuit, child: Text(words.quit)),
+                    if (onQuit != null) TextButton(onPressed: onQuit, child: KoText(words.quit)),
                     const SizedBox(width: 8),
-                    if (onCanned != null) FilledButton(onPressed: onCanned, child: Text(words.playWithoutAi)),
+                    if (onCanned != null) FilledButton(onPressed: onCanned, child: KoText(words.playWithoutAi)),
                   ],
                 ),
               ],

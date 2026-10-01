@@ -4,6 +4,7 @@ import '../../l10n/app_localizations.dart';
 import '../../sim/endings.dart';
 import '../../sim/influence.dart';
 import '../fonts.dart';
+import '../ko_text.dart';
 import '../palette.dart';
 import '../portrait.dart';
 import '../strings.dart';
@@ -24,7 +25,7 @@ class EpilogueView extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text(
+        KoText(
           l.afterTheFestival,
           style: Face.display.of(context, menuText(34, weight: FontWeight.w900, color: gold).copyWith(shadows: textShadow)),
         ),
@@ -52,7 +53,7 @@ class EpilogueView extends StatelessWidget {
                       children: [
                         LlamaPortrait(name, size: 46 * textScale),
                         const SizedBox(width: 10),
-                        Text(
+                        KoText(
                           name,
                           style: Face.display.of(context, menuText(19 * textScale, weight: FontWeight.w900, color: accentOf(name))),
                         ),
@@ -63,7 +64,7 @@ class EpilogueView extends StatelessWidget {
                       child: AnimatedOpacity(
                         opacity: line == null ? 0.6 : 1,
                         duration: const Duration(milliseconds: 400),
-                        child: Text(line ?? dots, style: menuText(14 * textScale, height: 1.4).copyWith(fontStyle: FontStyle.italic)),
+                        child: KoText(line ?? dots, style: menuText(14 * textScale, height: 1.4).copyWith(fontStyle: FontStyle.italic)),
                       ),
                     ),
                   ],
@@ -122,19 +123,19 @@ class ResultsView extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
             decoration: BoxDecoration(color: newlyUnlocked ? gold : const Color(0x33FFFFFF), borderRadius: BorderRadius.circular(20)),
-            child: Text(
+            child: KoText(
               (newlyUnlocked ? l.endingUnlocked : l.endingAlready).toUpperCase(),
               style: menuText(11, weight: FontWeight.w900, color: newlyUnlocked ? ink : Colors.white70).copyWith(letterSpacing: 1.2),
             ),
           ),
           const SizedBox(height: 8),
-          Text(
+          KoText(
             l.endingName(verdict.ending),
             style: Face.display.of(context, menuText(40, weight: FontWeight.w900, color: gold)),
           ),
-          Text(l.endingBlurb(verdict.ending.name), style: menuText(14, color: Colors.white70)),
+          KoText(l.endingBlurb(verdict.ending.name), style: menuText(14, color: Colors.white70)),
           const SizedBox(height: 6),
-          Text(l.why(verdict.why.map(l.reasonOf).join('; ')), style: menuText(12.5, color: Colors.white54)),
+          KoText(l.why(verdict.why.map(l.reasonOf).join('; ')), style: menuText(12.5, color: Colors.white54)),
           const SizedBox(height: 18),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -177,7 +178,7 @@ class ResultsView extends StatelessWidget {
                           children: [
                             SizedBox(
                               width: 70,
-                              child: Text(
+                              child: KoText(
                                 n,
                                 style: menuText(13, weight: FontWeight.w800, color: accentOf(n)),
                               ),
@@ -187,7 +188,7 @@ class ResultsView extends StatelessWidget {
                             ),
                             SizedBox(
                               width: 34,
-                              child: Text(
+                              child: KoText(
                                 '$t',
                                 textAlign: TextAlign.right,
                                 style: menuText(12.5, color: Colors.white70),
@@ -233,12 +234,12 @@ class _Stat extends StatelessWidget {
   Widget build(BuildContext context) => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      Text(
+      KoText(
         label.toUpperCase(),
         style: Face.display.of(context, menuText(10.5, weight: FontWeight.w900, color: gold).copyWith(letterSpacing: 1.1)),
       ),
-      Text(value, style: menuText(17, weight: FontWeight.w800)),
-      if (note.isNotEmpty) Text(note, style: menuText(11.5, color: Colors.white54)),
+      KoText(value, style: menuText(17, weight: FontWeight.w800)),
+      if (note.isNotEmpty) KoText(note, style: menuText(11.5, color: Colors.white54)),
     ],
   );
 }

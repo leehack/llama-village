@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../fonts.dart';
+import '../ko_text.dart';
 import '../palette.dart';
 
 TextStyle menuText(double size, {FontWeight weight = FontWeight.w600, Color color = Colors.white, double height = 1.3}) =>
@@ -72,12 +73,12 @@ class MenuButton extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
+                      KoText(
                         label,
                         style: menuText(16, weight: FontWeight.w800, color: fg),
                       ),
                       if (detail != null)
-                        Text(detail!, style: menuText(11.5, color: primary && enabled ? ink.withValues(alpha: 0.7) : Colors.white54)),
+                        KoText(detail!, style: menuText(11.5, color: primary && enabled ? ink.withValues(alpha: 0.7) : Colors.white54)),
                     ],
                   ),
                 ),
@@ -105,11 +106,11 @@ class MenuHeader extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
+            KoText(
               title,
               style: Face.display.of(context, menuText(26, weight: FontWeight.w900, color: gold)),
             ),
-            if (subtitle != null) Text(subtitle!, style: menuText(13, color: Colors.white70)),
+            if (subtitle != null) KoText(subtitle!, style: menuText(13, color: Colors.white70)),
           ],
         ),
       ),

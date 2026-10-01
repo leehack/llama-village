@@ -7,6 +7,7 @@ import '../render/stage.dart';
 import '../ui/bubble_layout.dart';
 import '../ui/bubbles.dart';
 import '../ui/fonts.dart';
+import '../ui/ko_text.dart';
 import '../ui/palette.dart';
 import 'timeline.dart';
 
@@ -133,7 +134,7 @@ class CutsceneOverlay extends StatelessWidget {
           Positioned(
             right: 20,
             bottom: bar > 30 ? bar / 2 - 9 : 14,
-            child: Text(
+            child: KoText(
               player.waiting ? '${l.llamasThinking}$dots   ·   ${l.skipHint}' : l.skipHint,
               style: const TextStyle(fontSize: 12, color: Colors.white54, fontWeight: FontWeight.w600),
             ),
@@ -205,7 +206,7 @@ class _DreamSpacing {
       final inner = 300 * scale - 32 - border;
       final body = TextPainter(
         text: TextSpan(
-          text: text,
+          text: keepWords(text, korean: korean),
           style: _dreamStyle(scale, highContrast, song: song, korean: korean, text: text),
         ),
         textAlign: TextAlign.center,
@@ -215,7 +216,10 @@ class _DreamSpacing {
       body.dispose();
       if (label != null) {
         final painter = TextPainter(
-          text: TextSpan(text: label, style: _speakerStyle(scale, korean)),
+          text: TextSpan(
+            text: keepWords(label, korean: korean),
+            style: _speakerStyle(scale, korean),
+          ),
           textDirection: TextDirection.ltr,
         )..layout(maxWidth: inner);
         width = math.max(width, painter.width);
@@ -230,16 +234,19 @@ class _DreamSpacing {
     if (_subtitles.length > 16) _subtitles.clear();
     return _subtitles.putIfAbsent((speaker, text, scale, maxWidth, korean), () {
       final painter = TextPainter(
-        text: TextSpan(
-          children: [
-            if (speaker != null)
-              TextSpan(
-                text: '$speaker  ',
-                style: const TextStyle(fontWeight: FontWeight.w900),
-              ),
-            TextSpan(text: text),
-          ],
-          style: _subtitleStyle(scale, korean),
+        text: keepWordsSpan(
+          TextSpan(
+            children: [
+              if (speaker != null)
+                TextSpan(
+                  text: '$speaker  ',
+                  style: const TextStyle(fontWeight: FontWeight.w900),
+                ),
+              TextSpan(text: text),
+            ],
+            style: _subtitleStyle(scale, korean),
+          ),
+          korean: korean,
         ),
         textAlign: TextAlign.center,
         textDirection: TextDirection.ltr,
@@ -290,7 +297,7 @@ class _Subtitle extends StatelessWidget {
       borderRadius: BorderRadius.circular(12),
       border: highContrast ? Border.all(color: Colors.white, width: 2) : null,
     ),
-    child: Text.rich(
+    child: KoText.rich(
       TextSpan(
         children: [
           if (speaker != null)
@@ -360,11 +367,11 @@ class _Dream extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               if (speaker != null)
-                Text(
+                KoText(
                   song ? speaker! : L10n.of(context).dreams(speaker!),
                   style: _speakerStyle(scale, korean).copyWith(color: highContrast ? Colors.black : edge),
                 ),
-              Text(
+              KoText(
                 text,
                 textAlign: TextAlign.center,
                 style: _dreamStyle(scale, highContrast, song: song, korean: korean, text: text),
@@ -389,7 +396,7 @@ class _Title extends StatelessWidget {
   Widget build(BuildContext context) => Column(
     mainAxisSize: MainAxisSize.min,
     children: [
-      Text(
+      KoText(
         title,
         textAlign: TextAlign.center,
         style: Face.display.on(
@@ -399,7 +406,7 @@ class _Title extends StatelessWidget {
         ),
       ),
       if (subtitle != null)
-        Text(
+        KoText(
           subtitle!,
           textAlign: TextAlign.center,
           style: TextStyle(fontSize: 20 * scale, fontWeight: FontWeight.w700, color: Colors.white, shadows: _glow),

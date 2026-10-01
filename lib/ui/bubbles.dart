@@ -5,6 +5,7 @@ import '../render/stage.dart';
 import '../sim/village.dart';
 import 'bubble_layout.dart';
 import 'fonts.dart';
+import 'ko_text.dart';
 import 'palette.dart';
 
 /// Name tags and speech/thought bubbles, pinned above each speaker's head.
@@ -145,7 +146,7 @@ class _Spacing {
       final border = highContrast ? 6 : 4;
       final painter = TextPainter(
         text: TextSpan(
-          text: text ?? '...',
+          text: text == null ? '...' : keepWords(text, korean: korean),
           style: text == null
               ? _dotsStyle(scale, highContrast)
               : _textStyle(thought: thought, scale: scale, highContrast: highContrast, korean: korean, text: text),
@@ -161,7 +162,10 @@ class _Spacing {
 
   Size tagSize(String name, bool icon, bool korean) => _tags.putIfAbsent((name, icon, korean), () {
     final painter = TextPainter(
-      text: TextSpan(text: name, style: _tagStyle(korean)),
+      text: TextSpan(
+        text: keepWords(name, korean: korean),
+        style: _tagStyle(korean),
+      ),
       textDirection: TextDirection.ltr,
     )..layout();
     final size = Size(painter.width + 14 + 3 + (icon ? 15 : 0), painter.height + 4 + 3 + 4);
@@ -245,7 +249,7 @@ class _NameTag extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(name, style: _tagStyle(korean)),
+          KoText(name, style: _tagStyle(korean)),
           if (icon != null) ...[const SizedBox(width: 3), Icon(icon, size: 12, color: Colors.white)],
         ],
       ),
@@ -267,8 +271,8 @@ class _Bubble extends StatelessWidget {
     final text = speech.text;
     final dots = '.' * (1 + (wall * 3).floor() % 3);
     final body = text == null
-        ? Text(dots.padRight(3), style: _dotsStyle(textScale, highContrast))
-        : Text(
+        ? KoText(dots.padRight(3), style: _dotsStyle(textScale, highContrast))
+        : KoText(
             text,
             textAlign: TextAlign.center,
             style: _textStyle(thought: thought, scale: textScale, highContrast: highContrast, korean: korean, text: text),

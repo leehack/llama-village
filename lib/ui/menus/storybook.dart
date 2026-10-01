@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import '../../l10n/app_localizations.dart';
 import '../../sim/storybook.dart';
 import '../fonts.dart';
+import '../ko_text.dart';
 import '../portrait.dart';
 import '../strings.dart';
 import 'gallery.dart';
@@ -273,7 +274,7 @@ class StorybookViewState extends State<StorybookView> with TickerProviderStateMi
             child: _Illustration(png: p.shot, star: pageStar(p)),
           ),
           const SizedBox(height: 14),
-          Text(
+          KoText(
             caption,
             textAlign: TextAlign.center,
             style: _serif(context, 15, family: _display, style: FontStyle.italic, color: _sepia),
@@ -294,7 +295,7 @@ class StorybookViewState extends State<StorybookView> with TickerProviderStateMi
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(
+          KoText(
             title,
             textAlign: TextAlign.center,
             style: _serif(context, 26, family: _display, weight: FontWeight.w600, style: FontStyle.italic),
@@ -307,7 +308,7 @@ class StorybookViewState extends State<StorybookView> with TickerProviderStateMi
                 : _Writing(draft: p.draft, pulse: _pulse, waiting: l.storyQuill),
           ),
           if (p.kind == PageKind.ending && p.text != null)
-            Text(
+            KoText(
               l.theEnd,
               textAlign: TextAlign.center,
               style: _serif(context, 18, family: _display, style: FontStyle.italic, color: _sepia),
@@ -327,7 +328,7 @@ class StorybookViewState extends State<StorybookView> with TickerProviderStateMi
       child: Column(
         children: [
           const Spacer(),
-          Text(
+          KoText(
             b.title,
             textAlign: TextAlign.center,
             style: _serif(context, 38, family: _display, weight: FontWeight.w600, style: FontStyle.italic, height: 1.2),
@@ -335,13 +336,13 @@ class StorybookViewState extends State<StorybookView> with TickerProviderStateMi
           const SizedBox(height: 16),
           const _Flourish(width: 180),
           const SizedBox(height: 16),
-          Text(
+          KoText(
             l.endingName(b.ending),
             textAlign: TextAlign.center,
             style: _serif(context, 18, family: _display, color: _sepia),
           ),
           const Spacer(),
-          Text(
+          KoText(
             written < total ? l.storyStillWriting(written, total) : l.storyBegin,
             textAlign: TextAlign.center,
             style: _serif(context, 14, style: FontStyle.italic, color: _sepia),
@@ -365,10 +366,10 @@ class DropCapText extends StatelessWidget {
     final trimmed = text.trim();
     // Measure with the same merged style the Text widgets below use.
     final style = DefaultTextStyle.of(context).style.merge(this.style);
-    if (trimmed.length < 2) return Text(trimmed, style: style);
+    if (trimmed.length < 2) return KoText(trimmed, style: style);
     final chars = trimmed.characters;
     final cap = chars.first;
-    final rest = chars.skip(1).toString();
+    final rest = keepWords(chars.skip(1).toString(), korean: koreanUi(context));
     return LayoutBuilder(
       builder: (context, box) {
         final scaler = MediaQuery.textScalerOf(context);
@@ -412,12 +413,12 @@ class DropCapText extends StatelessWidget {
               children: [
                 SizedBox(
                   width: capWidth,
-                  child: Text(cap, style: capStyle),
+                  child: KoText(cap, style: capStyle),
                 ),
-                Expanded(child: Text(head, style: style)),
+                Expanded(child: KoText(head, style: style)),
               ],
             ),
-            if (tail.isNotEmpty) Text(tail, style: style),
+            if (tail.isNotEmpty) KoText(tail, style: style),
           ],
         );
       },
@@ -439,7 +440,7 @@ class _Writing extends StatelessWidget {
       if (draft.trim().isNotEmpty) {
         return SingleChildScrollView(
           reverse: true,
-          child: Text.rich(
+          child: KoText.rich(
             TextSpan(
               children: [
                 TextSpan(text: draft.trim()),
@@ -458,7 +459,7 @@ class _Writing extends StatelessWidget {
         children: [
           Icon(Icons.history_edu, size: 44, color: _sepia.withValues(alpha: glow + 0.2)),
           const SizedBox(height: 12),
-          Text(
+          KoText(
             waiting,
             textAlign: TextAlign.center,
             style: _serif(context, 16, style: FontStyle.italic, color: _sepia),
@@ -681,7 +682,7 @@ class _PageNumber extends StatelessWidget {
   final int n;
 
   @override
-  Widget build(BuildContext context) => Text(
+  Widget build(BuildContext context) => KoText(
     '— $n —',
     textAlign: TextAlign.center,
     style: _serif(context, 12.5, color: _sepia),

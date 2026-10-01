@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../fonts.dart';
+import '../ko_text.dart';
 import '../palette.dart';
 import 'menu_kit.dart';
 
@@ -52,7 +53,7 @@ class CreditsView extends StatelessWidget {
                   children: [
                     for (final (section, rows) in creditSections(l)) ...[
                       const SizedBox(height: 12),
-                      Text(
+                      KoText(
                         section.toUpperCase(),
                         style: Face.display.of(context, menuText(11, weight: FontWeight.w900, color: gold).copyWith(letterSpacing: 1.2)),
                       ),
@@ -62,8 +63,8 @@ class CreditsView extends StatelessWidget {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(what, style: menuText(14.5, weight: FontWeight.w800)),
-                              Text(who, style: menuText(12.5, color: Colors.white70)),
+                              KoText(what, style: menuText(14.5, weight: FontWeight.w800)),
+                              KoText(who, style: menuText(12.5, color: Colors.white70)),
                             ],
                           ),
                         ),

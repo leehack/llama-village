@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../game/save_store.dart';
 import '../../l10n/app_localizations.dart';
 import '../fonts.dart';
+import '../ko_text.dart';
 import '../palette.dart';
 import '../strings.dart';
 import 'menu_kit.dart';
@@ -59,7 +60,7 @@ class StartMenu extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  KoText(
                     l.appTitle,
                     style: Face.display.of(
                       context,
@@ -67,14 +68,14 @@ class StartMenu extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 6),
-                  Text(
+                  KoText(
                     l.appSubtitle,
                     style: Face.display.of(
                       context,
                       menuText(20, weight: FontWeight.w800, color: Colors.white).copyWith(shadows: textShadow),
                     ),
                   ),
-                  Text(
+                  KoText(
                     l.titleTagline,
                     style: menuText(14, color: Colors.white70).copyWith(shadows: textShadow),
                   ),
@@ -91,7 +92,7 @@ class StartMenu extends StatelessWidget {
                               children: [
                                 const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2.5, color: gold)),
                                 const SizedBox(width: 14),
-                                Expanded(child: Text(busy!, style: menuText(14))),
+                                Expanded(child: KoText(busy!, style: menuText(14))),
                               ],
                             ),
                           )
@@ -119,7 +120,7 @@ class StartMenu extends StatelessWidget {
         Positioned(
           left: 64,
           bottom: 22,
-          child: Text(
+          child: KoText(
             status,
             style: menuText(12, color: Colors.white60).copyWith(shadows: textShadow),
           ),

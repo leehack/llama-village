@@ -4,6 +4,7 @@ import '../l10n/app_localizations.dart';
 import '../render/quality.dart';
 import '../settings.dart';
 import 'fonts.dart';
+import 'ko_text.dart';
 import 'palette.dart';
 
 /// The settings card: graphics, audio, gameplay and accessibility. Used
@@ -37,7 +38,7 @@ class SettingsPanel extends StatelessWidget {
           children: [
             Row(
               children: [
-                Text(
+                KoText(
                   l.settings,
                   style: Face.display.of(context, const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: Colors.white)),
                 ),
@@ -62,15 +63,15 @@ class SettingsPanel extends StatelessWidget {
                       (v) => settings.language = v,
                     ),
                     const SizedBox(height: 4),
-                    Text(l.languageNote, style: _note),
+                    KoText(l.languageNote, style: _note),
                     _Section(l.sectionGraphics),
-                    Text(l.frameRate, style: _label),
+                    KoText(l.frameRate, style: _label),
                     const SizedBox(height: 6),
                     _segments<int>({for (final f in VillageSettings.fpsChoices) f: l.fpsChoice(f)}, settings.fps, (v) => settings.fps = v),
                     const SizedBox(height: 4),
-                    Text(l.promotionNote, style: _note),
+                    KoText(l.promotionNote, style: _note),
                     const SizedBox(height: 10),
-                    Text(l.graphicsQuality, style: _label),
+                    KoText(l.graphicsQuality, style: _label),
                     const SizedBox(height: 6),
                     _segments<GraphicsQuality>(
                       {for (final q in GraphicsQuality.values) q: l.quality(q.name)},
@@ -82,7 +83,7 @@ class SettingsPanel extends StatelessWidget {
                     _volume(l.soundEffects, settings.sfxVolume, (v) => settings.sfxVolume = v),
                     _switch(l.muteAll, settings.muted, (v) => settings.muted = v),
                     _Section(l.sectionGameplay),
-                    Text(l.textSpeed, style: _label),
+                    KoText(l.textSpeed, style: _label),
                     const SizedBox(height: 6),
                     _segments<TextSpeed>(
                       {for (final t in TextSpeed.values) t: l.speedName(t.name)},
@@ -90,7 +91,7 @@ class SettingsPanel extends StatelessWidget {
                       (v) => settings.textSpeed = v,
                     ),
                     const SizedBox(height: 10),
-                    Text(l.startingSpeed, style: _label),
+                    KoText(l.startingSpeed, style: _label),
                     const SizedBox(height: 6),
                     _segments<int>(
                       {for (final s in VillageSettings.speedChoices) s: l.speedChoice(s)},
@@ -98,7 +99,7 @@ class SettingsPanel extends StatelessWidget {
                       (v) => settings.defaultSpeed = v,
                     ),
                     _Section(l.sectionAccessibility),
-                    Text(l.textSize, style: _label),
+                    KoText(l.textSize, style: _label),
                     const SizedBox(height: 6),
                     _segments<TextSize>(
                       {for (final t in TextSize.values) t: l.sizeName(t.name)},
@@ -107,7 +108,7 @@ class SettingsPanel extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     _switch(l.reducedMotion, settings.reducedMotion, (v) => settings.reducedMotion = v),
-                    Text(l.reducedMotionNote, style: _note),
+                    KoText(l.reducedMotionNote, style: _note),
                     _switch(l.highContrast, settings.highContrast, (v) => settings.highContrast = v),
                   ],
                 ),
@@ -121,7 +122,7 @@ class SettingsPanel extends StatelessWidget {
 
   Widget _segments<T>(Map<T, String> choices, T selected, ValueChanged<T> onChanged) => SegmentedButton<T>(
     showSelectedIcon: false,
-    segments: [for (final e in choices.entries) ButtonSegment(value: e.key, label: Text(e.value))],
+    segments: [for (final e in choices.entries) ButtonSegment(value: e.key, label: KoText(e.value))],
     selected: {selected},
     onSelectionChanged: (s) {
       onClick();
@@ -134,7 +135,7 @@ class SettingsPanel extends StatelessWidget {
     dense: true,
     contentPadding: EdgeInsets.zero,
     activeThumbColor: gold,
-    title: Text(label, style: _label),
+    title: KoText(label, style: _label),
     value: value,
     onChanged: (v) {
       onChanged(v);
@@ -150,7 +151,7 @@ class _Section extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.only(top: 14, bottom: 6),
-    child: Text(
+    child: KoText(
       title.toUpperCase(),
       style: Face.display.of(context, const TextStyle(fontSize: 11, fontWeight: FontWeight.w900, letterSpacing: 1.2, color: gold)),
     ),
@@ -162,13 +163,13 @@ const TextStyle _note = TextStyle(fontSize: 11, color: Colors.white60);
 
 Widget _volume(String label, double value, ValueChanged<double> onChanged) => Row(
   children: [
-    SizedBox(width: 104, child: Text(label, style: _label)),
+    SizedBox(width: 104, child: KoText(label, style: _label)),
     Expanded(
       child: Slider(value: value, onChanged: onChanged, activeColor: gold, inactiveColor: Colors.white24),
     ),
     SizedBox(
       width: 34,
-      child: Text(
+      child: KoText(
         '${(value * 100).round()}',
         textAlign: TextAlign.right,
         style: const TextStyle(fontSize: 12, color: Colors.white70),
