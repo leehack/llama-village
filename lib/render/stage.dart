@@ -4,10 +4,13 @@ import 'dart:ui' as ui;
 import 'package:flutter_scene/scene.dart';
 import 'package:vector_math/vector_math.dart' as vm;
 
+import '../ambient/creatures.dart';
+import '../ambient/layout.dart';
 import '../sim/geo.dart';
 import '../sim/places.dart';
 import '../sim/village.dart';
 import 'actors.dart';
+import 'animals.dart';
 import 'dressing.dart';
 import 'look.dart';
 import 'particles.dart';
@@ -91,6 +94,10 @@ class VillageStage {
   late final PondWater water;
   late final Fireflies fireflies = Fireflies(scene);
   late final FallingLeaves leaves = FallingLeaves(scene, world.crowns);
+
+  /// The village's cats, chickens, ducks, dog and butterflies.
+  late final AmbientLife life;
+  late final AnimalActors animals;
   GraphicsQuality _quality = GraphicsQuality.high;
   bool _loaded = false;
   late final Node _ring;
@@ -108,6 +115,8 @@ class VillageStage {
     dressing.build();
     fireflies.build();
     leaves.build();
+    life = AmbientLife(seed: 17, extraBlockers: [for (final (p, r) in world.treeTrunks) Blocker(p, r + 0.25)]);
+    animals = AnimalActors(scene, life)..build();
     for (final n in names) {
       final a = await LlamaActor.load(n);
       llamas[n] = a;
@@ -140,6 +149,7 @@ class VillageStage {
     if (!_loaded) return;
     sky.quality = q;
     dressing.quality = q;
+    animals.quality = q;
     fireflies.share = q.particles;
     leaves.share = q.particles;
   }
@@ -189,6 +199,22 @@ class VillageStage {
     dressing.update(_wall, dt, storm: sky.storm, wetness: sky.wetness);
     fireflies.update(_wall, night: v.storm ? 0 : ((sky.darkness - 0.55) / 0.35).clamp(0.0, 1.0));
     leaves.update(_wall, dt, day: 1 - sky.darkness, storm: sky.storm);
+    final d = v.dash;
+    life.update(
+      AmbientView(
+        hour: hour,
+        storm: v.storm,
+        llamas: [
+          for (final l in v.cast)
+            if (llamas[l.name]!.visible) ((llamas[l.name]!.position.x, llamas[l.name]!.position.z), v.llamaPose(l).$3),
+        ],
+        dash: d.pos,
+        dashHeight: dash.position.y - groundHeight(d.pos.$1, d.pos.$2),
+        dashMoving: d.moving,
+      ),
+      dt,
+    );
+    animals.update(_wall);
   }
 
   void _nightLights(Village v, double hour) {

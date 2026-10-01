@@ -11,6 +11,7 @@ import 'package:flutter_scene/scene.dart' hide Material;
 import 'package:vector_math/vector_math.dart' as vm;
 
 import 'ai/models.dart';
+import 'ambient/animal_sounds.dart';
 import 'audio/soloud_out.dart';
 import 'audio/soundscape.dart';
 import 'autoplay.dart';
@@ -20,6 +21,7 @@ import 'self_test.dart';
 import 'settings.dart';
 import 'sim/canned.dart';
 import 'sim/dash.dart';
+import 'sim/geo.dart';
 import 'sim/village.dart';
 import 'ui/bubbles.dart';
 import 'ui/game_keys.dart';
@@ -64,6 +66,10 @@ class VillageHomeState extends State<VillageHome> with SingleTickerProviderState
   final SoloudOut _audio = SoloudOut();
   late final Soundscape sound = Soundscape(_audio, onPlay: (name, volume) => test.log('AUDIO $name vol=${volume.toStringAsFixed(2)}'));
   late final _StageView _view = _StageView(this);
+  late final AnimalSounds animalSounds = AnimalSounds(
+    _audio,
+    onPlay: (name, volume) => test.log('AUDIO $name vol=${volume.toStringAsFixed(2)}'),
+  );
 
   Phase phase = Phase.loading;
   String label = 'Building the village…';
@@ -196,6 +202,7 @@ class VillageHomeState extends State<VillageHome> with SingleTickerProviderState
   void _applySettings() {
     _throttle.fps = settings.fps;
     stage.quality = settings.quality;
+    animalSounds.sfxVolume = settings.sfxVolume;
     sound
       ..musicVolume = settings.musicVolume
       ..sfxVolume = settings.sfxVolume;
@@ -313,7 +320,10 @@ class VillageHomeState extends State<VillageHome> with SingleTickerProviderState
     }
     final simDone = watch.elapsedMicroseconds;
     stage.update(v, step);
-    if (phase == Phase.playing) sound.update(v, _view, step);
+    if (phase == Phase.playing) {
+      sound.update(v, _view, step);
+      animalSounds.update(stage.life.calls, _view, step, groundAt: groundHeight);
+    }
     if (test.capture) {
       test.simMs.add(simDone / 1000);
       test.sceneMs.add((watch.elapsedMicroseconds - simDone) / 1000);
