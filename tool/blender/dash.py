@@ -1,8 +1,10 @@
 """Builds assets/dash.glb: Dash, the player's little blue bird (Blender 5.2).
 
-A round blue bird with a lighter belly, big glossy eyes, a small beak, a
-head tuft, wing meshes on wing bones and tail feathers. Origin at the body
-centre; faces glTF +Z like the llamas.
+A fan homage to the Flutter/Dart mascot, modelled from the plush and
+Dashatar photos on docs.flutter.dev/dash: a round sky-blue hummingbird ball
+with no neck, a darker-blue mask around big eyes, a white bib, a long
+straight beak, a dark-blue fan crest and tail, paddle wings and thin legs.
+Origin at the body centre; faces glTF +Z like the llamas.
 
   DashRig       armature: root, body, head, wing_L, wing_R, tail, lid_L, lid_R
     Body        skinned: Feather (vertex coloured)
@@ -26,127 +28,130 @@ from geo import Geo, basis_from, frame, sphere_grid
 FPS = 30
 MORPHS = ("Happy", "Sad")
 PROCEDURAL = ("root", "lid_L", "lid_R")
-BLUE, BELLY, DEEP, TUFT = "#3E8EF0", "#BDE6FF", "#2462C4", "#2FB6E8"
-BEAK = "#F5A623"
-RAD = (0.36, 0.33, 0.34)
+BLUE, MASK, BIB, DEEP = "#45ACEF", "#2366CF", "#F6FAFF", "#1C4FC0"
+BEAK, LEGS = "#8A7A6C", "#7A6656"
+RAD = 0.36
 FWD, UP = Vector((1, 0, 0)), Vector((0, 0, 1))
+EYE_AZ, EYE_EL = 25, 13
 
 
 def _v(*a):
     return Vector(a)
 
 
+def _dir(az, el, side=1):
+    return L._dir(az, el, side)
+
+
 def _body():
     B = L.Balls("DashBalls")
-    B.ellipsoid(_v(0, 0, 0), RAD)
-    B.ball(_v(0.12, 0, -0.1), 0.24)  # a round chest
-    B.ball(_v(-0.16, 0, 0.02), 0.22)
-    for i, (y, tilt, length) in enumerate(((0.0, -35, 0.13), (0.05, -50, 0.1), (-0.05, -50, 0.1))):
-        q = Quaternion((1, 0, 0), math.radians(y * 300)) @ Quaternion((0, 1, 0), math.radians(tilt))
-        B.ellipsoid(_v(-0.02 - 0.03 * i, y, RAD[2] + 0.05), (0.035, 0.03, length), rot=q, stiff=3.0)
+    B.ellipsoid(_v(0, 0, 0), (RAD, RAD * 1.02, RAD * 0.98))
     return B
 
 
+def _mask(d):
+    """How far `d` is inside the goggle-shaped mask (0..1): two discs round
+    the eyes joined across the face, soft at the edge."""
+    best = 0.0
+    for side in (1, -1):
+        best = max(best, c.smoothstep(math.radians(33), math.radians(31), d.angle(_dir(EYE_AZ, EYE_EL, side))))
+    return max(best, c.smoothstep(math.radians(27), math.radians(25), d.angle(_dir(0, EYE_EL - 4))))
+
+
 def _colors():
-    blue, belly, deep, tuft = c.hexc(BLUE), c.hexc(BELLY), c.hexc(DEEP), c.hexc(TUFT)
+    blue, mask, bib = c.hexc(BLUE), c.hexc(MASK), c.hexc(BIB)
     inv = c.T.inverted()
-    belly_dir = _v(0.75, 0, -0.62).normalized()
+    bib_dir = _dir(0, -38)
 
     def col(i, co):
-        p = inv @ co
-        if p.z > RAD[2] + 0.02:
-            return tuft
-        d = p.normalized() if p.length > 1e-6 else p
-        out = c.mix(blue, belly, c.smoothstep(0.45, 0.72, d.dot(belly_dir)))
-        return c.mix(out, deep, c.smoothstep(0.3, 0.8, -d.x) * 0.5)
+        d = (inv @ co).normalized()
+        # The white bib, a crescent under the mask.
+        out = c.mix(blue, bib, c.smoothstep(math.cos(math.radians(54)), math.cos(math.radians(52)), d.dot(bib_dir)))
+        return c.mix(out, mask, _mask(d))
     return col
 
 
-def _wings_tail_feet(geo):
-    blue, deep, beak = c.hexc(BLUE), c.hexc(DEEP), c.hexc(BEAK)
+def _feather(geo, base, direction, length, width, color, group, side_axis=None):
+    n, s, u = basis_from(direction, up=side_axis or UP)
+    geo.sphere(frame(base + direction * length * 0.5, n, s, u, length * 0.5, width, 0.014), color, "Feather", seg=12,
+               rings=6, group=group)
+
+
+def _wings_tail_legs_crest(geo):
+    blue, deep, legs = c.hexc(BLUE), c.hexc(DEEP), c.hexc(LEGS)
     for side, bone in ((1, "wing_L"), (-1, "wing_R")):
-        root = _v(-0.02, side * 0.3, 0.04)
+        root = _v(-0.03, side * (RAD - 0.03), 0.02)
         grp = ((bone, 1.0),)
 
         def shade(lp, p, root=root):
-            t = (abs(p.y) - abs(root.y)) / 0.36
-            return c.mix(blue, deep, c.smoothstep(0.3, 0.9, t))
-        # Three overlapping feathers make a scalloped wing edge.
-        for dx, dy, dz, sx, sy, a in ((0.02, 0.12, 0.0, 0.17, 0.15, 0), (-0.06, 0.24, -0.02, 0.12, 0.13, -15),
-                                      (-0.12, 0.32, -0.04, 0.08, 0.1, -30)):
-            centre = root + _v(dx, side * dy, dz)
-            M = Matrix.Translation(centre) @ Matrix.Rotation(math.radians(a * side), 4, 'Z') @ Matrix.Diagonal((sx, sy, 0.035, 1))
-            geo.sphere(M, shade, "Feather", seg=14, rings=8, group=grp)
-    for a, length in ((0, 0.2), (22, 0.17), (-22, 0.17)):
-        d = (Matrix.Rotation(math.radians(a), 3, 'Z') @ _v(-1, 0, 0.35)).normalized()
-        centre = _v(-0.3, 0, -0.04) + d * length * 0.7
-        n, s, u = basis_from(d, up=UP)
-        geo.sphere(frame(centre, n, s, u, length, 0.05, 0.016), c.mix(blue, deep, 0.6), "Feather", seg=12, rings=6,
-                   group=(("tail", 1.0),))
+            return c.mix(blue, c.mix(blue, deep, 0.45), c.smoothstep(0.08, 0.22, (p - root).length))
+        # A rounded paddle, out and a little up.
+        M = Matrix.Translation(root + _v(-0.02, side * 0.13, 0.1)) @ Matrix.Rotation(math.radians(-55 * side), 4, 'X') \
+            @ Matrix.Diagonal((0.11, 0.17, 0.04, 1))
+        geo.sphere(M, shade, "Feather", seg=14, rings=8, group=grp)
+    # Fan crest on top, in the body's mid plane.
+    # The crest fans out side to side, so it reads from the front.
+    for k, a in enumerate((-48, -24, 0, 24, 48)):
+        d = (Matrix.Rotation(math.radians(-14), 3, 'Y') @ Matrix.Rotation(math.radians(a), 3, 'X') @ UP).normalized()
+        _feather(geo, _v(-0.04, 0, RAD - 0.05), d, 0.2 - 0.02 * abs(k - 2), 0.05, c.hexc(DEEP), (("head", 1.0),),
+                 side_axis=FWD)
+    # Fan tail.
+    for a in (-34, -12, 12, 34):
+        d = (Matrix.Rotation(math.radians(a), 3, 'Z') @ _v(-1, 0, 0.45)).normalized()
+        _feather(geo, _v(-RAD + 0.05, 0, -0.02), d, 0.24, 0.06, c.hexc(DEEP), (("tail", 1.0),))
+    # Thin legs and three-toed feet.
     for side in (1, -1):
-        for a in (-25, 0, 25):
+        hip = _v(0.02, side * 0.1, -RAD + 0.04)
+        foot = hip + _v(0.02, side * 0.01, -0.17)
+        geo.tube([hip, (hip + foot) / 2 + _v(-0.01, 0, 0), foot], 0.014, legs, "Feather", seg=6, group=(("body", 1.0),))
+        for a in (-30, 0, 30):
             d = Matrix.Rotation(math.radians(a), 3, 'Z') @ FWD
-            p = _v(0.06, side * 0.1, -0.33) + d * 0.04
-            geo.sphere(frame(p, d, UP.cross(d).normalized(), UP, 0.04, 0.012, 0.012), beak, "Feather", seg=8, rings=5,
-                       group=(("body", 1.0),))
+            geo.tube([foot, foot + d * 0.06 - UP * 0.01], lambda t: 0.012 * (1 - 0.5 * t), legs, "Feather", seg=5,
+                     group=(("body", 1.0),))
 
 
 def _face(surf, materials):
     geo = Geo(MORPHS)
-    white, pupil, iris = c.hexc("#FFFFFF"), c.hexc("#0B0A12"), c.hexc("#2A3A5E")
-    lid, brow_col = c.hexc(BLUE), c.hexc("#173C7A")
-    origin = _v(0, 0, 0.06)
+    white, pupil, iris = c.hexc("#FFFFFF"), c.hexc("#0A0A10"), c.hexc("#1E6E78")
+    lid = c.hexc(MASK)
+    origin = _v(0, 0, 0)
     eyes = {}
     for side, bone in ((1, "lid_L"), (-1, "lid_R")):
-        hit, nrm = surf(origin, L._dir(30, 16, side))
-        n, sv, u = basis_from((nrm + FWD * 0.9).normalized())
-        r, w = 0.105, 0.088
-        centre = hit - n * r * 0.38
+        hit, nrm = surf(origin, _dir(EYE_AZ, EYE_EL, side))
+        n, sv, u = basis_from((nrm + FWD * 0.5).normalized())
+        r, w = 0.09, 0.085
+        centre = hit - n * r * 0.62
         M = frame(centre, n, sv, u, r, w, r)
-        geo.sphere(M, white, "EyeGloss", seg=20, rings=12)
-        gaze = (n + FWD * 0.5).normalized()
+        geo.sphere(M, white, "EyeGloss", seg=20, rings=12,
+                   shapes={"Happy": frame(centre, n, sv, u, r * 1.06, w * 1.06, r * 1.06)})
+        gaze = (n + FWD * 0.6).normalized()
         gl = Vector((gaze.dot(n) / r, gaze.dot(sv) / w, gaze.dot(u) / r)).normalized()
         q = Vector((0, 0, 1)).rotation_difference(gl).to_matrix().to_4x4()
-        for scale, cap, col, seg in ((1.012, 44, iris, 18), (1.022, 30, pupil, 16)):
+        for scale, cap, col, seg in ((1.012, 36, iris, 18), (1.022, 31, pupil, 16)):
             pts, faces = sphere_grid(seg, 6, 2.0, cap=math.radians(cap))
-            geo.add([M @ (q @ Vector(p) * scale) for p in pts], faces, col, "EyeGloss")
-        for off, size in (((0.5, 0.3), 0.3), ((-0.35, -0.3), 0.14)):
+            geo.add([M @ (q @ Vector(p) * scale) for p in pts], faces, col, "EyeGloss",
+                    shapes={"Happy": [frame(centre, n, sv, u, r * 1.06, w * 1.06, r * 1.06) @ (q @ Vector(p) * scale) for p in pts]})
+        for off, size in (((0.5, 0.35), 0.3), ((-0.3, -0.3), 0.13)):
             d = (gl + Vector((0, 0, 1)) * off[0] + Vector((0, side, 0)) * off[1]).normalized()
             d, t1, t2 = basis_from(d)
-            geo.sphere(M @ frame(d * 1.01, d, t1, t2, size * 0.15, size, size), (1, 1, 1), "EyeShine", seg=8, rings=6)
+            geo.sphere(M @ frame(d * 1.03, d, t1, t2, size * 0.15, size, size), (1, 1, 1), "EyeShine", seg=8, rings=6)
         grp = ((bone, 1.0),)
-        open_rot = Matrix.Rotation(math.radians(L.LID_OPEN + 14), 4, -sv)
+        open_rot = Matrix.Rotation(math.radians(L.LID_OPEN + 46), 4, -sv)
         Ml = Matrix.Translation(centre) @ open_rot @ Matrix.Translation(-centre) @ frame(centre, n, sv, u, r * 1.08, w * 1.09, r * 1.08)
         geo.sphere(Ml, lid, "Face", seg=18, rings=10, group=grp, zmin=0.0)
         rim = [Ml @ Vector((math.cos(a), math.sin(a), 0.0)) for a in [math.radians(-100 + 200 * i / 14) for i in range(15)]]
-        geo.tube(rim, lambda t: 0.008 * (0.6 + 0.4 * math.sin(math.pi * t)), c.hexc("#0E2450"), "Face", seg=6, group=grp)
+        geo.tube(rim, lambda t: 0.006 * (0.6 + 0.4 * math.sin(math.pi * t)), c.hexc("#123E86"), "Face", seg=6, group=grp)
         eyes[side] = dict(centre=centre, n=n, s=sv, u=u, r=r)
-        c0 = centre + u * r * 1.5 + n * r * 0.25
+    # The long straight beak, from the middle of the face, angled down.
+    root, _ = surf(origin, _dir(0, 2))
+    beak = c.hexc(BEAK)
 
-        def path(lift=0.0, inner=0.0, side=side, sv=sv, u=u, c0=c0, w=w):
-            pts = []
-            for i in range(6):
-                k = -1 + 2 * i / 5
-                inner_t = max(0.0, -k if (sv.y * side) > 0 else k)
-                p = c0 + sv * k * w * 0.85 + u * (lift + inner * inner_t + 0.01 * (1 - k * k))
-                h2, n2 = surf(origin, p - origin)
-                pts.append(h2 + n2 * 0.008)
-            return pts
-        geo.tube(path(), lambda t: 0.012 * (0.6 + 0.4 * math.sin(math.pi * t)), brow_col, "Face", seg=6,
-                 shapes={"Happy": path(lift=0.03), "Sad": path(inner=0.035)}, flat=0.7)
-    # Beak: upper and lower halves; Happy opens it in a chirp.
-    tip, _ = surf(_v(0, 0, 0.0), L._dir(0, 2))
-    base = tip - FWD * 0.03
-    beak, beak_dark = c.hexc(BEAK), c.hexc("#D9861A")
-    up_beak = frame(base + FWD * 0.045 + UP * 0.012, FWD, _v(0, 1, 0), UP, 0.1, 0.05, 0.035)
-    geo.sphere(up_beak, beak, "Face", seg=12, rings=8, zmin=-0.1, shapes={"Sad": Matrix.Translation((0, 0, -0.008)) @ up_beak})
-    low = frame(base + FWD * 0.03 - UP * 0.005, FWD, _v(0, 1, 0), UP, 0.07, 0.045, 0.03)
-    happy_low = Matrix.Translation(base) @ Matrix.Rotation(math.radians(22), 4, 'Y') @ Matrix.Translation(-base) @ low
-    geo.sphere(low, beak_dark, "Face", seg=12, rings=8, zmax=0.2, shapes={"Happy": happy_low})
-    for side in (1, -1):
-        hit, nrm = surf(_v(0, 0, 0), L._dir(48, -12, side))
-        nn, ns, nu = basis_from(nrm)
-        geo.sphere(frame(hit - nn * 0.006, nn, ns, nu, 0.01, 0.045, 0.03), c.hexc("#FF9AB8"), "Face", seg=12, rings=6)
+    def cone(tilt):
+        d = (Matrix.Rotation(math.radians(tilt), 3, 'Y') @ FWD).normalized()
+        n, s, u = basis_from(d)
+        base = root - d * 0.03
+        return frame(base + d * 0.19, s, u, d, 0.066, 0.056, 0.19)
+    geo.cylinder(cone(20), beak, "Face", seg=14, r_top=0.14, shapes={"Happy": cone(10), "Sad": cone(38)})
     return geo.to_object("Face", materials, matrix=Matrix.Identity(4)), eyes
 
 
@@ -274,11 +279,11 @@ def build(out_path):
         Face=c.mat("Face", rough=0.6),
     )
     body = _body().to_mesh("Body")
-    c.decimate(body, 5200)
+    c.decimate(body, 7000)
     body.data.materials.append(materials["Feather"])
     surf = L._surface(BVHTree.FromObject(body, bpy.context.evaluated_depsgraph_get()))
     parts = Geo()
-    _wings_tail_feet(parts)
+    _wings_tail_legs_crest(parts)
     face, eyes = _face(surf, materials)
     extra = parts.to_object("Parts", materials, matrix=Matrix.Identity(4))
     for ob in (body, face, extra):
