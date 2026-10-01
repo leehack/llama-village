@@ -3,11 +3,11 @@ import 'package:flutter/material.dart';
 import '../../l10n/app_localizations.dart';
 import '../../sim/endings.dart';
 import '../../sim/influence.dart';
+import '../fonts.dart';
 import '../palette.dart';
 import '../portrait.dart';
 import '../strings.dart';
 import 'menu_kit.dart';
-import '../fonts.dart';
 
 /// One card per llama with its epilogue line ("…" while it is written).
 class EpilogueView extends StatelessWidget {

@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 
 import '../../game/save_store.dart';
 import '../../l10n/app_localizations.dart';
+import '../fonts.dart';
 import '../palette.dart';
 import '../strings.dart';
 import 'menu_kit.dart';
-import '../fonts.dart';
 
 /// The pause menu (Esc): resume, save to a slot, settings, back to the
 /// title, or quit.

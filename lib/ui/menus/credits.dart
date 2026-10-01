@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../../l10n/app_localizations.dart';
+import '../fonts.dart';
 import '../palette.dart';
 import 'menu_kit.dart';
-import '../fonts.dart';
 
 /// (what, who and licence) rows of the credits, by section.
 List<(String, List<(String, String)>)> creditSections(L10n l) => [

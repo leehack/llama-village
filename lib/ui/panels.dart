@@ -5,10 +5,10 @@ import '../sim/cast.dart';
 import '../sim/dash.dart';
 import '../sim/log.dart';
 import '../sim/village.dart';
+import 'fonts.dart';
 import 'palette.dart';
 import 'portrait.dart';
 import 'strings.dart';
-import 'fonts.dart';
 
 TextStyle _t(double size, {FontWeight weight = FontWeight.w600, Color color = Colors.white, FontStyle? style}) =>
     TextStyle(fontSize: size, fontWeight: weight, color: color, fontStyle: style, height: 1.3);

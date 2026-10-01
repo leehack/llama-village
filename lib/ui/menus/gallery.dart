@@ -4,10 +4,10 @@ import 'package:intl/intl.dart';
 import '../../l10n/app_localizations.dart';
 import '../../sim/endings.dart';
 import '../../sim/storybook.dart';
+import '../fonts.dart';
 import '../palette.dart';
 import '../strings.dart';
 import 'menu_kit.dart';
-import '../fonts.dart';
 
 /// The endings gallery: unlocked endings in colour, locked ones as
 /// silhouettes with a hint.

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../l10n/app_localizations.dart';
-import '../palette.dart';
 import '../fonts.dart';
+import '../palette.dart';
 
 TextStyle menuText(double size, {FontWeight weight = FontWeight.w600, Color color = Colors.white, double height = 1.3}) =>
     TextStyle(fontSize: size, fontWeight: weight, color: color, height: height);

@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 
 import '../../game/save_store.dart';
 import '../../l10n/app_localizations.dart';
+import '../fonts.dart';
 import '../palette.dart';
 import '../strings.dart';
 import 'menu_kit.dart';
-import '../fonts.dart';
 
 /// The title screen, over the drone flyover of the village.
 class StartMenu extends StatelessWidget {
