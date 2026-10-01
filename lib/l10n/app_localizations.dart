@@ -2172,8 +2172,8 @@ abstract class L10n {
   /// No description provided for @sayWhyStormArrived.
   ///
   /// In en, this message translates to:
-  /// **'it arrived on time; {count} llamas had been warned'**
-  String sayWhyStormArrived(String count);
+  /// **'{count, plural, =0{it arrived on time, but nobody had believed him} =1{it arrived on time; one llama had been warned} other{it arrived on time; {count} llamas had been warned}}'**
+  String sayWhyStormArrived(int count);
 
   /// No description provided for @sayWhySkyCleared.
   ///
@@ -2592,7 +2592,7 @@ abstract class L10n {
   /// No description provided for @sayStoryGossip.
   ///
   /// In en, this message translates to:
-  /// **'Dash whispered made-up {count, plural, =1{rumour} other{rumours}} about {names} to {name}, and {name} was {reaction, select, offended{offended} annoyed{annoyed} indifferent{indifferent} pleased{pleased} delighted{delighted} other{{reaction}}}.'**
+  /// **'Dash whispered {count, plural, =1{a made-up rumour} other{made-up rumours}} about {names} to {name}, and {name} was {reaction, select, offended{offended} annoyed{annoyed} indifferent{indifferent} pleased{pleased} delighted{delighted} other{{reaction}}}.'**
   String sayStoryGossip(String name, String names, int count, String reaction);
 
   /// No description provided for @sayStoryDash.

@@ -251,7 +251,7 @@ extension SimWords on L10n {
       SaidKey.whyCrushExposed => sayWhyCrushExposed(a('name'), a('outcome')),
       SaidKey.whyNobodyBelieves => sayWhyNobodyBelieves,
       SaidKey.whyJuneExposed => sayWhyJuneExposed(a('name'), a('from')),
-      SaidKey.whyStormArrived => sayWhyStormArrived(n('count')),
+      SaidKey.whyStormArrived => sayWhyStormArrived(s.number('count')),
       SaidKey.whySkyCleared => sayWhySkyCleared,
       SaidKey.whyDay => countdownFor(s.number('day')),
       SaidKey.confMoTold => sayConfMoTold,

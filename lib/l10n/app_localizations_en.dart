@@ -1513,8 +1513,15 @@ class L10nEn extends L10n {
   }
 
   @override
-  String sayWhyStormArrived(String count) {
-    return 'it arrived on time; $count llamas had been warned';
+  String sayWhyStormArrived(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'it arrived on time; $count llamas had been warned',
+      one: 'it arrived on time; one llama had been warned',
+      zero: 'it arrived on time, but nobody had believed him',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -1780,7 +1787,7 @@ class L10nEn extends L10n {
 
   @override
   String sayStoryGossip(String name, String names, int count, String reaction) {
-    String _temp0 = intl.Intl.pluralLogic(count, locale: localeName, other: 'rumours', one: 'rumour');
+    String _temp0 = intl.Intl.pluralLogic(count, locale: localeName, other: 'made-up rumours', one: 'a made-up rumour');
     String _temp1 = intl.Intl.selectLogic(reaction, {
       'offended': 'offended',
       'annoyed': 'annoyed',
@@ -1789,7 +1796,7 @@ class L10nEn extends L10n {
       'delighted': 'delighted',
       'other': '$reaction',
     });
-    return 'Dash whispered made-up $_temp0 about $names to $name, and $name was $_temp1.';
+    return 'Dash whispered $_temp0 about $names to $name, and $name was $_temp1.';
   }
 
   @override

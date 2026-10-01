@@ -346,7 +346,7 @@
   "sayWhyCrushExposed": "Bramble a été démasqué par {name} ; June {outcome, select, accepted{l'a accepté} other{l'a éconduit en douceur}}.",
   "sayWhyNobodyBelieves": "plus personne n'y croit",
   "sayWhyJuneExposed": "{name} a appris que June l'avait inventée (par {from})",
-  "sayWhyStormArrived": "il est arrivé à l'heure ; {count} lamas avaient été prévenus",
+  "sayWhyStormArrived": "{count, plural, =0{il est arrivé à l'heure, mais personne ne l'avait cru} =1{il est arrivé à l'heure ; un lama avait été prévenu} other{il est arrivé à l'heure ; {count} lamas avaient été prévenus}}",
   "sayWhySkyCleared": "le ciel s'est dégagé",
   "sayConfMoTold": "Mo a tout avoué à Pip",
   "sayConfPipOverheard": "Pip a surpris Mo en train de tout avouer à quelqu'un d'autre",

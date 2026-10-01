@@ -346,7 +346,7 @@
   "sayWhyCrushExposed": "{name} 때문에 Bramble의 마음이 들통났어요. June은 {outcome, select, accepted{마음을 받아 주었어요} other{정중히 거절했어요}}.",
   "sayWhyNobodyBelieves": "이제 아무도 믿지 않아요",
   "sayWhyJuneExposed": "{name}{name, select, Pip{이} June{이} Bramble{이} other{가}} June이 지어낸 얘기라는 걸 알았어요 ({from}에게서)",
-  "sayWhyStormArrived": "예보대로 왔어요. 미리 경고를 들은 라마는 {count}마리였어요",
+  "sayWhyStormArrived": "{count, plural, =0{예보대로 왔지만, 아무도 Bramble의 말을 믿지 않았어요} other{예보대로 왔어요. 미리 경고를 들은 라마는 {count}마리였어요}}",
   "sayWhySkyCleared": "하늘이 개었어요",
   "sayConfMoTold": "Mo가 Pip에게 털어놓았어요",
   "sayConfPipOverheard": "Pip이 Mo가 다른 라마에게 털어놓는 걸 엿들었어요",

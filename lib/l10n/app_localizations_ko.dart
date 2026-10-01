@@ -1516,8 +1516,14 @@ class L10nKo extends L10n {
   }
 
   @override
-  String sayWhyStormArrived(String count) {
-    return '예보대로 왔어요. 미리 경고를 들은 라마는 $count마리였어요';
+  String sayWhyStormArrived(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '예보대로 왔어요. 미리 경고를 들은 라마는 $count마리였어요',
+      zero: '예보대로 왔지만, 아무도 Bramble의 말을 믿지 않았어요',
+    );
+    return '$_temp0';
   }
 
   @override

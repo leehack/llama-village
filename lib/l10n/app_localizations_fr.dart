@@ -1522,8 +1522,15 @@ class L10nFr extends L10n {
   }
 
   @override
-  String sayWhyStormArrived(String count) {
-    return 'il est arrivé à l\'heure ; $count lamas avaient été prévenus';
+  String sayWhyStormArrived(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'il est arrivé à l\'heure ; $count lamas avaient été prévenus',
+      one: 'il est arrivé à l\'heure ; un lama avait été prévenu',
+      zero: 'il est arrivé à l\'heure, mais personne ne l\'avait cru',
+    );
+    return '$_temp0';
   }
 
   @override
