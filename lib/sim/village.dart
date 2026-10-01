@@ -575,7 +575,9 @@ class Village {
   Future<void> _openConversation(Conversation c) async {
     final tc = topicCase(c.a, c.b);
     if (tc.options.isNotEmpty) {
+      final watch = Stopwatch()..start();
       final (topic, source) = await gatedTopic(laya, tc);
+      if (source == 'laya') metrics.add(CallRecord('topic_laya', watch.elapsedMicroseconds / 1000));
       c.topic = topic;
       c.topicSource = source;
     }

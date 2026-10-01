@@ -13,6 +13,82 @@ announced, so rumours spread, secrets slip out, and story threads (a lost
 red scarf, the Berry Festival singing contest, a secret crush, a bread
 rumour and a storm warning) play out differently every run.
 
+## Where the AI runs
+
+Three local models do the writing and judging; plain code does the
+rest. Latencies are typical medians (worst seen in brackets) for the
+release build on an M4 Max, from the self-test's per-call metrics (the
+`VILLAGE CALLS` log lines).
+
+| Job | Model | Why a model | Output | Latency |
+| --- | --- | --- | --- | --- |
+| Dialogue lines | gemma-4-E2B | Each line comes from what that llama knows right now, its mood, its goals and the conversation so far, so the talk follows the knowledge state instead of a script | Free text, one line (48 tokens max) | 0.5-0.7 s per line (0.9 s) |
+| Inner thoughts | gemma-4-E2B | A private thought from the llama's mood, activity, wants and what is on its mind | Free text, under 14 words | 0.7-1.1 s (1.5 s) |
+| Dash's choices | gemma-4-E2B | The rules pick four intents (gossip and a kind word always, plus two of compliment, praise, tell, gift, help and tease) and the facts behind them; the model words each one for this llama | Free text, one `intent: line` per option, parsed; retried, then canned lines | 0.9-1.7 s, written while Dash flies over |
+| The llama's reply to Dash | gemma-4-E2B | How the llama takes it (offended to delighted) is a rule; the model voices it | Free text | 0.3-0.7 s |
+| Conversation outcomes | gemma-4-E2B | Reads the finished conversation and judges mood and friendship changes, which candidate facts were said out loud, and a thread's yes/no question (did Mo agree to sing?) | Grammar-constrained JSON: enums, booleans and fact ids | 1.7-1.9 s (2.0 s) |
+| Memory check | EmbeddingGemma | Compares what the teller said with each fact the listener did not know, so a fact only counts as told when the words back it up | Embeddings, cached and kept in saves | 50-80 ms per batch |
+| Morning plans | gemma-4-E2B | Each llama plans its day from what it knows and wants | Free text, `HH place \| activity` lines, parsed; a work-day plan if that fails | 1.4-2.8 s each, five per morning while the clock waits at 05:59 |
+| Evening reflections (dreams) | gemma-4-E2B | One first-person sentence about the day, shown as the night's dream bubble and fed into the next morning's plan | Free text | about 0.6 s |
+| Cutscene lines | gemma-4-E2B | Clover's festival announcement and each singer's song line | Free text | 0.25-0.5 s |
+| Epilogue cards | gemma-4-E2B | One storybook-style sentence per llama from its final state and what it knows | Free text | about 0.35 s each |
+| Casual-topic choice | Laya (optional) | Picks what a llama brings up in small talk among the options the rules allow (never its own secret unless confessing, never news the listener told it); a topic tied to a strong goal is chosen by the rules | One choice among the options | about 0.1 s |
+
+Which facts go into a prompt is a rule (`relevantFacts` scores goals,
+recency, secrets and the listener); the embeddings only check what was
+said.
+
+### What is not AI, and why
+
+- **Movement and needs**: hunger, energy, company and what to do next are
+  utility rules (`lib/sim/brain.dart`); the model-written morning plan is
+  one of their inputs. The llamas never wait on a model to move.
+- **Who knows what**: every fact, who knows it, how they learned it and
+  whether they believe it is tracked in code (`lib/sim/facts.dart`). The
+  outcome model can only claim that a fact was told; code accepts the
+  claim only when the teller's words support it (keywords or embedding
+  similarity), and a secret always needs its keywords. Prompts list only
+  what that llama knows, so nobody repeats a secret they never heard.
+- **Endings**: a fixed set of rules over the final state
+  (`lib/sim/endings.dart`), so what the player did decides the ending.
+- **The festival winner**: a score from each singer's skill, the
+  audience's and Clover's feelings, the singer's mood and Clover's secret
+  deal with Pip (`FestivalThread`).
+- **Reactions to Dash**, who starts a conversation with whom, the story
+  threads' events and the clock are rules too.
+
+Rules keep the game fair (the player's choices, not a sampled token,
+decide who wins and how the week ends), coherent (knowledge only moves
+when it was really said) and testable (the endings, the festival and the
+knowledge bookkeeping run in unit tests on canned models). Model output
+that does not parse is retried once with another seed, then replaced by
+a canned line, so play never depends on the model.
+
+### On-device, offline and responsive
+
+Everything runs on this Mac through llamadart on Metal, and the game
+makes no network calls while it runs (llamadart's build hook fetches the
+llama.cpp runtime when the app is built). The weights are 2.8 GB for
+gemma-4-E2B (Q4_K_S), 318 MB for EmbeddingGemma 300M (Q8_0) and 402 MB
+plus a 101 MB head for Laya (Q8_0). They are memory-mapped: during a game
+the process holds about 4.6 GB resident, about 2 GB of it its own
+footprint (Metal buffers, KV caches and the scene) and 3.6 GB the mapped
+weight files.
+
+The game never waits on a model:
+
+- Each engine has a priority queue (Dash's reply first, then dialogue,
+  outcomes, Dash's options and reflections, thoughts, and background work
+  such as plans), and the world keeps ticking while it works.
+- Dash's four options are written while he flies over, so they are
+  usually ready on arrival.
+- Conversations are generated one line at a time: each line appears as a
+  bubble as soon as it is written, while the next one is being written
+  ("…" marks a llama still thinking).
+- Prompts go to the GPU in small micro-batches (128 tokens), so frames
+  slip in between: about 45 fps while the model is generating against 59
+  idle, under the default 60 fps cap.
+
 ## Features
 
 - **Festival Week**: a five-day story with its own beat each day, a

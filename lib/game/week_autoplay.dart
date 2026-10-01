@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import '../app.dart';
+import '../autoplay.dart';
 import '../cutscene/timeline.dart';
 
 /// The env-gated Festival Week script (`VILLAGE_AUTOPLAY=week`): the title
@@ -90,6 +91,8 @@ class WeekAutoplay {
             _shot('40_epilogue');
             return;
           }
+          final v = home.village;
+          if (v != null) logCalls(home.test, v);
           home.showResults();
           _next();
         }
