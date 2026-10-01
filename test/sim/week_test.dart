@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:llama_village/sim/canned.dart';
 import 'package:llama_village/sim/cast.dart';
 import 'package:llama_village/sim/clock.dart';
+import 'package:llama_village/sim/dialogue.dart';
 import 'package:llama_village/sim/village.dart';
 import 'package:llama_village/sim/week.dart';
 
@@ -92,22 +93,27 @@ void main() {
 
   test('before the festival, chats elsewhere break off and Dash cannot hold anyone back', () async {
     final v = Village(
-      chat: CannedChat(delay: const Duration(milliseconds: 20)),
+      chat: CannedChat(delay: Duration.zero),
       embed: HashEmbed(),
       seed: 3,
-      msPerMinute: 10,
+      msPerMinute: 500,
+      autoAck: true,
     );
     await v.begin();
     await v.jumpTo(festivalDay);
-    v.now = const GameTime(festivalDay, 12 * 60);
-    for (var i = 0; i < 4000 && v.active.every((c) => c.place == 'hilltop'); i++) {
-      v.advance(10);
-      await Future<void>.delayed(const Duration(milliseconds: 1));
+    // A chat away from the hilltop, caught as it starts: no line is written
+    // yet, and none can be during the synchronous skip, so it cannot end by
+    // itself before the call.
+    const call = GameTime(festivalDay, festivalMinute - 25);
+    var away = <Conversation>[];
+    for (var i = 0; i < 4000 && away.isEmpty && v.now.compareTo(call) < 0; i++) {
+      v.advance(500);
+      away = v.active.where((c) => c.place != 'hilltop' && !c.generationDone).toList();
+      if (away.isEmpty) await Future<void>.delayed(Duration.zero);
     }
-    final away = v.active.where((c) => c.place != 'hilltop').toList();
     expect(away, isNotEmpty);
     final mo = v.byName('Mo');
-    v.skipTo(const GameTime(festivalDay, festivalMinute - 25));
+    v.skipTo(call);
     for (final c in away) {
       expect(c.abandoned, isTrue);
       expect(v.active, isNot(contains(c)));
