@@ -16,4 +16,4 @@ for i in $(seq 1 $secs); do
 done
 if kill -0 $PID 2>/dev/null; then echo "still running after ${secs}s, killing"; kill $PID; fi
 wait $PID; echo "exit code=$?"
-grep -E "VILLAGE (MODELS|PLANS|AUTOPLAY|SHOT|FPS|SIM|CALLS|LINES|DASH|SHUTDOWN|EXIT)|FAILED|rror" $LOG | head -60
+grep -E "VILLAGE (MODELS|PLANS|AUTOPLAY|SHOT|FPS|SIM|CALLS|LINES|DASH|SHUTDOWN|EXIT|AUDIO (ready|played))|FAILED|rror" $LOG | head -60

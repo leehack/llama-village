@@ -5,9 +5,26 @@ import 'package:shared_preferences/shared_preferences.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  test('defaults to 60 fps', () async {
+  test('defaults to 60 fps, music 0.5, effects 0.7, not muted', () async {
     SharedPreferences.setMockInitialValues({});
-    expect((await VillageSettings.load()).fps, 60);
+    final s = await VillageSettings.load();
+    expect(s.fps, 60);
+    expect(s.musicVolume, 0.5);
+    expect(s.sfxVolume, 0.7);
+    expect(s.muted, isFalse);
+  });
+
+  test('volumes and mute persist across loads', () async {
+    SharedPreferences.setMockInitialValues({});
+    final s = await VillageSettings.load();
+    s
+      ..musicVolume = 0.2
+      ..sfxVolume = 1.4
+      ..muted = true;
+    final again = await VillageSettings.load();
+    expect(again.musicVolume, 0.2);
+    expect(again.sfxVolume, 1.0, reason: 'clamped');
+    expect(again.muted, isTrue);
   });
 
   test('a changed frame rate persists across loads', () async {

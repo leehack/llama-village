@@ -5,8 +5,11 @@ import 'palette.dart';
 
 /// The settings card under the top bar.
 class SettingsPanel extends StatelessWidget {
-  const SettingsPanel({super.key, required this.settings, required this.onClose});
+  const SettingsPanel({super.key, required this.settings, required this.onClick, required this.onClose});
   final VillageSettings settings;
+
+  /// Plays the UI click.
+  final VoidCallback onClick;
   final VoidCallback onClose;
 
   @override
@@ -38,22 +41,55 @@ class SettingsPanel extends StatelessWidget {
               ),
             ],
           ),
-          const Text(
-            'Frame rate',
-            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.white),
-          ),
+          const Text('Frame rate', style: _label),
           const SizedBox(height: 6),
           SegmentedButton<int>(
             showSelectedIcon: false,
             segments: [for (final f in VillageSettings.fpsChoices) ButtonSegment(value: f, label: Text('$f fps'))],
             selected: {settings.fps},
-            onSelectionChanged: (s) => settings.fps = s.first,
+            onSelectionChanged: (s) {
+              onClick();
+              settings.fps = s.first;
+            },
             style: SegmentedButton.styleFrom(foregroundColor: Colors.white, selectedForegroundColor: ink, selectedBackgroundColor: gold),
           ),
           const SizedBox(height: 4),
           const Text('120 fps needs a ProMotion display.', style: TextStyle(fontSize: 11, color: Colors.white60)),
+          const SizedBox(height: 10),
+          _volume('Music', settings.musicVolume, (v) => settings.musicVolume = v),
+          _volume('Sound effects', settings.sfxVolume, (v) => settings.sfxVolume = v),
+          SwitchListTile(
+            dense: true,
+            contentPadding: EdgeInsets.zero,
+            activeThumbColor: gold,
+            title: const Text('Mute all', style: _label),
+            value: settings.muted,
+            onChanged: (v) {
+              settings.muted = v;
+              onClick();
+            },
+          ),
         ],
       ),
     ),
   );
 }
+
+const TextStyle _label = TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.white);
+
+Widget _volume(String label, double value, ValueChanged<double> onChanged) => Row(
+  children: [
+    SizedBox(width: 104, child: Text(label, style: _label)),
+    Expanded(
+      child: Slider(value: value, onChanged: onChanged, activeColor: gold, inactiveColor: Colors.white24),
+    ),
+    SizedBox(
+      width: 34,
+      child: Text(
+        '${(value * 100).round()}',
+        textAlign: TextAlign.right,
+        style: const TextStyle(fontSize: 12, color: Colors.white70),
+      ),
+    ),
+  ],
+);

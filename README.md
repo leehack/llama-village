@@ -38,10 +38,11 @@ rumour and a storm warning) play out differently every run.
 - The **village log** (bottom left) lists events, conversations, who
   learned what, and story-thread turns.
 - The **gear** button opens Settings: a frame-rate cap of 30, 60
-  (default) or 120 fps (120 only matters on a ProMotion display). The cap
-  skips scene renders between display refreshes; the sim and animations
-  run on real time, so their speed does not change. Settings are saved
-  with shared_preferences.
+  (default) or 120 fps (120 only matters on a ProMotion display), music
+  and sound-effect volumes (0.5 and 0.7 by default) and Mute all. The
+  cap skips scene renders between display refreshes; the sim and
+  animations run on real time, so their speed does not change. Settings
+  are saved with shared_preferences.
 
 Speech bubbles show "…" while the model is still writing a line; thought
 bubbles (rounded, italic) show what an idle llama is thinking.
@@ -80,6 +81,33 @@ Actions, reactions and knowledge bookkeeping are rules; the model writes
 the words. When the model's output does not parse, the sim retries once
 with another seed and then falls back to a canned line, so the world never
 waits on the model.
+
+## Sound
+
+Music and effects are synthesized by `tool/audio/gen_audio.py` (additive
+synthesis, shaped noise and an FFT reverb; nothing is sampled or
+downloaded) and committed as Ogg Opus files in `assets/audio/`. A cozy
+day loop and a softer night loop crossfade with the time of day, and a
+rain loop fades in with the storm. Effects: Dash's wing flaps and arrival
+chirp, footsteps of nearby walking llamas, a murmur as each speech bubble
+appears (pitched per llama), a bubble pop, a UI click, a sparkle when a
+fact Dash spread is learned, and birds by day and crickets at night.
+
+Playback uses [flutter_soloud](https://pub.dev/packages/flutter_soloud)
+(pinned to 4.1.7, the newest release compatible with flutter_scene
+0.23.0's `code_assets` constraint): a native SoLoud mixer with low-latency
+one-shots, per-voice speed and pan, and sample-exact loops from clips
+decoded into memory. The engine shuts down before the models are freed on
+quit.
+
+To regenerate (needs numpy and ffmpeg with libopus):
+
+```
+python3 tool/audio/gen_audio.py [--preview /tmp/village_audio.m4a]
+```
+
+Loop lengths are whole Opus frames minus the encoder pre-skip, so they
+decode sample-exact.
 
 ## Dev-only: the macOS sandbox is off
 
@@ -144,6 +172,8 @@ are inert unless their environment variables are set (`VILLAGE_CAPTURE`,
 - `lib/ai/models.dart` backs the sim's model interfaces with llamadart.
 - `lib/render/` builds the diorama, sky, llamas and Dash with
   flutter_scene.
-- `lib/ui/` holds the bubbles, HUD, log, options and inspector.
+- `lib/ui/` holds the bubbles, HUD, log, options, inspector and settings.
+- `lib/audio/` maps sim events to music and effects (`soundscape.dart`)
+  and plays them with flutter_soloud.
 - `lib/app.dart` wires it together: loading, input, the game loop and
   shutdown.

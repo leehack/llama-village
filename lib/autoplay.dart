@@ -154,6 +154,7 @@ class Autoplay {
             'calls=${v.metrics.calls.length} json=${v.metrics.json}',
           );
           _calls(v);
+          test.log('AUDIO played ${home.sound.played}');
           test.log('AUTOPLAY done in ${_t.toStringAsFixed(0)} s');
           _next();
           if (test.exitWhenDone) home.quit();

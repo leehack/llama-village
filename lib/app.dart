@@ -11,6 +11,8 @@ import 'package:flutter_scene/scene.dart' hide Material;
 import 'package:vector_math/vector_math.dart' as vm;
 
 import 'ai/models.dart';
+import 'audio/soloud_out.dart';
+import 'audio/soundscape.dart';
 import 'autoplay.dart';
 import 'frame_throttle.dart';
 import 'render/stage.dart';
@@ -59,6 +61,9 @@ class VillageHomeState extends State<VillageHome> with SingleTickerProviderState
   RenderObject? _scenePaint;
   VillageSettings settings = VillageSettings.ephemeral();
   bool showSettings = false;
+  final SoloudOut _audio = SoloudOut();
+  late final Soundscape sound = Soundscape(_audio, onPlay: (name, volume) => test.log('AUDIO $name vol=${volume.toStringAsFixed(2)}'));
+  late final _StageView _view = _StageView(this);
 
   Phase phase = Phase.loading;
   String label = 'Building the village…';
@@ -112,8 +117,14 @@ class VillageHomeState extends State<VillageHome> with SingleTickerProviderState
   Future<void> _boot() async {
     final fps = test.fps;
     settings = fps != null ? (VillageSettings.ephemeral()..fps = fps) : await VillageSettings.load();
-    _throttle.fps = settings.fps;
-    settings.addListener(() => _throttle.fps = settings.fps);
+    _applySettings();
+    settings.addListener(_applySettings);
+    unawaited(
+      _audio.init().then((ok) {
+        _applySettings();
+        test.log('AUDIO ready=$ok loops ${_audio.loopLengths().map((k, s) => MapEntry(k, s.toStringAsFixed(4)))}');
+      }),
+    );
     final scene = stage.load(const ['Pip', 'Mo', 'June', 'Bramble', 'Clover']).then((_) => _sceneReady = true);
     final cfg = ModelConfig.resolve();
     config = cfg;
@@ -182,6 +193,14 @@ class VillageHomeState extends State<VillageHome> with SingleTickerProviderState
     }
   }
 
+  void _applySettings() {
+    _throttle.fps = settings.fps;
+    sound
+      ..musicVolume = settings.musicVolume
+      ..sfxVolume = settings.sfxVolume;
+    _audio.muted = settings.muted;
+  }
+
   Future<void> startCanned() async {
     modelLabel = 'canned lines (no AI)';
     await _start(
@@ -225,6 +244,7 @@ class VillageHomeState extends State<VillageHome> with SingleTickerProviderState
 
   Future<void> _doShutdown() async {
     final watch = Stopwatch()..start();
+    _audio.dispose();
     village?.close();
     // A quit during loading waits for the engines, then frees them too.
     final loading = _loading;
@@ -292,6 +312,7 @@ class VillageHomeState extends State<VillageHome> with SingleTickerProviderState
     }
     final simDone = watch.elapsedMicroseconds;
     stage.update(v, step);
+    if (phase == Phase.playing) sound.update(v, _view, step);
     if (test.capture) {
       test.simMs.add(simDone / 1000);
       test.sceneMs.add((watch.elapsedMicroseconds - simDone) / 1000);
@@ -340,6 +361,7 @@ class VillageHomeState extends State<VillageHome> with SingleTickerProviderState
   }
 
   void choose(int i) {
+    sound.click();
     village?.dash.choose(i);
   }
 
@@ -496,6 +518,11 @@ class VillageHomeState extends State<VillageHome> with SingleTickerProviderState
     ),
   );
 
+  VoidCallback _clicky(VoidCallback action) => () {
+    sound.click();
+    action();
+  };
+
   List<Widget> _overlay(Village v) => [
     ValueListenableBuilder<int>(
       valueListenable: frame,
@@ -509,13 +536,16 @@ class VillageHomeState extends State<VillageHome> with SingleTickerProviderState
         builder: (context, _, _) => TopBar(
           village: v,
           fps: fps,
-          onPause: togglePause,
-          onSpeed: setSpeed,
-          onOverview: () => setState(stage.rig.overview),
-          onFollow: follow,
+          onPause: _clicky(togglePause),
+          onSpeed: (s) {
+            sound.click();
+            setSpeed(s);
+          },
+          onOverview: _clicky(() => setState(stage.rig.overview)),
+          onFollow: _clicky(follow),
           followName: stage.rig.followName,
           modelLabel: modelLabel,
-          onSettings: () => setState(() => showSettings = !showSettings),
+          onSettings: _clicky(() => setState(() => showSettings = !showSettings)),
         ),
       ),
     ),
@@ -523,7 +553,7 @@ class VillageHomeState extends State<VillageHome> with SingleTickerProviderState
       Positioned(
         top: 80,
         left: 14,
-        child: SettingsPanel(settings: settings, onClose: () => setState(() => showSettings = false)),
+        child: SettingsPanel(settings: settings, onClick: sound.click, onClose: _clicky(() => setState(() => showSettings = false))),
       ),
     Positioned(
       left: 14,
@@ -540,8 +570,12 @@ class VillageHomeState extends State<VillageHome> with SingleTickerProviderState
         bottom: 14,
         child: ValueListenableBuilder<int>(
           valueListenable: slow,
-          builder: (context, _, _) =>
-              Inspector(data: v.inspect(stage.selected!), cast: v.cast, onClose: () => select(null), onTalk: () => talkTo(stage.selected!)),
+          builder: (context, _, _) => Inspector(
+            data: v.inspect(stage.selected!),
+            cast: v.cast,
+            onClose: _clicky(() => select(null)),
+            onTalk: _clicky(() => talkTo(stage.selected!)),
+          ),
         ),
       ),
     // Between the log (left) and the inspector (right).
@@ -555,7 +589,7 @@ class VillageHomeState extends State<VillageHome> with SingleTickerProviderState
           builder: (context, _, _) {
             final visit = v.dash.visit;
             if (visit == null) return const HelpHint();
-            return OptionsPanel(visit: visit, onChoose: choose, onMore: v.dash.sayMore, onLeave: v.dash.leave);
+            return OptionsPanel(visit: visit, onChoose: choose, onMore: _clicky(v.dash.sayMore), onLeave: _clicky(v.dash.leave));
           },
         ),
       ),
@@ -575,4 +609,29 @@ class VillageHomeState extends State<VillageHome> with SingleTickerProviderState
       ),
     ),
   ];
+}
+
+class _StageView implements SoundView {
+  _StageView(this.home);
+  final VillageHomeState home;
+
+  @override
+  vm.Vector3 get eye => home.stage.rig.eye;
+
+  @override
+  vm.Vector3 get dash => home.stage.dash.position;
+
+  @override
+  vm.Vector3? llama(String name) {
+    final a = home.stage.llamas[name];
+    return a == null || !a.visible ? null : a.position;
+  }
+
+  @override
+  double panOf(vm.Vector3 p) {
+    final size = home._size;
+    final at = home.stage.toScreen(p, size);
+    if (at == null || size.width <= 0) return 0;
+    return ((at.dx / size.width) * 2 - 1).clamp(-1.0, 1.0) * 0.6;
+  }
 }
