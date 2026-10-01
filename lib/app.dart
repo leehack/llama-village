@@ -20,6 +20,7 @@ import 'sim/canned.dart';
 import 'sim/dash.dart';
 import 'sim/village.dart';
 import 'ui/bubbles.dart';
+import 'ui/game_keys.dart';
 import 'ui/panels.dart';
 import 'ui/settings_panel.dart';
 
@@ -308,10 +309,10 @@ class VillageHomeState extends State<VillageHome> with SingleTickerProviderState
   void _steer(Village v) {
     final keys = HardwareKeyboard.instance.logicalKeysPressed;
     var f = 0.0, r = 0.0;
-    if (keys.contains(LogicalKeyboardKey.keyW)) f += 1;
-    if (keys.contains(LogicalKeyboardKey.keyS)) f -= 1;
-    if (keys.contains(LogicalKeyboardKey.keyD)) r += 1;
-    if (keys.contains(LogicalKeyboardKey.keyA)) r -= 1;
+    if (keys.contains(LogicalKeyboardKey.keyW) || keys.contains(LogicalKeyboardKey.arrowUp)) f += 1;
+    if (keys.contains(LogicalKeyboardKey.keyS) || keys.contains(LogicalKeyboardKey.arrowDown)) f -= 1;
+    if (keys.contains(LogicalKeyboardKey.keyD) || keys.contains(LogicalKeyboardKey.arrowRight)) r += 1;
+    if (keys.contains(LogicalKeyboardKey.keyA) || keys.contains(LogicalKeyboardKey.arrowLeft)) r -= 1;
     if (f == 0 && r == 0) {
       if (v.dash.steer.$1 != 0 || v.dash.steer.$2 != 0) v.dash.steerBy(0, 0);
       return;
@@ -389,52 +390,35 @@ class VillageHomeState extends State<VillageHome> with SingleTickerProviderState
     if (ground != null) v.dash.flyTo(ground);
   }
 
-  KeyEventResult _onKey(FocusNode node, KeyEvent e) {
-    if (e is! KeyDownEvent) return KeyEventResult.ignored;
+  void _onPress(LogicalKeyboardKey k) {
     final v = village;
-    if (v == null) return KeyEventResult.ignored;
-    final k = e.logicalKey;
+    if (v == null) return;
     final visit = v.dash.visit;
     if (k == LogicalKeyboardKey.space) {
       togglePause();
-      return KeyEventResult.handled;
-    }
-    if (k == LogicalKeyboardKey.escape) {
+    } else if (k == LogicalKeyboardKey.escape) {
       if (visit != null) {
         v.dash.leave();
       } else {
         select(null);
       }
-      return KeyEventResult.handled;
-    }
-    final digit = switch (k) {
-      LogicalKeyboardKey.digit1 => 1,
-      LogicalKeyboardKey.digit2 => 2,
-      LogicalKeyboardKey.digit3 => 3,
-      LogicalKeyboardKey.digit4 => 4,
-      _ => 0,
-    };
-    if (digit > 0 && visit?.stage == VisitStage.choosing) {
-      choose(digit - 1);
-      return KeyEventResult.handled;
-    }
-    if (k == LogicalKeyboardKey.keyF) {
+    } else if (k == LogicalKeyboardKey.keyF) {
       follow();
-      return KeyEventResult.handled;
-    }
-    if (k == LogicalKeyboardKey.keyO) {
+    } else if (k == LogicalKeyboardKey.keyO) {
       stage.rig.overview();
       setState(() {});
-      return KeyEventResult.handled;
-    }
-    if (k == LogicalKeyboardKey.keyQ || k == LogicalKeyboardKey.keyE) {
+    } else if (k == LogicalKeyboardKey.keyQ || k == LogicalKeyboardKey.keyE) {
       stage.rig.yaw += k == LogicalKeyboardKey.keyQ ? 0.35 : -0.35;
-      return KeyEventResult.handled;
+    } else {
+      final digit = switch (k) {
+        LogicalKeyboardKey.digit1 => 1,
+        LogicalKeyboardKey.digit2 => 2,
+        LogicalKeyboardKey.digit3 => 3,
+        LogicalKeyboardKey.digit4 => 4,
+        _ => 0,
+      };
+      if (digit > 0 && visit?.stage == VisitStage.choosing) choose(digit - 1);
     }
-    if ({LogicalKeyboardKey.keyW, LogicalKeyboardKey.keyA, LogicalKeyboardKey.keyS, LogicalKeyboardKey.keyD}.contains(k)) {
-      return KeyEventResult.handled;
-    }
-    return KeyEventResult.ignored;
   }
 
   // ------------------------------------------------------------ build
@@ -443,10 +427,9 @@ class VillageHomeState extends State<VillageHome> with SingleTickerProviderState
   Widget build(BuildContext context) {
     return Material(
       color: const Color(0xFF2B3A67),
-      child: Focus(
+      child: GameKeys(
         focusNode: focus,
-        autofocus: true,
-        onKeyEvent: _onKey,
+        onPress: _onPress,
         child: RepaintBoundary(
           key: test.boundaryKey,
           child: LayoutBuilder(

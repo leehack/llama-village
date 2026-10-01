@@ -26,8 +26,9 @@ rumour and a storm warning) play out differently every run.
   how it learned it: "saw it", "heard from June; maybe untrue", "own
   secret"), its current thought, and why it chose its current action
   (the utilities of its options).
-- **Click the ground** or hold **WASD** to fly Dash around. Dash
-  witnesses what happens where it hovers, and can pass true news on.
+- **Click the ground** or hold **WASD** (or the arrow keys) to fly Dash
+  around. Dash witnesses what happens where it hovers, and can pass true
+  news on.
 - **Camera**: drag to orbit, right-drag or two-finger drag to pan, scroll
   or pinch to zoom, Q/E to turn. **F** follows the selected llama (or
   Dash), **O** returns to the overview.
