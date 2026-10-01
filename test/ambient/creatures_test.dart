@@ -131,6 +131,22 @@ void main() {
     expect(hen.lift, greaterThanOrEqualTo(0));
   });
 
+  test('with reduced motion nothing bolts: cats stay put for Dash, hens ignore llamas, no chases', () {
+    final life = AmbientLife(seed: 4, ducks: 0, dog: false, butterflies: 0)..calm = true;
+    run(life, 3, (_) => at(11));
+    final cat = life.of(Species.cat).first, hen = life.of(Species.chicken).first;
+    final dash = (cat.pos.$1 + 1.5, cat.pos.$2), llama = (hen.pos.$1 + 1.2, hen.pos.$2);
+    life.update(at(11, dash: dash, dashMoving: true, llamas: [(llama, true)]), _dt);
+    expect(cat.act, isNot(Act.flee));
+    expect(hen.act, isNot(Act.flutter));
+
+    final chaser = AmbientLife(seed: 1, chickens: 0, ducks: 0, dog: false, cats: 1, butterflies: 3)..calm = true;
+    run(chaser, 120, (_) {
+      expect(chaser.all.single.act, isNot(Act.chase));
+      return at(12);
+    });
+  });
+
   test('a standing llama does not startle the chickens', () {
     final life = AmbientLife(seed: 4, cats: 0, ducks: 0, dog: false, butterflies: 0);
     run(life, 2, (_) => at(10));

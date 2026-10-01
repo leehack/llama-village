@@ -108,6 +108,7 @@ class VillageStage {
   late final AmbientLife life;
   late final AnimalActors animals;
   GraphicsQuality _quality = GraphicsQuality.high;
+  bool _reducedMotion = false;
   bool _loaded = false;
   late final Node _ring;
   final List<Node> _rain = [];
@@ -163,8 +164,22 @@ class VillageStage {
     sky.quality = q;
     dressing.quality = q;
     animals.quality = q;
-    fireflies.share = q.particles;
-    leaves.share = q.particles;
+    _applyMotion();
+  }
+
+  bool get reducedMotion => _reducedMotion;
+
+  /// Calms the animals and halves the fireflies and falling leaves.
+  set reducedMotion(bool value) {
+    _reducedMotion = value;
+    if (_loaded) _applyMotion();
+  }
+
+  void _applyMotion() {
+    final particles = _quality.particles * (_reducedMotion ? 0.5 : 1);
+    life.calm = _reducedMotion;
+    fireflies.share = particles;
+    leaves.share = particles;
   }
 
   /// Rain falls in two stacked curtains that wrap around, so a storm costs

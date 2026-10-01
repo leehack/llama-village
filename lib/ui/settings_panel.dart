@@ -95,7 +95,10 @@ class SettingsPanel extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   _switch('Reduced motion', settings.reducedMotion, (v) => settings.reducedMotion = v),
-                  const Text('Shorter camera moves in cutscenes, no camera shake, a slower menu flyover.', style: _note),
+                  const Text(
+                    'Shorter camera moves in cutscenes, no camera shake, a slower menu flyover, calmer animals and fewer particles.',
+                    style: _note,
+                  ),
                   _switch('High-contrast bubbles', settings.highContrast, (v) => settings.highContrast = v),
                 ],
               ),

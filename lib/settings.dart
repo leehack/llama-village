@@ -125,7 +125,8 @@ class VillageSettings extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Shortens camera moves and turns off camera shake.
+  /// Shortens camera moves, turns off camera shake, calms the animals and
+  /// thins the particles.
   bool get reducedMotion => _reducedMotion;
   set reducedMotion(bool value) {
     if (value == _reducedMotion) return;

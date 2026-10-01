@@ -300,7 +300,9 @@ class VillageHomeState extends State<VillageHome> with SingleTickerProviderState
 
   void _applySettings() {
     _throttle.fps = settings.fps;
-    stage.quality = settings.quality;
+    stage
+      ..quality = settings.quality
+      ..reducedMotion = settings.reducedMotion;
     animalSounds.sfxVolume = settings.sfxVolume;
     sound
       ..musicVolume = settings.musicVolume

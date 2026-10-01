@@ -191,6 +191,11 @@ class AmbientLife {
   final math.Random _rng;
   final List<Blocker> blockers;
   final List<Creature> all = [];
+
+  /// Reduced motion: no sudden dashes. Cats neither bolt from Dash nor
+  /// chase butterflies, chickens do not flutter off, and butterflies flit
+  /// gently.
+  bool calm = false;
   final List<Butterfly> butterflies = [];
   double _clock = 0;
 
@@ -371,7 +376,7 @@ class AmbientLife {
     if (c.act == Act.sleep || c.act == Act.hide) c._go(Act.idle, 1);
 
     // Dash swooping low sends a cat running.
-    if (c.act != Act.flee && c._calm <= 0 && _dashClose(c, v, 4.2) && (v.dashMoving || dist(c.pos, v.dash) < 2.5)) {
+    if (!calm && c.act != Act.flee && c._calm <= 0 && _dashClose(c, v, 4.2) && (v.dashMoving || dist(c.pos, v.dash) < 2.5)) {
       final dx = c.pos.$1 - v.dash.$1, dz = c.pos.$2 - v.dash.$2;
       final d = math.max(0.1, math.sqrt(dx * dx + dz * dz));
       c._go(Act.flee, c._between(1.4, 2.2), to: _pushOut((c.pos.$1 + dx / d * 7, c.pos.$2 + dz / d * 7)));
@@ -428,7 +433,7 @@ class AmbientLife {
       ..perchAt = null
       ..next = null;
     // A butterfly nearby is hard to resist.
-    if (v.butterflyHours) {
+    if (v.butterflyHours && !calm) {
       for (var i = 0; i < butterflies.length; i++) {
         final b = butterflies[i];
         if (b.visible && dist(b.pos, c.pos) < 8 && c.rng.nextDouble() < 0.6) {
@@ -534,7 +539,7 @@ class AmbientLife {
     }
 
     // Flutter off when a llama walks close or Dash swoops down.
-    if (c.act != Act.flutter) {
+    if (!calm && c.act != Act.flutter) {
       P2? from;
       for (final (p, walking) in v.llamas) {
         if (walking && dist(p, c.pos) < 2.6) from = p;
@@ -764,8 +769,8 @@ class AmbientLife {
     }
     final dx = b._target.$1 - b.pos.$1, dz = b._target.$2 - b.pos.$2;
     final d = math.sqrt(dx * dx + dz * dz);
-    final speed = b._scared > 0 ? 3.2 : 1.1;
-    final wobble = math.sin(_clock * 5.3 + b.seed) * 0.9;
+    final speed = b._scared > 0 ? (calm ? 1.6 : 3.2) : 1.1;
+    final wobble = math.sin(_clock * 5.3 + b.seed) * (calm ? 0.3 : 0.9);
     if (d > 0.05) {
       final ux = dx / d, uz = dz / d;
       final step = math.min(d, speed * dt);

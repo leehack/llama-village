@@ -96,8 +96,8 @@ Endings gallery on the title screen.
     and Mute all.
   - **Gameplay**: text speed and the starting time speed.
   - **Accessibility**: text size, reduced motion (shorter cutscene
-    camera moves, no shake, a slower title flyover) and high-contrast
-    bubbles.
+    camera moves, no shake, a slower title flyover, calmer animals and
+    fewer particles) and high-contrast bubbles.
 
   Settings are saved with shared_preferences.
 
