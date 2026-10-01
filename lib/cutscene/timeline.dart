@@ -30,10 +30,17 @@ class CameraPose {
 
 /// The camera reaches [pose] at [at], easing in from the previous key.
 class CameraKey {
-  CameraKey(this.at, this.pose, {this.ease = Ease.inOut});
+  CameraKey(this.at, CameraPose pose, {this.ease = Ease.inOut}) : _pose = (() => pose);
+
+  /// A key whose pose is worked out when it is used, for subjects only
+  /// known mid-scene (the festival winner).
+  CameraKey.lazy(this.at, CameraPose Function() pose, {this.ease = Ease.inOut}) : _pose = pose;
+
   final double at;
-  final CameraPose pose;
+  final CameraPose Function() _pose;
   final Ease ease;
+
+  CameraPose get pose => _pose();
 }
 
 /// A value going from [from] to [to] over [duration] seconds from [at]; it
@@ -56,7 +63,7 @@ double _rampValue(List<Ramp> ramps, double t) {
   return current?.valueAt(t) ?? 0;
 }
 
-enum TextKind { subtitle, dream, title }
+enum TextKind { subtitle, dream, song, title }
 
 /// A line on screen from [at] for [duration] seconds: a subtitle, a dream
 /// bubble pinned to [anchor], or a title card. Its text is fixed, or comes
@@ -133,6 +140,7 @@ class Cutscene {
     List<Hold> holds = const [],
     this.shakes = const [],
     this.pausesSim = true,
+    this.onFrame,
   }) : camera = [...camera]..sort((a, b) => a.at.compareTo(b.at)),
        cues = [...cues]..sort((a, b) => a.at.compareTo(b.at)),
        holds = [...holds]..sort((a, b) => a.at.compareTo(b.at));
@@ -149,6 +157,10 @@ class Cutscene {
   final List<Hold> holds;
   final List<Shake> shakes;
   final bool pausesSim;
+
+  /// Called with the scene time after every update, for continuous effects
+  /// such as the sky's hour.
+  final void Function(double time)? onFrame;
 }
 
 /// Something the timeline is waiting at: a [Hold] or a holding [TextCue].
@@ -213,6 +225,11 @@ class CutscenePlayer {
   _Block? get _pending => _blocks.where((b) => !b.released).firstOrNull;
 
   void update(double dt) {
+    _run(dt);
+    scene.onFrame?.call(time);
+  }
+
+  void _run(double dt) {
     var remaining = dt;
     while (!finished) {
       final block = _pending;
@@ -260,6 +277,7 @@ class CutscenePlayer {
       }
     }
     _advanceTo(scene.duration);
+    scene.onFrame?.call(scene.duration);
     _finish();
   }
 

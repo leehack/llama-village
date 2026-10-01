@@ -11,6 +11,8 @@ class CannedChat implements ChatModel {
   final Duration delay;
   int calls = 0;
 
+  static const List<String> _scripted = ['last page of a storybook', 'Ring your bell and announce', 'Write one line of the song'];
+
   static const List<String> _lines = [
     'Lovely weather for it, is it not?',
     'I have been meaning to ask you about that.',
@@ -51,6 +53,8 @@ class CannedChat implements ChatModel {
       return [for (final i in intents) '$i: ${_option(i)}'].join('\n');
     }
     if (user.contains('private thought')) return 'I wonder what everyone is up to today.';
+    // Cutscene and epilogue lines fall back to their written defaults.
+    if (_scripted.any(user.contains)) return '';
     return _lines[r.nextInt(_lines.length)];
   }
 

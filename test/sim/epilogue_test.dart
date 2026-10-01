@@ -5,6 +5,22 @@ import 'package:llama_village/sim/influence.dart';
 import 'package:llama_village/sim/model.dart';
 import 'package:llama_village/sim/village.dart';
 
+class _Fixed implements ChatModel {
+  _Fixed(this.line);
+  final String line;
+
+  @override
+  Future<String> complete(
+    String system,
+    String user, {
+    required int maxTokens,
+    required double temp,
+    required int seed,
+    List<String> stop = const [],
+    Map<String, dynamic>? jsonSchema,
+  }) async => line;
+}
+
 class _Broken implements ChatModel {
   @override
   Future<String> complete(
@@ -51,10 +67,13 @@ void main() {
     );
   });
 
-  test('a working model writes the line', () async {
+  test('a working model writes the line, cleaned of quotes and name prefixes', () async {
+    final v = Village(chat: _Fixed('Bramble: "Bramble took up reading his poems aloud on the hilltop."'), embed: HashEmbed(), seed: 1);
+    expect(await epilogueLine(v, v.byName('Bramble'), measure(v)), 'Bramble took up reading his poems aloud on the hilltop.');
+  });
+
+  test('canned play uses the rule-made line', () async {
     final v = Village(chat: CannedChat(), embed: HashEmbed(), seed: 1);
-    final line = await epilogueLine(v, v.byName('Bramble'), measure(v));
-    expect(line, isNotEmpty);
-    expect(line, isNot(fallbackEpilogue(v, v.byName('Bramble'), measure(v))));
+    expect(await epilogueLine(v, v.byName('Clover'), measure(v)), fallbackEpilogue(v, v.byName('Clover'), measure(v)));
   });
 }
