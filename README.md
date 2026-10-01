@@ -39,13 +39,43 @@ rumour and a storm warning) play out differently every run.
   learned what, and story-thread turns.
 - The **gear** button opens Settings: a frame-rate cap of 30, 60
   (default) or 120 fps (120 only matters on a ProMotion display), music
-  and sound-effect volumes (0.5 and 0.7 by default) and Mute all. The
+  and sound-effect volumes (0.5 and 0.7 by default), Mute all, and
+  Graphics quality (Low, Medium or High, the default; see below). The
   cap skips scene renders between display refreshes; the sim and
   animations run on real time, so their speed does not change. Settings
   are saved with shared_preferences.
 
 Speech bubbles show "…" while the model is still writing a line; thought
 bubbles (rounded, italic) show what an idle llama is thinking.
+
+## The look and the village's animals
+
+The light follows the clock: a pink sunrise with a little morning haze,
+a clear midday, a warm golden hour, a blue hour as the lamps come on and
+a moonlit night with glowing windows and fireflies. The storm darkens
+the sky, thickens the fog, flashes lightning now and then and leaves the
+ground glossy with puddles that dry over the next game hour. Clouds
+drift over, leaves fall from the round trees, the pond's ripples
+shimmer, and there are grass tufts, wildflowers, fences, a well, a
+chicken coop, a doghouse, laundry lines, a vegetable patch, a dock with
+a rowing boat and lanterns along the paths.
+
+Animals live around the llamas without talking: two cats wander, sit,
+groom, nap in sunny spots, climb onto hut roofs, chase butterflies and
+run from Dash when he swoops low; five chickens peck around the bakery
+and the berry bushes, flutter away from walking llamas and go into the
+coop at dusk; three ducks paddle and dabble on the pond and tuck in by
+the reeds at night; and a dog tags along after Dash for a while, then
+gets bored and goes home. Everyone hides in a storm, and the cats and
+the dog sleep at night. They meow, cluck, quack and woof now and then,
+quieter with distance and scaled by the effects volume.
+
+Graphics quality: High has everything (ground-truth ambient occlusion,
+bloom, soft and contact shadows, god rays at sunrise, all the grass,
+flowers and particles); Medium drops god rays and contact and soft
+shadows and thins the foliage and particles; Low also drops ambient
+occlusion, bloom and the animals' shadows and uses a smaller shadow
+map.
 
 ## Models
 
@@ -91,7 +121,8 @@ day loop and a softer night loop crossfade with the time of day, and a
 rain loop fades in with the storm. Effects: Dash's wing flaps and arrival
 chirp, footsteps of nearby walking llamas, a murmur as each speech bubble
 appears (pitched per llama), a bubble pop, a UI click, a sparkle when a
-fact Dash spread is learned, and birds by day and crickets at night.
+fact Dash spread is learned, birds by day and crickets at night, and
+the animals' meows, clucks, quacks and woofs.
 
 Playback uses [flutter_soloud](https://pub.dev/packages/flutter_soloud)
 (pinned to 4.1.7, the newest release compatible with flutter_scene
@@ -103,7 +134,7 @@ quit.
 To regenerate (needs numpy and ffmpeg with libopus):
 
 ```
-python3 tool/audio/gen_audio.py [--preview /tmp/village_audio.m4a]
+python3 tool/audio/gen_audio.py [--preview /tmp/village_audio.m4a] [--only meow,cluck]
 ```
 
 Loop lengths are whole Opus frames minus the encoder pre-skip, so they
@@ -163,6 +194,14 @@ are inert unless their environment variables are set (`VILLAGE_CAPTURE`,
 `VILLAGE_CLOSE_AFTER`); see
 `lib/self_test.dart`.
 
+`VILLAGE_TOUR=shots` (with `VILLAGE_CAPTURE=1`) instead follows one day
+and captures the looks and the animals (sunrise, midday, the storm, the
+golden and blue hours, night with fireflies, chickens, ducks, cats on a
+roof and a crowd of bubbles); `VILLAGE_TOUR=perf` (best with
+`VILLAGE_MS_PER_MINUTE=100`) logs the frame rate per graphics quality
+for the sunrise, a morning, the golden hour and the storm, with the model generating
+and idle. See `lib/render_tour.dart`.
+
 ## Layout
 
 - `lib/sim/` is the pure-Dart simulation, with no Flutter or llamadart
@@ -170,8 +209,10 @@ are inert unless their environment variables are set (`VILLAGE_CAPTURE`,
   threads, utility decisions, dialogue and outcomes, Dash, logs, and the
   model interfaces with canned stand-ins.
 - `lib/ai/models.dart` backs the sim's model interfaces with llamadart.
-- `lib/render/` builds the diorama, sky, llamas and Dash with
-  flutter_scene.
+- `lib/render/` builds the diorama, sky, scene dressing, water,
+  particles, llamas, animals and Dash with flutter_scene.
+- `lib/ambient/` is the pure-Dart life of the animals: their state
+  machines, the village layout they use, and when they make sounds.
 - `lib/ui/` holds the bubbles, HUD, log, options, inspector and settings.
 - `lib/audio/` maps sim events to music and effects (`soundscape.dart`)
   and plays them with flutter_soloud.

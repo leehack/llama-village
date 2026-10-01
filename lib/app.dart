@@ -16,6 +16,7 @@ import 'audio/soloud_out.dart';
 import 'audio/soundscape.dart';
 import 'autoplay.dart';
 import 'frame_throttle.dart';
+import 'render_tour.dart';
 import 'render/stage.dart';
 import 'self_test.dart';
 import 'settings.dart';
@@ -70,6 +71,7 @@ class VillageHomeState extends State<VillageHome> with SingleTickerProviderState
     _audio,
     onPlay: (name, volume) => test.log('AUDIO $name vol=${volume.toStringAsFixed(2)}'),
   );
+  RenderTour? _tour;
 
   Phase phase = Phase.loading;
   String label = 'Building the village…';
@@ -235,7 +237,12 @@ class VillageHomeState extends State<VillageHome> with SingleTickerProviderState
     if (!mounted) return;
     setState(() => phase = Phase.playing);
     focus.requestFocus();
-    if (test.autoplay) _autoplay = Autoplay(this)..start();
+    final tour = RenderTour.requested;
+    if (tour != null) {
+      _tour = RenderTour(this, tour)..start();
+    } else if (test.autoplay) {
+      _autoplay = Autoplay(this)..start();
+    }
   }
 
   // ------------------------------------------------------------ exit
@@ -330,6 +337,7 @@ class VillageHomeState extends State<VillageHome> with SingleTickerProviderState
     }
     test.frame();
     _autoplay?.tick(dt);
+    _tour?.tick(dt);
     frame.value++;
     _slowAcc += dt;
     if (_slowAcc > 0.25) {
