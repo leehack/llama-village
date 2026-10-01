@@ -111,9 +111,10 @@ The game never waits on a model:
   lights going out, the moon, dream bubbles, a "Day N" card), the
   festival with a sung line per singer, and the ending.
 - **Title screen, saves and gallery**: a drone flyover of the village
-  behind the menu; an autosave every morning plus three manual slots;
-  unlocked endings and each finished week's storybook are kept in the
-  Endings gallery.
+  behind the menu; an autosave every morning plus three manual slots,
+  picked from a list with a picture of each save, its day, time and
+  playtime; conversations carry on after a load; unlocked endings and
+  each finished week's storybook are kept in the Endings gallery.
 - **The storybook**: after the results, "Read the story" opens "The
   Week Dash Came to Berry Valley", a fairy tale of the week just played,
   a page per day, illustrated with pictures taken in the village.
@@ -224,7 +225,10 @@ plants a lie that a trusting listener believes.
   write the day's plans.
 - **Esc** opens the pause menu: resume, save to one of three slots,
   settings, save and quit to the title (to the autosave slot), or quit.
-  **Continue** on the title screen loads the newest save that loads.
+  **Continue** on the title screen opens the save picker: the autosave
+  and the three slots, each with a picture of the village when it was
+  saved, the day and time and the playtime. Pick one to load it; empty
+  and damaged slots cannot be picked. Esc or the close button goes back.
 - In a cutscene, **Esc**, **Space** or a click skips it.
 - The **village log** (bottom left) lists events, conversations, who
   learned what, and story-thread turns.
@@ -480,10 +484,26 @@ Saves are JSON files in `~/Library/Application Support/<bundle id>/saves`:
 gallery) and one file per storybook in `storybooks/`. A save holds the
 whole sim (needs, places, plans, memories and the embedding cache, the
 knowledge base, threads, Dash, the clock, the RNG state, and the
-storybook's journal and pictures) under a version number; conversations
-in flight are not saved. A save from before the storybook loads with an
-empty journal, and its storybook pages fall back accordingly.
-A damaged or other-version save is listed as damaged and never loaded.
+storybook's journal and pictures) under a version number, with the
+playtime (real time in play, not counting the pause menu) and a 320 px
+PNG of the 3D view (base64, in the same file, so a save is still written
+in one atomic rename). The save picker reads only the header and the
+picture, off the UI isolate; a missing or damaged picture shows a
+placeholder and never stops a save loading.
+
+Conversations in progress are saved and resumed, not cut short: a save
+keeps what has been said, the topic and, once it is in, the outcome. After
+a load the lines not yet shown are said, the turn or outcome that was
+being written is asked for again, and the conversation ends as it would
+have (diary, log, threads). Saving changes nothing in the running game.
+A llama talking with Dash comes back idle, since Dash's visit is not
+saved.
+
+A save from before the storybook loads with an empty journal, and its
+storybook pages fall back accordingly; one from before playtime,
+pictures and saved conversations loads with a playtime of zero, no
+picture and nobody talking. A damaged or other-version save is listed
+as damaged and never loaded.
 
 ### Quitting
 
@@ -511,7 +531,8 @@ are inert unless their environment variables are set (`VILLAGE_CAPTURE`,
 settings, a new game, the pause menu and a manual save, the first night
 skip (later ones are skipped), the inspector, the festival, the ending,
 the epilogue, the results, the storybook (the cover, a page turning, two
-pages and the ending) and the gallery again, with a PNG at each stop.
+pages and the ending), the gallery again and the save picker, with a PNG
+at each stop.
 Pair it with
 `VILLAGE_BOT=harmony|drama|quiet` (the bot plays Dash toward that
 ending), `VILLAGE_LANG=en|ko|fr` (the language for the run, without
@@ -573,8 +594,8 @@ hour and the storm, with the model generating and idle. See
   generated localizations; `lib/ui/strings.dart` says the sim's names and
   labels in the player's language.
 - `lib/ui/` holds the bubbles, HUD, log, options, inspector and settings;
-  `lib/ui/menus/` the title screen, pause menu, credits, gallery,
-  epilogue and results.
+  `lib/ui/menus/` the title screen, save picker, pause menu, credits,
+  gallery, epilogue and results.
 - `lib/cutscene/` is the timeline runner (camera keys, letterbox, fades,
   text, cues, holds, shake), the scene scripts and their overlay.
 - `lib/game/` directs the week (`director.dart`), stores saves and the
