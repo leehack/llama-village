@@ -796,8 +796,8 @@ class VillageHomeState extends State<VillageHome> with SingleTickerProviderState
   bool _wasCutscene = false;
 
   /// VILLAGE_QUIT_AT: quits from the title screen (its Quit button), mid
-  /// cutscene or mid generation (both through the system exit request, as
-  /// Cmd-Q does).
+  /// cutscene, mid generation or while the storybook is being written (the
+  /// last three through the system exit request, as Cmd-Q does).
   void _quitTest() {
     final at = test.quitAt;
     if (at == null || _quitStarted) return;
@@ -806,6 +806,7 @@ class VillageHomeState extends State<VillageHome> with SingleTickerProviderState
       'menu' => phase == Phase.menu && busy == null && phaseTime > 3,
       'cutscene' => (director?.player?.time ?? 0) > 2,
       'generation' => game != null && phase == Phase.playing && !inCutscene && phaseTime > 4 && game.chat.queue.busy,
+      'story' => book != null && !book!.complete && book!.pages.any((p) => p.draft.isNotEmpty),
       _ => false,
     };
     if (!due) return;

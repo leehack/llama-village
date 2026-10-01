@@ -450,8 +450,9 @@ ending), `VILLAGE_LANG=en|ko|fr` (the language for the run, without
 touching the saved settings), `VILLAGE_TIME_SCALE=32` (a compressed week) and
 `VILLAGE_SAVE_DIR=<dir>` (keeps saves and the gallery out of your
 profile); `VILLAGE_JUMP_DAY=5` starts a new game on that morning.
-`VILLAGE_QUIT_AT=menu|cutscene|generation` quits at that moment, through
-the title screen's Quit button or the system exit request.
+`VILLAGE_QUIT_AT=menu|cutscene|generation|story` quits at that moment
+(`story`: while the storybook is being written), through the title
+screen's Quit button or the system exit request.
 
 ```
 tool/run_selftest.sh /tmp/week 400 VILLAGE_AUTOPLAY=week VILLAGE_CANNED=1 \

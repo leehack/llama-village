@@ -22,7 +22,7 @@ import 'settings.dart';
 ///   compress the week.
 /// * `VILLAGE_SAVE_DIR=dir` keeps saves and the gallery out of the real
 ///   profile.
-/// * `VILLAGE_QUIT_AT=menu|cutscene|generation` quits at that moment.
+/// * `VILLAGE_QUIT_AT=menu|cutscene|generation|story` quits at that moment.
 /// * `VILLAGE_LANG=en|ko|fr` sets the language for the run; like
 ///   `VILLAGE_FPS`, it makes the run's settings unsaved defaults.
 class SelfTest {
