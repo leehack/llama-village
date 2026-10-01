@@ -140,7 +140,13 @@ class CharacterTour {
       _Step('dash_land', 0.07, () {}, until: () => !v.dash.moving),
       _Step('dash_hover', 1.5, () {}),
       _Step('dash_hover_2', 0.3, () {}),
-      _Step('dash_happy', 0.5, () => home.stage.dash.react(4)),
+      // Round to face him.
+      _Step('dash_face', 1.6, () => home.stage.rig.yaw = home.stage.dash.yaw + math.pi),
+      _Step('dash_face_34', 1.4, () => home.stage.rig.yaw = home.stage.dash.yaw + math.pi + 0.7),
+      _Step('dash_happy', 0.5, () {
+        home.stage.rig.yaw = home.stage.dash.yaw + math.pi + 0.3;
+        home.stage.dash.react(4);
+      }),
       _Step('dash_sad', 3.0, () => home.stage.dash.react(0)),
       // A conversation: wait for two llamas talking, frame them side-on.
       _Step(null, 0, () {
