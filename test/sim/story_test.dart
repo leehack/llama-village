@@ -156,6 +156,7 @@ void main() {
     expect(prompt, contains('second day'));
     expect(prompt, contains('The previous page ended: "Dash slept."'));
     expect(prompt, contains('Do not begin with "Once upon a time"'));
+    expect(prompt, contains('40 to 60 words'), reason: 'a thin day gets a short page');
     expect(pageFacts(v, StoryPage(PageKind.day, day: 3)).single, contains('quiet day'));
   });
 

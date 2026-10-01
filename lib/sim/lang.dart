@@ -34,7 +34,7 @@ String speakIn(Lang lang, {bool json = false, bool story = false}) => switch (la
   Lang.ko => [
     json ? 'Keep the JSON keys in English and write every value in Korean.' : writeIn(lang),
     if (json) 'JSON 키는 영어 그대로 두고, 값(대사)은 모두 자연스러운 한국어로 쓰세요.' else '반드시 자연스러운 한국어로만 쓰세요.',
-    if (story) '"옛날 옛적에"처럼 다정한 동화 말투(…했어요, …했답니다)로, 네다섯 문장으로 쓰세요.',
+    if (story) '"옛날 옛적에"처럼 다정한 동화 말투(…했어요, …했답니다)로 쓰세요.',
     '이름은 $_names처럼 영어 철자 그대로 쓰세요(피프, 모, 준처럼 한글로 옮기지 마세요).',
     '용어: Berry Festival은 베리 축제, Golden Bell은 황금 종, Berry Valley는 베리 골짜기, lantern은 등불, llama는 라마.',
   ].join(' '),

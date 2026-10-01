@@ -272,8 +272,9 @@ and in a storybook page or epilogue the model failed to write (the rule
 version frames the day's English facts in the chosen language).
 
 Korean and French take more tokens than English, so each call gets a
-larger budget and runs about 1.3 to 1.6 times longer (a dialogue line
-around 0.4 s, a storybook page around 1.8 s). Korean text uses the
+larger budget and runs longer: on a quiet M4 Max, a dialogue line takes
+about 0.26 s in English against 0.37 s in French and 0.44 s in Korean,
+and a storybook page about 1.2 s against 1.9 s and 1.7 s. Korean text uses the
 system fonts (Apple SD Gothic Neo in the UI, AppleMyungjo for the
 storybook's serif), so nothing is downloaded.
 

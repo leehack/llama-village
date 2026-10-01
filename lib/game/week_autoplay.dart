@@ -232,7 +232,14 @@ class WeekAutoplay {
       return;
     }
     _followFor += dt;
-    if (_followFor > 1.4) _shot('07_conversation');
+    if (_followFor < 0.7) return;
+    // Bubbles come and go fast in a compressed week: shoot while one is up.
+    final talking = v.active.any((c) => v.speech[c.a.name]?.text != null || v.speech[c.b.name]?.text != null);
+    if (talking) {
+      _shot('07_conversation');
+    } else if (_followFor > 4) {
+      _following = null;
+    }
   }
 
   Future<void> _pauseShots() async {

@@ -158,7 +158,15 @@ String storyPagePrompt(Village v, StoryPage page, List<String> facts, {String? p
       : page.kind == PageKind.ending
       ? 'End with a gentle closing line, like "$andSo".'
       : 'Do not begin with "$once".';
-  final length = v.lang == Lang.ko ? 'four or five sentences' : '80 to 120 words';
+  // A thin day gets a shorter page, so the model is not tempted to pad it
+  // with events that did not happen.
+  final thin = page.kind == PageKind.day && facts.length <= 2;
+  final length = switch ((v.lang == Lang.ko, thin)) {
+    (true, true) => 'two or three sentences',
+    (true, false) => 'four or five sentences',
+    (false, true) => '40 to 60 words',
+    (false, false) => '80 to 120 words',
+  };
   final prompt = [
     'You are writing a gentle fairy-tale picture book for children called "$storyTitle", one short page at a time.',
     _cast,
