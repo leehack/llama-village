@@ -13,6 +13,29 @@ announced, so rumours spread, secrets slip out, and story threads (a lost
 red scarf, the Berry Festival singing contest, a secret crush, a bread
 rumour and a storm warning) play out differently every run.
 
+## Features
+
+- **Festival Week**: a five-day story with its own beat each day, a
+  night cutscene between days, the Berry Festival on day 5 and one of
+  three endings, followed by an epilogue card per llama and the results.
+- **Generative llamas**: every line, plan, thought, evening reflection and
+  epilogue is written live by a local model from what that llama knows.
+- **Cutscenes**: the festival announcement, each night (sunset, hut
+  lights going out, the moon, dream bubbles, a "Day N" card), the
+  festival with a sung line per singer, and the ending.
+- **Title screen, saves and gallery**: a drone flyover of the village
+  behind the menu; an autosave every morning plus three manual slots;
+  unlocked endings are kept in the Endings gallery.
+- **Time-of-day lighting**: sunrise, midday, golden hour, blue hour and
+  a moonlit night, a storm with rain, lightning and wet ground, and
+  three graphics qualities.
+- **A lived-in village**: grass, flowers, props, rippling water,
+  fireflies and falling leaves, and cats, chickens, ducks, a dog and
+  butterflies with lives of their own.
+- **Sound**: synthesized music, ambience and effects, including the
+  animals.
+- **Accessibility**: text size, reduced motion and high-contrast bubbles.
+
 ## Festival Week
 
 A game is five days. Clover announces the Berry Festival on the morning
@@ -26,39 +49,33 @@ When every llama is asleep (or at 22:00) a night cutscene plays: the sun
 sets, hut lights go out one by one, the moon crosses, each llama's evening
 reflection appears as a dream bubble over its hut, then dawn and a "Day N"
 card. The sim clock runs to 06:00 underneath (it waits for the llamas'
-plans), and the game autosaves. Cutscenes (night, the announcement, the
-festival, the ending) letterbox the screen and pause the sim; Esc, Space
-or a click skips one.
+plans), and the game autosaves. Cutscenes letterbox the screen and pause
+the sim; the animals carry on under the cutscene's sky (the chickens go
+in and the cats curl up as the night skip's sun sets). Esc, Space or a
+click skips a cutscene.
 
-After the festival comes an ending scene, an epilogue card per llama
-(written by the model from its final state; a rule-made line if that
-fails) and the results. What Dash changed is read off the sim:
+### Endings
 
-- **harmony**: the mean friendship among the five llamas (-10 to 10);
-- **truth**: false facts still believed (the bread rumour, Dash's lies);
-- **Pip and Mo**: made up (both 3+, scarf back, rumour dropped), fell out
-  (either at -3 or lower) or left unsaid;
-- **Bramble's poems**: still secret, out in the open, confessed and
-  accepted or declined, or exposed by gossip and declined;
-- **trust in Dash**: each llama's friendship toward Dash.
+How the week ends depends on what Dash did to the village, and there are
+three endings to find:
 
-The ending rules, in order (`lib/sim/endings.dart`):
+- **Harmony Festival**: win the llamas over, set the record straight
+  and bring them closer.
+- **Drama Llama**: a little bird with a loose beak can stir up a lot.
+- **Quiet Valley**: sometimes the valley is happiest left alone.
 
-1. **Drama Llama**: four or more false beliefs, or two or more of: harmony
-   below 0.5, a Pip-Mo rift, Bramble exposed and declined, no festival
-   winner.
-2. **Harmony Festival**: a festival winner, no false belief left, harmony
-   1.5 or more, mean trust in Dash 1.5 or more, and no Pip-Mo rift.
-3. **Quiet Valley** otherwise.
+What counts: how well the llamas get on, whether false rumours are still
+going round, how things stand between Pip and Mo, what became of
+Bramble's secret, and how far the llamas trust Dash. The results screen
+shows each of these after the epilogue. (The exact rules are in
+`lib/sim/endings.dart`, if you want them spoiled.)
 
 Dash's levers: compliments, gifts and help build trust; a pleased llama
-confides something Dash did not know (corrections first); "tell" passes
-news on (a correction to someone who believes the rumour comes first);
-"praise" makes the listener like another llama more; "gossip" plants a
-lie that a trusting listener believes. Unlocked endings are kept in the
-Endings gallery on the title screen.
+confides something Dash did not know; "tell" passes news on (corrections
+first); "praise" makes the listener like another llama more; "gossip"
+plants a lie that a trusting listener believes.
 
-## How to play
+## Controls
 
 - **Click a llama**: Dash flies over and starts talking. Four things Dash
   could say appear as buttons (they are written while Dash is flying, so
@@ -77,37 +94,43 @@ Endings gallery on the title screen.
 - **Camera**: drag to orbit, right-drag or two-finger drag to pan, scroll
   or pinch to zoom, Q/E to turn. **F** follows the selected llama (or
   Dash), **O** returns to the overview.
+- **Time**: Space pauses; the 1×/2×/4× buttons set the speed. One game
+  minute is half a second at 1×; the clock waits at dawn while the llamas
+  write the day's plans.
 - **Esc** opens the pause menu: resume, save to one of three slots,
   settings, save and quit to the title (to the autosave slot), or quit.
   **Continue** on the title screen loads the newest save that loads.
-- **Time**: Space pauses; the 1×/2×/4× buttons set the speed. One game
-  minute is half a second at 1×; the deep night runs faster, and the
-  clock waits at dawn while the llamas write the day's plans.
+- In a cutscene, **Esc**, **Space** or a click skips it.
 - The **village log** (bottom left) lists events, conversations, who
   learned what, and story-thread turns.
-- The **gear** button (and the title and pause menus) opens Settings,
-  in four groups:
-  - **Graphics**: a frame-rate cap of 30, 60 (default) or 120 fps (120
-    only matters on a ProMotion display) and Graphics quality (Low,
-    Medium or High, the default; see below). The cap skips scene renders
-    between display refreshes; the sim and animations run on real time,
-    so their speed does not change.
-  - **Audio**: music and sound-effect volumes (0.5 and 0.7 by default)
-    and Mute all.
-  - **Gameplay**: text speed and the starting time speed.
-  - **Accessibility**: text size, reduced motion (shorter cutscene
-    camera moves, no shake, a slower title flyover, calmer animals and
-    fewer particles) and high-contrast bubbles.
-
-  Settings are saved with shared_preferences.
 
 Speech bubbles show "…" while the model is still writing a line; thought
-bubbles (rounded, italic) show what an idle llama is thinking.
+bubbles (rounded, italic) show what an idle llama is thinking. Bubbles in
+a crowd (and the dream and song bubbles in cutscenes) stack so they never
+cover each other.
+
+## Settings
+
+The **gear** button (and the title and pause menus) opens Settings, in
+four groups:
+
+- **Graphics**: a frame-rate cap of 30, 60 (default) or 120 fps (120
+  only matters on a ProMotion display) and Graphics quality (Low, Medium
+  or High, the default; see below). The cap skips scene renders between
+  display refreshes; the sim and animations run on real time, so their
+  speed does not change.
+- **Audio**: music and sound-effect volumes (0.5 and 0.7 by default) and
+  Mute all.
+- **Gameplay**: text speed and the starting time speed.
+- **Accessibility**: text size, reduced motion (shorter cutscene camera
+  moves, no shake, a slower title flyover, calmer animals and half the
+  fireflies and falling leaves) and high-contrast bubbles.
+
+Settings are saved with shared_preferences.
 
 ## The look and the village's animals
 
-The light follows the clock: a pink sunrise with a little morning haze,
-a clear midday, a warm golden hour, a blue hour as the lamps come on and
+The light follows the clock: a clear pink sunrise, a bright midday, a warm golden hour, a blue hour as the lamps come on and
 a moonlit night with glowing windows and fireflies. The storm darkens
 the sky, thickens the fog, flashes lightning now and then and leaves the
 ground glossy with puddles that dry over the next game hour. Clouds
@@ -224,11 +247,13 @@ The first build runs the `hook/build.dart` scene build (it imports
 `assets/llama.glb` into `flutter_scene_generated/`) and fetches the
 llama.cpp native runtime for llamadart.
 
-Checks:
+Checks (CI runs the same on every push and pull request, see
+`.github/workflows/ci.yml`):
 
 ```
+dart format --output=none --set-exit-if-changed .
 flutter analyze
-flutter test          # pure-Dart sim tests on canned models
+flutter test          # sim, UI and settings tests on canned models; no GPU or model files
 ```
 
 ### Saves
