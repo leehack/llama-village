@@ -1,7 +1,7 @@
 # Llama Village
 
 A small 3D village of AI llamas that live their own lives while you watch
-and meddle as Dash, a little blue bird.
+and meddle as Dash, a little blue bird, over one Festival Week.
 
 Five llamas (Pip, Mo, June, Bramble and Clover) each have a persona, needs,
 friendships, goals and secrets. They plan their day, walk the paths
@@ -12,6 +12,51 @@ actually knows. Facts move between them by being seen, told, overheard or
 announced, so rumours spread, secrets slip out, and story threads (a lost
 red scarf, the Berry Festival singing contest, a secret crush, a bread
 rumour and a storm warning) play out differently every run.
+
+## Festival Week
+
+A game is five days. Clover announces the Berry Festival on the morning
+of day 1; it is held on day 5 at 16:00 on the hilltop. In between: Pip's
+scarf goes missing (day 1), June finds an unsigned poem (day 2), Mo bakes
+a honey loaf (day 2), Bramble's storm arrives (day 3), Clover holds a
+rehearsal (day 4) and strings up lanterns (day 5). A day runs from 06:00
+to about 22:00, eight minutes at 1×.
+
+When every llama is asleep (or at 22:00) a night cutscene plays: the sun
+sets, hut lights go out one by one, the moon crosses, each llama's evening
+reflection appears as a dream bubble over its hut, then dawn and a "Day N"
+card. The sim clock runs to 06:00 underneath (it waits for the llamas'
+plans), and the game autosaves. Cutscenes (night, the announcement, the
+festival, the ending) letterbox the screen and pause the sim; Esc, Space
+or a click skips one.
+
+After the festival comes an ending scene, an epilogue card per llama
+(written by the model from its final state; a rule-made line if that
+fails) and the results. What Dash changed is read off the sim:
+
+- **harmony**: the mean friendship among the five llamas (-10 to 10);
+- **truth**: false facts still believed (the bread rumour, Dash's lies);
+- **Pip and Mo**: made up (both 3+, scarf back, rumour dropped), fell out
+  (either at -3 or lower) or left unsaid;
+- **Bramble's poems**: still secret, out in the open, confessed and
+  accepted or declined, or exposed by gossip and declined;
+- **trust in Dash**: each llama's friendship toward Dash.
+
+The ending rules, in order (`lib/sim/endings.dart`):
+
+1. **Drama Llama**: four or more false beliefs, or two or more of: harmony
+   below 0.5, a Pip-Mo rift, Bramble exposed and declined, no festival
+   winner.
+2. **Harmony Festival**: none of those signs, a festival winner, no false
+   belief left, harmony 1.5 or more and mean trust in Dash 1.5 or more.
+3. **Quiet Valley** otherwise.
+
+Dash's levers: compliments, gifts and help build trust; a pleased llama
+confides something Dash did not know (corrections first); "tell" passes
+news on (a correction to someone who believes the rumour comes first);
+"praise" makes the listener like another llama more; "gossip" plants a
+lie that a trusting listener believes. Unlocked endings are kept in the
+Endings gallery on the title screen.
 
 ## How to play
 
@@ -32,17 +77,23 @@ rumour and a storm warning) play out differently every run.
 - **Camera**: drag to orbit, right-drag or two-finger drag to pan, scroll
   or pinch to zoom, Q/E to turn. **F** follows the selected llama (or
   Dash), **O** returns to the overview.
+- **Esc** opens the pause menu: resume, save to one of three slots,
+  settings, save and quit to the title (to the autosave slot), or quit.
+  **Continue** on the title screen loads the newest save that loads.
 - **Time**: Space pauses; the 1×/2×/4× buttons set the speed. One game
   minute is half a second at 1×; the deep night runs faster, and the
   clock waits at dawn while the llamas write the day's plans.
 - The **village log** (bottom left) lists events, conversations, who
   learned what, and story-thread turns.
-- The **gear** button opens Settings: a frame-rate cap of 30, 60
-  (default) or 120 fps (120 only matters on a ProMotion display), music
-  and sound-effect volumes (0.5 and 0.7 by default) and Mute all. The
-  cap skips scene renders between display refreshes; the sim and
-  animations run on real time, so their speed does not change. Settings
-  are saved with shared_preferences.
+- The **gear** button (and the title and pause menus) opens Settings:
+  a frame-rate cap of 30, 60 (default) or 120 fps (120 only matters on a
+  ProMotion display), music and sound-effect volumes (0.5 and 0.7 by
+  default) and Mute all; text speed and the starting time speed; text
+  size, reduced motion (shorter cutscene camera moves, no shake, a slower
+  title flyover) and high-contrast bubbles. The cap skips scene renders
+  between display refreshes; the sim and animations run on real time, so
+  their speed does not change. Settings are saved with
+  shared_preferences.
 
 Speech bubbles show "…" while the model is still writing a line; thought
 bubbles (rounded, italic) show what an idle llama is thinking.
@@ -74,8 +125,9 @@ VILLAGE_LAYA_HEAD     full path to laya-head.safetensors
 VILLAGE_LAYA=0        skip Laya (topics then come from the rules)
 ```
 
-If a required model is missing, the loading screen says which file and
-where it looked, and offers to play with canned lines instead.
+The models load in the background behind the title screen. If a required
+model is missing, the title screen says which file and where it looked,
+and new games play with canned lines instead.
 
 Actions, reactions and knowledge bookkeeping are rules; the model writes
 the words. When the model's output does not parse, the sim retries once
@@ -143,13 +195,23 @@ flutter analyze
 flutter test          # pure-Dart sim tests on canned models
 ```
 
+### Saves
+
+Saves are JSON files in `~/Library/Application Support/<bundle id>/saves`:
+`autosave.json`, `slot1.json` to `slot3.json` and `endings.json` (the
+gallery). A save holds the whole sim (needs, places, plans, memories and
+the embedding cache, the knowledge base, threads, Dash, the clock and the
+RNG state) under a version number; conversations in flight are not saved.
+A damaged or other-version save is listed as damaged and never loaded.
+
 ### Quitting
 
-Cmd-Q and the window's close button both go through Flutter's exit
-request, which stops the sim and disposes every model engine before the
-process exits (ggml's Metal teardown crashes if the process exits with
-models still loaded). Quitting while the models load waits for the load
-and then frees them.
+Cmd-Q, the window's close button and the Quit buttons all stop the sim
+and dispose every model engine before the process exits (ggml's Metal
+teardown crashes if the process exits with models still loaded).
+Quitting while the models load waits for the load and then frees them.
+Leaving a game for the title screen cancels its model work and waits for
+it to stop before another game can use the engines.
 
 ### Self-test
 
@@ -163,6 +225,23 @@ are inert unless their environment variables are set (`VILLAGE_CAPTURE`,
 `VILLAGE_CLOSE_AFTER`); see
 `lib/self_test.dart`.
 
+`VILLAGE_AUTOPLAY=week` runs the Festival Week script instead
+(`lib/game/week_autoplay.dart`): the title screen, gallery, credits and
+settings, a new game, the pause menu and a manual save, the first night
+skip (later ones are skipped), the festival, the ending, the epilogue,
+the results and the gallery again, with a PNG at each stop. Pair it with
+`VILLAGE_BOT=harmony|drama|quiet` (the bot plays Dash toward that
+ending), `VILLAGE_TIME_SCALE=32` (a compressed week) and
+`VILLAGE_SAVE_DIR=<dir>` (keeps saves and the gallery out of your
+profile); `VILLAGE_JUMP_DAY=5` starts a new game on that morning.
+`VILLAGE_QUIT_AT=menu|cutscene|generation` quits at that moment, through
+the title screen's Quit button or the system exit request.
+
+```
+tool/run_selftest.sh /tmp/week 400 VILLAGE_AUTOPLAY=week VILLAGE_CANNED=1 \
+  VILLAGE_BOT=drama VILLAGE_TIME_SCALE=32 VILLAGE_MS_PER_MINUTE=500 VILLAGE_SAVE_DIR=/tmp/week_saves
+```
+
 ## Layout
 
 - `lib/sim/` is the pure-Dart simulation, with no Flutter or llamadart
@@ -172,8 +251,14 @@ are inert unless their environment variables are set (`VILLAGE_CAPTURE`,
 - `lib/ai/models.dart` backs the sim's model interfaces with llamadart.
 - `lib/render/` builds the diorama, sky, llamas and Dash with
   flutter_scene.
-- `lib/ui/` holds the bubbles, HUD, log, options, inspector and settings.
+- `lib/ui/` holds the bubbles, HUD, log, options, inspector and settings;
+  `lib/ui/menus/` the title screen, pause menu, credits, gallery,
+  epilogue and results.
+- `lib/cutscene/` is the timeline runner (camera keys, letterbox, fades,
+  text, cues, holds, shake), the scene scripts and their overlay.
+- `lib/game/` directs the week (`director.dart`), stores saves and the
+  gallery, and holds the player bot and the week autoplay.
 - `lib/audio/` maps sim events to music and effects (`soundscape.dart`)
   and plays them with flutter_soloud.
-- `lib/app.dart` wires it together: loading, input, the game loop and
-  shutdown.
+- `lib/app.dart` wires it together: loading, the title screen, input,
+  the game loop, saves and shutdown.
