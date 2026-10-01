@@ -36,6 +36,8 @@ Map<String, Object?> snapshotVillage(Village v, {DateTime? at}) => {
   'threads': {for (final t in v.threads) t.id: t.save()},
   'dash': v.dash.save(),
   'embeddings': {for (final e in v.embed.cache.entries) e.key: _vector(e.value)},
+  'journal': v.journal.save(),
+  'album': v.album.save(),
   'log': [
     for (final e in v.log.entries.skip(v.log.entries.length > 300 ? v.log.entries.length - 300 : 0))
       {'at': e.at.absolute, 'kind': e.kind.name, 'text': e.text, 'who': e.who},
@@ -80,6 +82,9 @@ void restoreVillage(Village v, Map<String, Object?> j) {
     v.embed.cache
       ..clear()
       ..addAll({for (final e in (j['embeddings'] as Map).entries) e.key as String: _unvector(e.value as String)});
+    // Saves from before the storybook have neither; its pages then fall back.
+    v.journal.load((j['journal'] as Map?)?.cast<String, Object?>());
+    v.album.load((j['album'] as Map?)?.cast<String, Object?>());
     v.log.entries
       ..clear()
       ..addAll([

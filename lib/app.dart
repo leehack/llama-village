@@ -21,6 +21,7 @@ import 'frame_throttle.dart';
 import 'game/bot.dart';
 import 'game/director.dart';
 import 'game/save_store.dart';
+import 'game/story_camera.dart';
 import 'game/week_autoplay.dart';
 import 'render_tour.dart';
 import 'render/stage.dart';
@@ -34,6 +35,7 @@ import 'sim/epilogue.dart';
 import 'sim/geo.dart';
 import 'sim/influence.dart';
 import 'sim/snapshot.dart';
+import 'sim/storybook.dart';
 import 'sim/village.dart';
 import 'ui/bubbles.dart';
 import 'ui/game_keys.dart';
@@ -42,6 +44,7 @@ import 'ui/menus/gallery.dart';
 import 'ui/menus/menu_kit.dart';
 import 'ui/menus/pause_menu.dart';
 import 'ui/menus/start_menu.dart';
+import 'ui/menus/storybook.dart';
 import 'ui/menus/week_end.dart';
 import 'ui/panels.dart';
 import 'ui/settings_panel.dart';
@@ -84,6 +87,9 @@ class VillageHomeState extends State<VillageHome> with SingleTickerProviderState
   late final Ticker _vsync;
   final FrameThrottle _throttle = FrameThrottle(VillageSettings.defaultFps);
   final GlobalKey _sceneKey = GlobalKey();
+
+  /// The 3D view alone (no HUD), for the storybook's pictures.
+  final GlobalKey _sceneShotKey = GlobalKey();
   RenderObject? _scenePaint;
   VillageSettings settings = VillageSettings.ephemeral();
   bool showSettings = false;
@@ -128,6 +134,21 @@ class VillageHomeState extends State<VillageHome> with SingleTickerProviderState
   double _toastUntil = 0;
 
   final Map<String, String?> epilogue = {};
+
+  /// This week's storybook, written from the ending scene on.
+  Storybook? book;
+  StoryWriter? _writer;
+  StoryCamera? _camera;
+  bool _bookSaved = false;
+  final Set<int> _pagesLogged = {};
+
+  /// Ticks as storybook pages stream in.
+  final ValueNotifier<int> storyTick = ValueNotifier(0);
+
+  /// The storybook on screen: this week's or one from the gallery.
+  Storybook? reading;
+  final GlobalKey<StorybookViewState> storyKey = GlobalKey();
+  List<Storybook> books = [];
   EndingVerdict? verdict;
   Influence? influence;
   bool newlyUnlocked = false;
@@ -174,6 +195,7 @@ class VillageHomeState extends State<VillageHome> with SingleTickerProviderState
     _vsync.dispose();
     frame.dispose();
     slow.dispose();
+    storyTick.dispose();
     focus.dispose();
     unawaited(shutdown());
     super.dispose();
@@ -400,6 +422,12 @@ class VillageHomeState extends State<VillageHome> with SingleTickerProviderState
       ..paused = false;
     test.generating = () => v.chat.queue.busy;
     final preset = botPresetFrom(test.bot);
+    final camera = _camera = StoryCamera(stage: stage, boundary: _sceneShotKey, log: test.log);
+    v.events.listeners.add((e) => camera.onEvent(v, e));
+    book = null;
+    _writer = null;
+    _bookSaved = false;
+    _pagesLogged.clear();
     setState(() {
       busy = null;
       village = v;
@@ -412,6 +440,7 @@ class VillageHomeState extends State<VillageHome> with SingleTickerProviderState
               log: test.log,
               onDawn: (day) => unawaited(_autosave(day)),
               onWeekOver: _weekOver,
+              onEnding: _startStory,
             );
       bot = preset == null ? null : PlayerBot(preset);
       phase = Phase.playing;
@@ -454,8 +483,72 @@ class VillageHomeState extends State<VillageHome> with SingleTickerProviderState
     if (mounted) setState(() {});
   }
 
+  /// Starts writing this week's storybook in the background, page by page,
+  /// while the ending scene, the epilogue and the results play.
+  void _startStory(EndingVerdict verdict, Influence i) {
+    final v = village;
+    if (v == null) return;
+    final b = book = newStorybook(v, verdict, id: 'week-${DateTime.now().millisecondsSinceEpoch}');
+    _bookSaved = false;
+    final writer = _writer = StoryWriter(v, b, verdict: verdict, influence: i, onChange: () => _storyChanged(b));
+    test.log('STORYBOOK start (${v.journal.beats.length} beats, ${v.album.shots.length} pictures)');
+    unawaited(writer.start());
+  }
+
+  void _storyChanged(Storybook b) {
+    storyTick.value++;
+    for (final (n, p) in b.pages.indexed) {
+      if (p.text != null && _pagesLogged.add(n)) test.log('STORYPAGE $n fallback=${p.fallback} ${p.text}');
+    }
+    if (b.complete && !_bookSaved && b == book) unawaited(_saveBook(b));
+  }
+
+  /// Keeps the finished book in the gallery, once.
+  Future<void> _saveBook(Storybook b) async {
+    if (_bookSaved) return;
+    _bookSaved = true;
+    final v = village;
+    if (v != null) illustrate(b, v.album);
+    try {
+      await store?.writeStorybook(b);
+      test.log('STORYBOOK saved ${b.id} (${b.pages.where((p) => p.shot != null).length} pictures)');
+    } catch (e) {
+      debugPrint('Llama Village: storybook not saved: $e');
+    }
+  }
+
+  /// Finishes an unfinished book from the rules and keeps it, for a game
+  /// being left or quit while pages are still being written.
+  Future<void> _keepBook() async {
+    final b = book;
+    if (b == null || _bookSaved) return;
+    if (!b.complete) _writer?.finishWithFallbacks();
+    await _saveBook(b);
+  }
+
+  void openStory([Storybook? b]) {
+    final open = b ?? book;
+    if (open == null) return;
+    sound.click();
+    setState(() => reading = open);
+    test.log('STORYBOOK open ${open.id}');
+  }
+
+  void closeStory() {
+    sound.click();
+    setState(() => reading = null);
+    focus.requestFocus();
+  }
+
+  Future<void> _refreshBooks() async {
+    final list = await store?.storybooks() ?? const <Storybook>[];
+    if (mounted) setState(() => books = list);
+  }
+
   void _weekOver(EndingVerdict v, Influence i) {
     final game = village!;
+    final b = book;
+    if (b != null) illustrate(b, game.album);
     setState(() {
       phase = Phase.epilogue;
       phaseTime = 0;
@@ -501,6 +594,7 @@ class VillageHomeState extends State<VillageHome> with SingleTickerProviderState
     final v = village;
     if (v == null) return;
     if (save) await saveTo(SaveStore.autoSlot);
+    await _keepBook();
     director?.dispose();
     v.close();
     models?.cancel();
@@ -508,6 +602,8 @@ class VillageHomeState extends State<VillageHome> with SingleTickerProviderState
       village = null;
       director = null;
       bot = null;
+      reading = null;
+      _camera = null;
       pauseMenu = false;
       showSettings = false;
       stage.selected = null;
@@ -547,6 +643,11 @@ class VillageHomeState extends State<VillageHome> with SingleTickerProviderState
 
   Future<void> _doShutdown() async {
     final watch = Stopwatch()..start();
+    try {
+      await _keepBook().timeout(const Duration(seconds: 5));
+    } catch (_) {
+      // Quitting must not wait on the gallery.
+    }
     _audio.dispose();
     village?.close();
     attract?.close();
@@ -617,6 +718,7 @@ class VillageHomeState extends State<VillageHome> with SingleTickerProviderState
       if (!inCutscene && !pauseMenu) _steer(game);
       game.advance(step * 1000);
       director?.tick(step);
+      _camera?.tick(game, step, player: director?.player);
       if (inCutscene != _wasCutscene) setState(() => _wasCutscene = inCutscene);
       if (!inCutscene && !pauseMenu) bot?.tick(game);
     } else if (game == null) {
@@ -774,7 +876,10 @@ class VillageHomeState extends State<VillageHome> with SingleTickerProviderState
   void openPage(MenuPage p) {
     sound.click();
     setState(() => page = p);
-    if (p == MenuPage.endings) unawaited(_refreshSaves());
+    if (p == MenuPage.endings) {
+      unawaited(_refreshSaves());
+      unawaited(_refreshBooks());
+    }
   }
 
   void closePage() {
@@ -817,6 +922,10 @@ class VillageHomeState extends State<VillageHome> with SingleTickerProviderState
 
   void _onPress(LogicalKeyboardKey k) {
     final escape = k == LogicalKeyboardKey.escape;
+    if (reading != null) {
+      if (escape) closeStory();
+      return;
+    }
     if (inCutscene) {
       if (escape || k == LogicalKeyboardKey.space) director!.skip();
       return;
@@ -892,11 +1001,30 @@ class VillageHomeState extends State<VillageHome> with SingleTickerProviderState
                   if (phase == Phase.epilogue) Scrim(opacity: 0.35, child: _epilogue()),
                   if (phase == Phase.results && verdict != null)
                     Scrim(
-                      child: ResultsView(
-                        verdict: verdict!,
-                        influence: influence!,
-                        newlyUnlocked: newlyUnlocked,
-                        onMenu: () => unawaited(toMenu()),
+                      child: ValueListenableBuilder<int>(
+                        valueListenable: storyTick,
+                        builder: (context, _, _) {
+                          final b = book;
+                          return ResultsView(
+                            verdict: verdict!,
+                            influence: influence!,
+                            newlyUnlocked: newlyUnlocked,
+                            onMenu: () => unawaited(toMenu()),
+                            onStory: b == null ? null : openStory,
+                            storyStatus: b == null || b.complete ? null : '${b.writtenCount} of ${b.textPages} pages written…',
+                          );
+                        },
+                      ),
+                    ),
+                  if (reading != null)
+                    Positioned.fill(
+                      child: StorybookView(
+                        key: storyKey,
+                        book: reading!,
+                        changes: storyTick,
+                        reducedMotion: settings.reducedMotion,
+                        onClick: sound.click,
+                        onClose: closeStory,
                       ),
                     ),
                   if (phase == Phase.loading || phase == Phase.failed)
@@ -950,7 +1078,7 @@ class VillageHomeState extends State<VillageHome> with SingleTickerProviderState
         child: switch (page) {
           MenuPage.settings => SettingsPanel(settings: settings, onClick: sound.click, onClose: closePage, maxHeight: _panelHeight),
           MenuPage.credits => CreditsView(onClose: closePage),
-          MenuPage.endings => EndingsGallery(unlocked: unlocked, onClose: closePage),
+          MenuPage.endings => EndingsGallery(unlocked: unlocked, onClose: closePage, books: books, onOpenBook: openStory),
           MenuPage.none => const SizedBox.shrink(),
         },
       ),
@@ -991,6 +1119,7 @@ class VillageHomeState extends State<VillageHome> with SingleTickerProviderState
       if (e.scale != 1) stage.rig.zoom(1 / math.pow(e.scale, 0.08).toDouble());
     },
     child: RepaintBoundary(
+      key: _sceneShotKey,
       child: SceneView(stage.scene, key: _sceneKey, autoTick: false, cameraBuilder: (_) => stage.rig.camera()),
     ),
   );

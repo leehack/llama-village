@@ -5,7 +5,8 @@ import 'dart:math' as math;
 /// A text generator. The app backs it with llamadart; tests with a script.
 abstract interface class ChatModel {
   /// Completes [user] under [system]. When [jsonSchema] is set the output is
-  /// grammar-constrained to it.
+  /// grammar-constrained to it. [onText], when set, gets the text written so
+  /// far as it streams in.
   Future<String> complete(
     String system,
     String user, {
@@ -14,6 +15,7 @@ abstract interface class ChatModel {
     required int seed,
     List<String> stop,
     Map<String, dynamic>? jsonSchema,
+    void Function(String text)? onText,
   });
 }
 
@@ -150,15 +152,26 @@ class ChatRuntime {
     required int seed,
     List<String> stop = const [],
     Map<String, dynamic>? jsonSchema,
+    void Function(String text)? onText,
   }) async {
     final watch = Stopwatch()..start();
-    final out = await model.complete(system, user, maxTokens: maxTokens, temp: temp, seed: seed, stop: stop, jsonSchema: jsonSchema);
+    final out = await model.complete(
+      system,
+      user,
+      maxTokens: maxTokens,
+      temp: temp,
+      seed: seed,
+      stop: stop,
+      jsonSchema: jsonSchema,
+      onText: onText,
+    );
     metrics.add(CallRecord(type, watch.elapsedMicroseconds / 1000, queueMs: queueMs));
     return out;
   }
 
   /// Free text, parsed by [parse]; one retry with another seed, then
-  /// [fallback]. A model error goes straight to the fallback.
+  /// [fallback]. A model error goes straight to the fallback. [onText]
+  /// streams each attempt's text as it is written.
   Future<T> text<T>(
     String type,
     int priority,
@@ -169,6 +182,7 @@ class ChatRuntime {
     double temp = 0.85,
     required int seed,
     List<String> stop = const [],
+    void Function(String text)? onText,
   }) {
     return queue.submit(type, priority, (queueMs) async {
       for (var attempt = 0; attempt < 2; attempt++) {
@@ -182,6 +196,7 @@ class ChatRuntime {
             temp: temp,
             seed: seed + attempt * 7919,
             stop: stop,
+            onText: onText,
           );
         } catch (_) {
           break;

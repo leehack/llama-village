@@ -31,7 +31,9 @@ String _festivalRole(Village v, Llama l) {
   return others.firstOrNull;
 }
 
-String _arcFor(Llama l, Influence i) => switch (l.name) {
+/// The story arc [l] shares with another llama, as one clause; empty for
+/// Clover.
+String arcFor(Llama l, Influence i) => switch (l.name) {
   'Pip' || 'Mo' => switch (i.pipMo) {
     PipMoArc.reconciled => 'Pip and Mo made up',
     PipMoArc.rift => 'Pip and Mo fell out',
@@ -51,7 +53,7 @@ String _arcFor(Llama l, Influence i) => switch (l.name) {
 String epiloguePrompt(Village v, Llama l, Influence i) {
   final warm = _extreme(l, warmest: true), cold = _extreme(l, warmest: false);
   final facts = relevantFacts(v, l, limit: 4);
-  final arc = _arcFor(l, i);
+  final arc = arcFor(l, i);
   final he = _pronoun[l.name] ?? 'they';
   return [
     'Festival week in Llama Village is over. ${l.name} ($he), the ${l.job} (${l.traits}), ${_festivalRole(v, l)}.',

@@ -32,6 +32,7 @@ release build on an M4 Max, from the self-test's per-call metrics (the
 | Evening reflections (dreams) | gemma-4-E2B | One first-person sentence about the day, shown as the night's dream bubble and fed into the next morning's plan | Free text | about 0.6 s |
 | Cutscene lines | gemma-4-E2B | Clover's festival announcement and each singer's song line | Free text | 0.25-0.5 s |
 | Epilogue cards | gemma-4-E2B | One storybook-style sentence per llama from its final state and what it knows | Free text | about 0.35 s each |
+| The storybook | gemma-4-E2B | One fairy-tale page per day and one for the ending, retold from that day's digest of what really happened | Free text, one paragraph of 80-120 words, streamed onto the page; a page written by rules if it fails | 2.2 s per page (3.1 s), about 14 s for the book |
 | Casual-topic choice | Laya (optional) | Picks what a llama brings up in small talk among the options the rules allow (never its own secret unless confessing, never news the listener told it); a topic tied to a strong goal is chosen by the rules | One choice among the options | about 0.1 s |
 
 Which facts go into a prompt is a rule (`relevantFacts` scores goals,
@@ -101,7 +102,11 @@ The game never waits on a model:
   festival with a sung line per singer, and the ending.
 - **Title screen, saves and gallery**: a drone flyover of the village
   behind the menu; an autosave every morning plus three manual slots;
-  unlocked endings are kept in the Endings gallery.
+  unlocked endings and each finished week's storybook are kept in the
+  Endings gallery.
+- **The storybook**: after the results, "Read the story" opens "The
+  Week Dash Came to Berry Valley", a fairy tale of the week just played,
+  a page per day, illustrated with pictures taken in the village.
 - **Time-of-day lighting**: sunrise, midday, golden hour, blue hour and
   a moonlit night, a storm with rain, lightning and wet ground, and
   three graphics qualities.
@@ -145,6 +150,34 @@ going round, how things stand between Pip and Mo, what became of
 Bramble's secret, and how far the llamas trust Dash. The results screen
 shows each of these after the epilogue. (The exact rules are in
 `lib/sim/endings.dart`, if you want them spoiled.)
+
+### The storybook
+
+Once the ending scene starts, the dialogue model writes the week as a
+picture book in the background: a cover, a page per day and a page for
+the ending, each a gentle fairy-tale paragraph. Each page is grounded in
+that day's digest: the sim keeps a journal of the week's notable moments
+(world events, story-thread turns, conversations and how they ended,
+secrets and rumours passed on, and Dash's visits and how they went), and
+a page gets the day's seven weightiest moments, in order, with the
+instruction to use nothing else. The digest is a pure function of the
+journal, so the same week always gives the same digest. A page the model
+fails to write is written from the same digest by rules.
+
+The pictures are taken in the engine during play: a small capture of the
+3D view (no HUD or bubbles) when a story moment happens with the llamas
+involved on screen (a conversation, a rumour, the storm, a
+confession, the scarf turning up), during the announcement, the
+festival and the ending scenes, and one of the village each day. The
+best two of each day travel inside the save, so a loaded game's
+storybook still has them; a page without a picture gets a painted
+valley.
+
+The book opens on a spread (picture left, text right) with a drop cap,
+page numbers and a page-turn animation; ← and →, the arrows or a click
+on either page turn it, and Esc closes it. Pages still being written
+stream in as the model writes them. Every finished book is kept in the
+Endings gallery and can be read again.
 
 Dash's levers: compliments, gifts and help build trust; a pleased llama
 confides something Dash did not know; "tell" passes news on (corrections
@@ -335,10 +368,13 @@ flutter test          # sim, UI and settings tests on canned models; no GPU or m
 ### Saves
 
 Saves are JSON files in `~/Library/Application Support/<bundle id>/saves`:
-`autosave.json`, `slot1.json` to `slot3.json` and `endings.json` (the
-gallery). A save holds the whole sim (needs, places, plans, memories and
-the embedding cache, the knowledge base, threads, Dash, the clock and the
-RNG state) under a version number; conversations in flight are not saved.
+`autosave.json`, `slot1.json` to `slot3.json`, `endings.json` (the
+gallery) and one file per storybook in `storybooks/`. A save holds the
+whole sim (needs, places, plans, memories and the embedding cache, the
+knowledge base, threads, Dash, the clock, the RNG state, and the
+storybook's journal and pictures) under a version number; conversations
+in flight are not saved. A save from before the storybook loads with an
+empty journal, and its storybook pages fall back accordingly.
 A damaged or other-version save is listed as damaged and never loaded.
 
 ### Quitting
@@ -366,7 +402,8 @@ are inert unless their environment variables are set (`VILLAGE_CAPTURE`,
 (`lib/game/week_autoplay.dart`): the title screen, gallery, credits and
 settings, a new game, the pause menu and a manual save, the first night
 skip (later ones are skipped), the festival, the ending, the epilogue,
-the results and the gallery again, with a PNG at each stop. Pair it with
+the results, the storybook (the cover, a page turning, two pages and
+the ending) and the gallery again, with a PNG at each stop. Pair it with
 `VILLAGE_BOT=harmony|drama|quiet` (the bot plays Dash toward that
 ending), `VILLAGE_TIME_SCALE=32` (a compressed week) and
 `VILLAGE_SAVE_DIR=<dir>` (keeps saves and the gallery out of your

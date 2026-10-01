@@ -1,15 +1,20 @@
 import 'package:flutter/material.dart';
 
 import '../../sim/endings.dart';
+import '../../sim/storybook.dart';
 import '../palette.dart';
 import 'menu_kit.dart';
 
 /// The endings gallery: unlocked endings in colour, locked ones as
 /// silhouettes with a hint.
 class EndingsGallery extends StatelessWidget {
-  const EndingsGallery({super.key, required this.unlocked, required this.onClose});
+  const EndingsGallery({super.key, required this.unlocked, required this.onClose, this.books = const [], this.onOpenBook});
   final Set<Ending> unlocked;
   final VoidCallback onClose;
+
+  /// Storybooks of finished weeks, newest first.
+  final List<Storybook> books;
+  final ValueChanged<Storybook>? onOpenBook;
 
   @override
   Widget build(BuildContext context) => MenuCard(
@@ -32,9 +37,94 @@ class EndingsGallery extends StatelessWidget {
               ),
           ],
         ),
+        const SizedBox(height: 18),
+        Text(
+          'STORYBOOKS',
+          style: menuText(11, weight: FontWeight.w900, color: gold).copyWith(letterSpacing: 1.2),
+        ),
+        const SizedBox(height: 8),
+        if (books.isEmpty)
+          Text('Finish a week to keep its storybook here.', style: menuText(12.5, color: Colors.white54))
+        else
+          SizedBox(
+            height: 128,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: books.length,
+              separatorBuilder: (_, _) => const SizedBox(width: 12),
+              itemBuilder: (context, i) => _BookTile(book: books[i], onTap: onOpenBook == null ? null : () => onOpenBook!(books[i])),
+            ),
+          ),
       ],
     ),
   );
+}
+
+/// One storybook on the gallery shelf: its cover picture, title and ending.
+class _BookTile extends StatelessWidget {
+  const _BookTile({required this.book, required this.onTap});
+  final Storybook book;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final cover = book.pages.first.shot;
+    final d = book.finishedAt.toLocal();
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
+        width: 250,
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: const Color(0x14FFFFFF),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: const Color(0x33FFFFFF)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 84,
+              decoration: BoxDecoration(
+                color: const Color(0xFF5B3A22),
+                borderRadius: BorderRadius.circular(4),
+                border: Border.all(color: const Color(0xFFB0874A), width: 2),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: cover == null
+                  ? const Icon(Icons.menu_book, color: Color(0xFFF7EFDC))
+                  : Image.memory(
+                      cover,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, _, _) => const Icon(Icons.menu_book, color: Color(0xFFF7EFDC)),
+                    ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    book.title,
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                    style: menuText(13, weight: FontWeight.w800),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(endingInfo[book.ending]!.title, style: menuText(11.5, color: gold)),
+                  Text(
+                    '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}',
+                    style: menuText(11, color: Colors.white54),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 const Map<Ending, (Color, Color)> _sky = {

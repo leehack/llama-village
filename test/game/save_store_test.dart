@@ -1,10 +1,12 @@
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:llama_village/game/save_store.dart';
 import 'package:llama_village/sim/canned.dart';
 import 'package:llama_village/sim/endings.dart';
 import 'package:llama_village/sim/snapshot.dart';
+import 'package:llama_village/sim/storybook.dart';
 import 'package:llama_village/sim/village.dart';
 
 import '../sim/harness.dart';
@@ -73,5 +75,31 @@ void main() {
     expect(await SaveStore(store.dir).unlocked(), {Ending.dramaLlama, Ending.quietValley});
     File('${store.dir.path}/endings.json').writeAsStringSync('{"unlocked": [');
     expect(await store.unlocked(), isEmpty);
+  });
+
+  test('finished storybooks are kept in the gallery, newest first, and a damaged one is skipped', () async {
+    expect(await store.storybooks(), isEmpty);
+    Storybook book(String id, DateTime at) => Storybook(
+      id: id,
+      title: storyTitle,
+      ending: Ending.harmonyFestival,
+      finishedAt: at,
+      pages: [
+        StoryPage(PageKind.cover, shot: Uint8List.fromList([137, 80, 78, 71])),
+        for (var d = 1; d <= 5; d++) StoryPage(PageKind.day, day: d, text: 'Day $d was lovely. Everyone sang.'),
+        StoryPage(PageKind.ending, text: 'And so the week ended.', fallback: true),
+      ],
+    );
+    final older = book('w1', DateTime.utc(2026, 9, 1));
+    final newer = book('w2', DateTime.utc(2026, 9, 2));
+    await store.writeStorybook(older);
+    await store.writeStorybook(newer);
+    File('${store.dir.path}/storybooks/broken.json').writeAsStringSync('{"game": "llama_village_storybook"');
+
+    final books = await SaveStore(store.dir).storybooks();
+    expect([for (final b in books) b.id], ['w2', 'w1']);
+    expect(books.first.toJson(), newer.toJson());
+    expect(books.first.pages.first.shot, [137, 80, 78, 71]);
+    expect(books.first.complete, isTrue);
   });
 }

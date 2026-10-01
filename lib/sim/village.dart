@@ -13,6 +13,7 @@ import 'log.dart';
 import 'model.dart';
 import 'places.dart';
 import 'rng.dart';
+import 'story.dart';
 import 'threads.dart';
 import 'week.dart';
 
@@ -91,6 +92,7 @@ class Village {
         'believes': t.knowing.believes,
       });
     };
+    journal.attach(this);
   }
 
   late final ChatRuntime chat;
@@ -117,6 +119,10 @@ class Village {
   final StormThread storm_ = StormThread();
   final WeekThread week = WeekThread();
   late final List<StoryThread> threads;
+
+  /// The week's notable moments and pictures, for the storybook.
+  final StoryJournal journal = StoryJournal();
+  final StoryAlbum album = StoryAlbum();
 
   GameTime now = const GameTime(1, 6 * 60);
   bool storm = false;

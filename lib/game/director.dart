@@ -14,7 +14,15 @@ import '../sim/village.dart';
 /// scene plays, drives the camera and the sky overrides, and hands over to
 /// the epilogue when the ending scene is done.
 class Director {
-  Director({required this.v, required this.stage, required this.settings, required this.onDawn, required this.onWeekOver, this.log}) {
+  Director({
+    required this.v,
+    required this.stage,
+    required this.settings,
+    required this.onDawn,
+    required this.onWeekOver,
+    this.onEnding,
+    this.log,
+  }) {
     v.events.listeners.add(_onEvent);
   }
 
@@ -25,6 +33,9 @@ class Director {
   /// A new morning after a night skip: the app autosaves.
   final void Function(int day) onDawn;
   final void Function(EndingVerdict verdict, Influence influence) onWeekOver;
+
+  /// The ending scene is starting; the storybook starts being written.
+  final void Function(EndingVerdict verdict, Influence influence)? onEnding;
   final void Function(String)? log;
 
   CutscenePlayer? player;
@@ -116,6 +127,7 @@ class Director {
     influence = i;
     verdict = verdictNow;
     log?.call('ENDING ${verdictNow.ending.name} ${i.toJson()} reasons=${verdictNow.reasons}');
+    onEnding?.call(verdictNow, i);
     return endingScene(_c, verdictNow, i);
   }
 

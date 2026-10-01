@@ -91,11 +91,25 @@ String brambleLabel(BrambleArc a) => switch (a) {
 
 /// The week's numbers, the ending and whether it was newly unlocked.
 class ResultsView extends StatelessWidget {
-  const ResultsView({super.key, required this.verdict, required this.influence, required this.newlyUnlocked, required this.onMenu});
+  const ResultsView({
+    super.key,
+    required this.verdict,
+    required this.influence,
+    required this.newlyUnlocked,
+    required this.onMenu,
+    this.onStory,
+    this.storyStatus,
+  });
   final EndingVerdict verdict;
   final Influence influence;
   final bool newlyUnlocked;
   final VoidCallback onMenu;
+
+  /// Opens the week's storybook.
+  final VoidCallback? onStory;
+
+  /// How far the storybook is ("4 of 6 pages written").
+  final String? storyStatus;
 
   @override
   Widget build(BuildContext context) {
@@ -191,12 +205,20 @@ class ResultsView extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 20),
-          Align(
-            alignment: Alignment.centerRight,
-            child: SizedBox(
-              width: 240,
-              child: MenuButton(label: 'Back to the title', icon: Icons.home_outlined, primary: true, onTap: onMenu),
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              if (onStory != null)
+                SizedBox(
+                  width: 280,
+                  child: MenuButton(label: 'Read the story', icon: Icons.menu_book, primary: true, detail: storyStatus, onTap: onStory),
+                ),
+              const SizedBox(width: 12),
+              SizedBox(
+                width: 240,
+                child: MenuButton(label: 'Back to the title', icon: Icons.home_outlined, primary: onStory == null, onTap: onMenu),
+              ),
+            ],
           ),
         ],
       ),

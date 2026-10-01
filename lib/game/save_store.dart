@@ -6,6 +6,7 @@ import 'package:path_provider/path_provider.dart';
 
 import '../sim/endings.dart';
 import '../sim/snapshot.dart';
+import '../sim/storybook.dart';
 
 /// One save slot as the menus list it.
 class SaveInfo {
@@ -41,9 +42,10 @@ class SaveStore {
 
   File _file(String slot) => File('${dir.path}/$slot.json');
   File get _gallery => File('${dir.path}/endings.json');
+  Directory get _books => Directory('${dir.path}/storybooks');
 
   Future<void> _writeAtomic(File file, String text) async {
-    await dir.create(recursive: true);
+    await file.parent.create(recursive: true);
     final tmp = File('${file.path}.tmp');
     await tmp.writeAsString(text, flush: true);
     await tmp.rename(file.path);
@@ -118,5 +120,27 @@ class SaveStore {
       }),
     );
     return true;
+  }
+
+  /// Keeps a finished week's storybook in the gallery (one file per book).
+  Future<void> writeStorybook(Storybook book) async {
+    final text = await Isolate.run(() => jsonEncode(book.toJson()));
+    await _writeAtomic(File('${_books.path}/${book.id}.json'), text);
+  }
+
+  /// Every storybook in the gallery, newest first; damaged files are skipped.
+  Future<List<Storybook>> storybooks() async {
+    if (!await _books.exists()) return [];
+    final books = <Storybook>[];
+    await for (final f in _books.list()) {
+      if (f is! File || !f.path.endsWith('.json')) continue;
+      try {
+        final text = await f.readAsString();
+        books.add(await Isolate.run(() => Storybook.fromJson((jsonDecode(text) as Map).cast<String, Object?>())));
+      } catch (_) {
+        // A damaged book is left out of the gallery.
+      }
+    }
+    return books..sort((a, b) => b.finishedAt.compareTo(a.finishedAt));
   }
 }

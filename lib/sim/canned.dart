@@ -11,7 +11,12 @@ class CannedChat implements ChatModel {
   final Duration delay;
   int calls = 0;
 
-  static const List<String> _scripted = ['last page of a storybook', 'Ring your bell and announce', 'Write one line of the song'];
+  static const List<String> _scripted = [
+    'last page of a storybook',
+    'Ring your bell and announce',
+    'Write one line of the song',
+    'fairy-tale picture book',
+  ];
 
   static const List<String> _lines = [
     'Lovely weather for it, is it not?',
@@ -33,6 +38,7 @@ class CannedChat implements ChatModel {
     required int seed,
     List<String> stop = const [],
     Map<String, dynamic>? jsonSchema,
+    void Function(String text)? onText,
   }) async {
     calls++;
     if (delay > Duration.zero) await Future<void>.delayed(delay);

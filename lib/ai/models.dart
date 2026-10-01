@@ -163,6 +163,7 @@ class VillageModels implements ChatModel, EmbedModel, TopicChooser {
     required int seed,
     List<String> stop = const [],
     Map<String, dynamic>? jsonSchema,
+    void Function(String text)? onText,
   }) async {
     final format = jsonSchema == null
         ? null
@@ -181,6 +182,7 @@ class VillageModels implements ChatModel, EmbedModel, TopicChooser {
         final content = choice.delta.content;
         if (content != null) buffer.write(content);
       }
+      onText?.call(buffer.toString());
     }
     return buffer.toString();
   }

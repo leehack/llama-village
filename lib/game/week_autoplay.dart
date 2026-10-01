@@ -7,7 +7,8 @@ import '../cutscene/timeline.dart';
 /// The env-gated Festival Week script (`VILLAGE_AUTOPLAY=week`): the title
 /// screen and gallery, a new game, the pause menu and a manual save, the
 /// first night skip watched to the day card (later ones skipped), the
-/// festival, the ending, the epilogue and results, then the gallery again.
+/// festival, the ending, the epilogue and results, the storybook (cover,
+/// a page turning, two pages and the ending), then the gallery again.
 /// It takes a PNG at each stop; a bot (`VILLAGE_BOT`) plays Dash meanwhile.
 class WeekAutoplay {
   WeekAutoplay(this.home);
@@ -103,20 +104,69 @@ class WeekAutoplay {
         }
       case 11:
         if (_since > 1) {
-          unawaited(home.toMenu());
+          home.openStory();
           _next();
         }
       case 12:
+        final book = home.book;
+        if ((book != null && book.complete && _since > 2) || _since > 180) {
+          home.test.log('STORYBOOK ${book?.writtenCount}/${book?.textPages} written after ${_since.toStringAsFixed(0)} s');
+          _shot('43_storybook_cover');
+          _next();
+        }
+      case 13:
+        if (_since > 0.5) {
+          home.storyKey.currentState?.turnTo(1);
+          _next();
+        }
+      case 14:
+        if (_since > 0.3) _shot('44a_storybook_turning');
+        if (_since > 1.4) {
+          _shot('44_storybook_day1');
+          _next();
+        }
+      case 15:
+        if (_since > 0.5) {
+          home.storyKey.currentState?.turnTo(3);
+          _next();
+        }
+      case 16:
+        if (_since > 1.4) {
+          _shot('45_storybook_day3');
+          _next();
+        }
+      case 17:
+        if (_since > 0.5) {
+          final s = home.storyKey.currentState;
+          s?.turnTo(s.count - 1);
+          _next();
+        }
+      case 18:
+        if (_since > 1.4) {
+          _shot('46_storybook_ending');
+          _next();
+        }
+      case 19:
+        if (_since > 0.5) {
+          home.closeStory();
+          _next();
+        }
+      case 20:
+        if (_since > 1) {
+          unawaited(home.toMenu());
+          _next();
+        }
+      case 21:
         if (home.phase == Phase.menu && home.busy == null && _since > 1) {
           home.openPage(MenuPage.endings);
           _next();
         }
-      case 13:
+      case 22:
         if (_since > 1.5) {
           _shot('42_gallery_after');
           _next();
         }
-      case 14:
+      case 23:
         if (_since > 0.5) {
           home.test.log('WEEK autoplay done in ${_t.toStringAsFixed(0)} s');
           _next();

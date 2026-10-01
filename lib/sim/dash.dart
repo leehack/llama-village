@@ -408,6 +408,8 @@ class Dash {
     v.events.emit('dash_reply', {
       'target': l.name,
       'intent': pick.intent,
+      'about': pick.about,
+      'item': pick.item,
       'reaction': reactionLevels[level],
       'reply': reply,
       'effects': effects,
