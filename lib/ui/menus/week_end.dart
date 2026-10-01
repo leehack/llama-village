@@ -7,6 +7,7 @@ import '../palette.dart';
 import '../portrait.dart';
 import '../strings.dart';
 import 'menu_kit.dart';
+import '../fonts.dart';
 
 /// One card per llama with its epilogue line ("…" while it is written).
 class EpilogueView extends StatelessWidget {
@@ -25,7 +26,7 @@ class EpilogueView extends StatelessWidget {
       children: [
         Text(
           l.afterTheFestival,
-          style: menuText(34, weight: FontWeight.w900, color: gold).copyWith(shadows: textShadow),
+          style: Face.display.of(context, menuText(34, weight: FontWeight.w900, color: gold).copyWith(shadows: textShadow)),
         ),
         const SizedBox(height: 18),
         Wrap(
@@ -53,7 +54,7 @@ class EpilogueView extends StatelessWidget {
                         const SizedBox(width: 10),
                         Text(
                           name,
-                          style: menuText(19 * textScale, weight: FontWeight.w900, color: accentOf(name)),
+                          style: Face.display.of(context, menuText(19 * textScale, weight: FontWeight.w900, color: accentOf(name))),
                         ),
                       ],
                     ),
@@ -129,7 +130,7 @@ class ResultsView extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             l.endingName(verdict.ending),
-            style: menuText(40, weight: FontWeight.w900, color: gold),
+            style: Face.display.of(context, menuText(40, weight: FontWeight.w900, color: gold)),
           ),
           Text(l.endingBlurb(verdict.ending.name), style: menuText(14, color: Colors.white70)),
           const SizedBox(height: 6),
@@ -234,7 +235,7 @@ class _Stat extends StatelessWidget {
     children: [
       Text(
         label.toUpperCase(),
-        style: menuText(10.5, weight: FontWeight.w900, color: gold).copyWith(letterSpacing: 1.1),
+        style: Face.display.of(context, menuText(10.5, weight: FontWeight.w900, color: gold).copyWith(letterSpacing: 1.1)),
       ),
       Text(value, style: menuText(17, weight: FontWeight.w800)),
       if (note.isNotEmpty) Text(note, style: menuText(11.5, color: Colors.white54)),

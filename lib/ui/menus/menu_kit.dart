@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../palette.dart';
+import '../fonts.dart';
 
 TextStyle menuText(double size, {FontWeight weight = FontWeight.w600, Color color = Colors.white, double height = 1.3}) =>
     TextStyle(fontSize: size, fontWeight: weight, color: color, height: height);
@@ -106,7 +107,7 @@ class MenuHeader extends StatelessWidget {
           children: [
             Text(
               title,
-              style: menuText(26, weight: FontWeight.w900, color: gold),
+              style: Face.display.of(context, menuText(26, weight: FontWeight.w900, color: gold)),
             ),
             if (subtitle != null) Text(subtitle!, style: menuText(13, color: Colors.white70)),
           ],

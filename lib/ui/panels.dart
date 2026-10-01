@@ -8,6 +8,7 @@ import '../sim/village.dart';
 import 'palette.dart';
 import 'portrait.dart';
 import 'strings.dart';
+import 'fonts.dart';
 
 TextStyle _t(double size, {FontWeight weight = FontWeight.w600, Color color = Colors.white, FontStyle? style}) =>
     TextStyle(fontSize: size, fontWeight: weight, color: color, fontStyle: style, height: 1.3);
@@ -76,7 +77,7 @@ class TopBar extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(l.dayClock(now.day, now.hhmm), style: _t(18, weight: FontWeight.w900)),
+              Text(l.dayClock(now.day, now.hhmm), style: Face.display.of(context, _t(18, weight: FontWeight.w900))),
               Text(village.planning ? l.planningTomorrowLower : l.countdownFor(now.day), style: _t(11, color: Colors.white70)),
             ],
           ),
@@ -204,7 +205,7 @@ class _VillageLogState extends State<VillageLog> {
                 children: [
                   Text(
                     L10n.of(context).villageLog,
-                    style: _t(13, weight: FontWeight.w900, color: gold),
+                    style: Face.display.of(context, _t(13, weight: FontWeight.w900, color: gold)),
                   ),
                   const Spacer(),
                   Icon(_open ? Icons.expand_more : Icons.expand_less, color: Colors.white54, size: 18),
@@ -316,7 +317,10 @@ class OptionsPanel extends StatelessWidget {
                         Icon(_icons[options[i].intent] ?? Icons.chat, size: 18, color: const Color(0xFF6B6878)),
                         const SizedBox(width: 8),
                         Expanded(
-                          child: Text(options[i].text, style: _t(13.5, color: ink)),
+                          child: Text(
+                            options[i].text,
+                            style: Face.display.of(context, _t(13.5, color: ink), text: options[i].text),
+                          ),
                         ),
                         const SizedBox(width: 6),
                         Text(words.intent(options[i].intent), style: _t(10.5, color: const Color(0xFF8A8796))),
@@ -334,7 +338,7 @@ class OptionsPanel extends StatelessWidget {
         children: [
           Text(
             words.reaction(l.name, visit.reaction ?? 2),
-            style: _t(14, weight: FontWeight.w900, color: ink),
+            style: Face.display.of(context, _t(14, weight: FontWeight.w900, color: ink)),
           ),
           const SizedBox(height: 4),
           for (final e in visit.effects) Text('• ${words.effectOf(e)}', style: _t(12, color: const Color(0xFF55525F))),
@@ -365,7 +369,7 @@ class OptionsPanel extends StatelessWidget {
                 const SizedBox(width: 6),
                 Text(
                   words.dashAnd(l.name),
-                  style: _t(15, weight: FontWeight.w900, color: ink),
+                  style: Face.display.of(context, _t(15, weight: FontWeight.w900, color: ink)),
                 ),
                 const SizedBox(width: 8),
                 Flexible(
@@ -442,7 +446,10 @@ class Inspector extends StatelessWidget {
                       children: [
                         Text(
                           l.name,
-                          style: _t(22, weight: FontWeight.w900, color: Colors.white).copyWith(shadows: textShadow),
+                          style: Face.display.of(
+                            context,
+                            _t(22, weight: FontWeight.w900, color: Colors.white).copyWith(shadows: textShadow),
+                          ),
                         ),
                         Text(words.llamaRole(l.name), style: _t(12.5, color: Colors.white)),
                       ],
@@ -471,7 +478,7 @@ class Inspector extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(words.llamaBio(l.name), style: _t(12, color: Colors.white60)),
-                  _section(words.sectionNow),
+                  _section(context, words.sectionNow),
                   Text(words.activityOf(village, l), style: _t(13)),
                   if (data.thought != null) ...[
                     const SizedBox(height: 4),
@@ -489,22 +496,25 @@ class Inspector extends StatelessWidget {
                       ],
                     ),
                   ],
-                  _section(words.sectionMoodNeeds),
+                  _section(context, words.sectionMoodNeeds),
                   _bar(words.barMood(words.moodOf(l)), (l.mood + 5) / 10, const Color(0xFFFFC857), centered: true),
                   _bar(words.barFed, 1 - l.hunger, const Color(0xFF7BD389)),
                   _bar(words.barEnergy, l.energy, const Color(0xFF6CB4EE)),
                   _bar(words.barCompany, l.social, const Color(0xFFF49AC2)),
                   if (l.name == 'Mo') _bar(words.barCourage, l.courage, const Color(0xFFFF9F68)),
-                  _section(words.sectionFriendships),
+                  _section(context, words.sectionFriendships),
                   for (final o in [...cast.where((o) => o != l).map((o) => o.name), 'Dash'])
                     _bar(o, ((l.friendship[o] ?? 0) + 10) / 20, accentOf(o), centered: true, value: '${l.friendship[o] ?? 0}'),
-                  if (data.goals.isNotEmpty) ...[_section(words.sectionGoals), for (final g in data.goals.take(5)) _bullet(words.say(g))],
-                  _section(words.sectionWhy),
+                  if (data.goals.isNotEmpty) ...[
+                    _section(context, words.sectionGoals),
+                    for (final g in data.goals.take(5)) _bullet(words.say(g)),
+                  ],
+                  _section(context, words.sectionWhy),
                   if (l.lastDecision == null)
                     Text(words.noDecision, style: _t(12, color: Colors.white54))
                   else
                     for (final (i, o) in l.lastDecision!.options.take(5).indexed) _utility(words.choiceOf(o), words.say(o.why), o, i == 0),
-                  _section(words.sectionKnows(l.name, data.knows.length)),
+                  _section(context, words.sectionKnows(l.name, data.knows.length)),
                   for (final k in data.knows) _fact(k, k.said == null ? k.text : words.say(k.said!), words.howOf(k)),
                 ],
               ),
@@ -515,11 +525,11 @@ class Inspector extends StatelessWidget {
     );
   }
 
-  Widget _section(String s) => Padding(
+  Widget _section(BuildContext context, String s) => Padding(
     padding: const EdgeInsets.only(top: 14, bottom: 6),
     child: Text(
       s.toUpperCase(),
-      style: _t(11, weight: FontWeight.w900, color: gold).copyWith(letterSpacing: 1.1),
+      style: Face.display.of(context, _t(11, weight: FontWeight.w900, color: gold).copyWith(letterSpacing: 1.1)),
     ),
   );
 
@@ -723,7 +733,7 @@ class LoadingCard extends StatelessWidget {
             children: [
               Text(
                 words.appTitle,
-                style: _t(34, weight: FontWeight.w900, color: gold),
+                style: Face.display.of(context, _t(34, weight: FontWeight.w900, color: gold)),
               ),
               Text(words.loadingTagline, style: _t(14, color: Colors.white70)),
               const SizedBox(height: 22),
@@ -743,7 +753,7 @@ class LoadingCard extends StatelessWidget {
               if (missing != null) ...[
                 Text(
                   words.modelsNotFoundTitle,
-                  style: _t(17, weight: FontWeight.w900, color: const Color(0xFFFF8FA3)),
+                  style: Face.display.of(context, _t(17, weight: FontWeight.w900, color: const Color(0xFFFF8FA3))),
                 ),
                 const SizedBox(height: 8),
                 Text(words.modelsMissing(missing!.join(', ')), style: _t(13)),
@@ -753,7 +763,7 @@ class LoadingCard extends StatelessWidget {
               if (error != null) ...[
                 Text(
                   words.modelsFailedTitle,
-                  style: _t(17, weight: FontWeight.w900, color: const Color(0xFFFF8FA3)),
+                  style: Face.display.of(context, _t(17, weight: FontWeight.w900, color: const Color(0xFFFF8FA3))),
                 ),
                 const SizedBox(height: 8),
                 Text(error!, style: _t(12.5)),

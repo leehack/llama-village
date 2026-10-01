@@ -7,6 +7,7 @@ import '../../sim/storybook.dart';
 import '../palette.dart';
 import '../strings.dart';
 import 'menu_kit.dart';
+import '../fonts.dart';
 
 /// The endings gallery: unlocked endings in colour, locked ones as
 /// silhouettes with a hint.
@@ -45,7 +46,7 @@ class EndingsGallery extends StatelessWidget {
           const SizedBox(height: 18),
           Text(
             l.storybooksSection.toUpperCase(),
-            style: menuText(11, weight: FontWeight.w900, color: gold).copyWith(letterSpacing: 1.2),
+            style: Face.display.of(context, menuText(11, weight: FontWeight.w900, color: gold).copyWith(letterSpacing: 1.2)),
           ),
           const SizedBox(height: 8),
           if (books.isEmpty)
@@ -115,7 +116,7 @@ class _BookTile extends StatelessWidget {
                     book.title,
                     maxLines: 3,
                     overflow: TextOverflow.ellipsis,
-                    style: menuText(13, weight: FontWeight.w800),
+                    style: Face.display.of(context, menuText(13, weight: FontWeight.w800), text: book.title),
                   ),
                   const SizedBox(height: 4),
                   Text(l.endingName(book.ending), style: menuText(11.5, color: gold)),
@@ -167,7 +168,7 @@ class _EndingCard extends StatelessWidget {
           ),
           Text(
             open ? l.endingName(ending) : l.lockedTitle,
-            style: menuText(20, weight: FontWeight.w900, color: open ? gold : Colors.white38),
+            style: Face.display.of(context, menuText(20, weight: FontWeight.w900, color: open ? gold : Colors.white38)),
           ),
           const SizedBox(height: 4),
           Text(

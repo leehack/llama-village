@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../../sim/storybook.dart';
+import '../fonts.dart';
 import '../portrait.dart';
 import '../strings.dart';
 import 'gallery.dart';
@@ -12,9 +13,9 @@ import 'gallery.dart';
 const String _display = 'Hoefler Text';
 const String _body = 'Baskerville';
 
-/// Serif faces on macOS; Hangul falls back to AppleMyungjo (then the system
-/// Gothic), so Korean pages render without bundling a font.
-const List<String> _fallback = ['AppleMyungjo', 'Apple SD Gothic Neo', 'Georgia', 'Times New Roman'];
+/// Serif faces on macOS; Korean pages are set in Gowun Batang instead (see
+/// [Face.serif]).
+const List<String> _fallback = ['Georgia', 'Times New Roman'];
 
 const Color _paper = Color(0xFFF7EFDC);
 const Color _paperEdge = Color(0xFFE6D6B4);
@@ -23,20 +24,24 @@ const Color _sepia = Color(0xFF7A5634);
 const Color _gilt = Color(0xFFB0874A);
 
 TextStyle _serif(
+  BuildContext context,
   double size, {
   String family = _body,
   FontWeight weight = FontWeight.w400,
   Color color = _inkBrown,
   FontStyle? style,
   double height = 1.5,
-}) => TextStyle(
-  fontFamily: family,
-  fontFamilyFallback: _fallback,
-  fontSize: size,
-  fontWeight: weight,
-  color: color,
-  fontStyle: style,
-  height: height,
+}) => Face.serif.of(
+  context,
+  TextStyle(
+    fontFamily: family,
+    fontFamilyFallback: _fallback,
+    fontSize: size,
+    fontWeight: weight,
+    color: color,
+    fontStyle: style,
+    height: height,
+  ),
 );
 
 const List<String> _nth = ['first', 'second', 'third', 'fourth', 'fifth'];
@@ -271,7 +276,7 @@ class StorybookViewState extends State<StorybookView> with TickerProviderStateMi
           Text(
             caption,
             textAlign: TextAlign.center,
-            style: _serif(15, family: _display, style: FontStyle.italic, color: _sepia),
+            style: _serif(context, 15, family: _display, style: FontStyle.italic, color: _sepia),
           ),
           const Spacer(),
           if (i > 0) _PageNumber(i * 2),
@@ -292,20 +297,20 @@ class StorybookViewState extends State<StorybookView> with TickerProviderStateMi
           Text(
             title,
             textAlign: TextAlign.center,
-            style: _serif(26, family: _display, weight: FontWeight.w600, style: FontStyle.italic),
+            style: _serif(context, 26, family: _display, weight: FontWeight.w600, style: FontStyle.italic),
           ),
           const _Flourish(),
           const SizedBox(height: 10),
           Expanded(
             child: p.text != null
-                ? SingleChildScrollView(child: DropCapText(p.text!, style: _serif(18.5)))
+                ? SingleChildScrollView(child: DropCapText(p.text!, style: _serif(context, 18.5)))
                 : _Writing(draft: p.draft, pulse: _pulse, waiting: l.storyQuill),
           ),
           if (p.kind == PageKind.ending && p.text != null)
             Text(
               l.theEnd,
               textAlign: TextAlign.center,
-              style: _serif(18, family: _display, style: FontStyle.italic, color: _sepia),
+              style: _serif(context, 18, family: _display, style: FontStyle.italic, color: _sepia),
             ),
           const SizedBox(height: 6),
           _PageNumber(i * 2 + 1),
@@ -325,7 +330,7 @@ class StorybookViewState extends State<StorybookView> with TickerProviderStateMi
           Text(
             b.title,
             textAlign: TextAlign.center,
-            style: _serif(38, family: _display, weight: FontWeight.w600, style: FontStyle.italic, height: 1.2),
+            style: _serif(context, 38, family: _display, weight: FontWeight.w600, style: FontStyle.italic, height: 1.2),
           ),
           const SizedBox(height: 16),
           const _Flourish(width: 180),
@@ -333,13 +338,13 @@ class StorybookViewState extends State<StorybookView> with TickerProviderStateMi
           Text(
             l.endingName(b.ending),
             textAlign: TextAlign.center,
-            style: _serif(18, family: _display, color: _sepia),
+            style: _serif(context, 18, family: _display, color: _sepia),
           ),
           const Spacer(),
           Text(
             written < total ? l.storyStillWriting(written, total) : l.storyBegin,
             textAlign: TextAlign.center,
-            style: _serif(14, style: FontStyle.italic, color: _sepia),
+            style: _serif(context, 14, style: FontStyle.italic, color: _sepia),
           ),
         ],
       ),
@@ -368,8 +373,10 @@ class DropCapText extends StatelessWidget {
       builder: (context, box) {
         final scaler = MediaQuery.textScalerOf(context);
         final lineHeight = scaler.scale(style.fontSize!) * (style.height ?? 1.2);
+        final korean = koreanUi(context) || hasHangul(cap);
         final capStyle = style.copyWith(
-          fontFamily: _display,
+          fontFamily: korean ? null : _display,
+          fontWeight: korean ? FontWeight.w700 : null,
           fontSize: lineHeight * lines * 0.92,
           height: 1.0,
           color: const Color(0xFF8C3B2A),
@@ -442,7 +449,7 @@ class _Writing extends StatelessWidget {
                 ),
               ],
             ),
-            style: _serif(18.5),
+            style: _serif(context, 18.5),
           ),
         );
       }
@@ -454,7 +461,7 @@ class _Writing extends StatelessWidget {
           Text(
             waiting,
             textAlign: TextAlign.center,
-            style: _serif(16, style: FontStyle.italic, color: _sepia),
+            style: _serif(context, 16, style: FontStyle.italic, color: _sepia),
           ),
           const SizedBox(height: 18),
           for (final w in const [0.92, 0.84, 0.88, 0.6])
@@ -677,7 +684,7 @@ class _PageNumber extends StatelessWidget {
   Widget build(BuildContext context) => Text(
     '— $n —',
     textAlign: TextAlign.center,
-    style: _serif(12.5, color: _sepia),
+    style: _serif(context, 12.5, color: _sepia),
   );
 }
 

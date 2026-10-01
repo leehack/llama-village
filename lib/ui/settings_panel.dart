@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../l10n/app_localizations.dart';
 import '../render/quality.dart';
 import '../settings.dart';
+import 'fonts.dart';
 import 'palette.dart';
 
 /// The settings card: graphics, audio, gameplay and accessibility. Used
@@ -38,7 +39,7 @@ class SettingsPanel extends StatelessWidget {
               children: [
                 Text(
                   l.settings,
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: Colors.white),
+                  style: Face.display.of(context, const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: Colors.white)),
                 ),
                 const Spacer(),
                 IconButton(
@@ -151,7 +152,7 @@ class _Section extends StatelessWidget {
     padding: const EdgeInsets.only(top: 14, bottom: 6),
     child: Text(
       title.toUpperCase(),
-      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w900, letterSpacing: 1.2, color: gold),
+      style: Face.display.of(context, const TextStyle(fontSize: 11, fontWeight: FontWeight.w900, letterSpacing: 1.2, color: gold)),
     ),
   );
 }

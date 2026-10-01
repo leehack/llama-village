@@ -5,6 +5,7 @@ import '../../l10n/app_localizations.dart';
 import '../palette.dart';
 import '../strings.dart';
 import 'menu_kit.dart';
+import '../fonts.dart';
 
 /// The pause menu (Esc): resume, save to a slot, settings, back to the
 /// title, or quit.
@@ -60,7 +61,7 @@ class _PauseMenuState extends State<PauseMenu> {
         children: [
           Text(
             l.paused,
-            style: menuText(30, weight: FontWeight.w900, color: gold),
+            style: Face.display.of(context, menuText(30, weight: FontWeight.w900, color: gold)),
           ),
           Text(widget.when, style: menuText(13, color: Colors.white70)),
           const SizedBox(height: 16),
@@ -68,7 +69,7 @@ class _PauseMenuState extends State<PauseMenu> {
           const SizedBox(height: 8),
           Text(
             l.saveGame.toUpperCase(),
-            style: menuText(11, weight: FontWeight.w900, color: gold).copyWith(letterSpacing: 1.2),
+            style: Face.display.of(context, menuText(11, weight: FontWeight.w900, color: gold).copyWith(letterSpacing: 1.2)),
           ),
           for (final MapEntry(key: slot, value: info) in widget.slots.entries)
             MenuButton(

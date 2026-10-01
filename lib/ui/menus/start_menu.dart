@@ -5,6 +5,7 @@ import '../../l10n/app_localizations.dart';
 import '../palette.dart';
 import '../strings.dart';
 import 'menu_kit.dart';
+import '../fonts.dart';
 
 /// The title screen, over the drone flyover of the village.
 class StartMenu extends StatelessWidget {
@@ -60,12 +61,18 @@ class StartMenu extends StatelessWidget {
                 children: [
                   Text(
                     l.appTitle,
-                    style: menuText(54, weight: FontWeight.w900, color: gold, height: 1.0).copyWith(shadows: textShadow),
+                    style: Face.display.of(
+                      context,
+                      menuText(54, weight: FontWeight.w900, color: gold, height: 1.0).copyWith(shadows: textShadow),
+                    ),
                   ),
                   const SizedBox(height: 6),
                   Text(
                     l.appSubtitle,
-                    style: menuText(20, weight: FontWeight.w800, color: Colors.white).copyWith(shadows: textShadow),
+                    style: Face.display.of(
+                      context,
+                      menuText(20, weight: FontWeight.w800, color: Colors.white).copyWith(shadows: textShadow),
+                    ),
                   ),
                   Text(
                     l.titleTagline,

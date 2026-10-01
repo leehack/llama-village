@@ -40,6 +40,7 @@ import 'sim/snapshot.dart';
 import 'sim/storybook.dart';
 import 'sim/village.dart';
 import 'ui/bubbles.dart';
+import 'ui/fonts.dart';
 import 'ui/game_keys.dart';
 import 'ui/menus/credits.dart';
 import 'ui/menus/gallery.dart';
@@ -66,7 +67,9 @@ class VillageApp extends StatelessWidget {
       locale: language.code == null ? null : Locale(language.code!),
       localizationsDelegates: L10n.localizationsDelegates,
       supportedLocales: L10n.supportedLocales,
-      theme: ThemeData(useMaterial3: true, colorSchemeSeed: const Color(0xFF3E8EF0)),
+      theme: villageTheme(korean: false),
+      // The resolved locale (a system default may be Korean) picks the face.
+      builder: (context, child) => koreanUi(context) ? Theme(data: villageTheme(korean: true), child: child!) : child!,
       home: VillageHome(test: test, settings: settings),
     ),
   );

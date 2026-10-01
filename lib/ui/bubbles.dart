@@ -4,6 +4,7 @@ import 'package:flutter/scheduler.dart';
 import '../render/stage.dart';
 import '../sim/village.dart';
 import 'bubble_layout.dart';
+import 'fonts.dart';
 import 'palette.dart';
 
 /// Name tags and speech/thought bubbles, pinned above each speaker's head.
@@ -32,6 +33,7 @@ class BubbleLayer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final eye = stage.rig.eye;
+    final korean = koreanUi(context);
     final spacing = _spacing[village] ??= _Spacing();
     final items = <_Item>[];
     final names = [...village.cast.map((l) => l.name), 'Dash'];
@@ -54,11 +56,11 @@ class BubbleLayer extends StatelessWidget {
     final tags = <Box>[];
     final requests = <BubbleRequest>[];
     for (final it in items) {
-      final tag = spacing.tagSize(it.name, it.icon != null) * it.near;
+      final tag = spacing.tagSize(it.name, it.icon != null, korean) * it.near;
       tags.add(Box(it.at.dx - tag.width / 2, it.at.dy - tag.height, tag.width, tag.height));
       final s = it.speech;
       if (s == null) continue;
-      final b = spacing.bubbleSize(s, textScale, highContrast) * it.near;
+      final b = spacing.bubbleSize(s, textScale, highContrast, korean) * it.near;
       requests.add(BubbleRequest(it.name, Box(it.at.dx - b.width / 2, it.at.dy - tag.height - b.height, b.width, b.height)));
     }
     final offsets = spacing.smoother.step(
@@ -73,7 +75,7 @@ class BubbleLayer extends StatelessWidget {
       final (dx, dy) = offsets[it.name] ?? (0.0, 0.0);
       final s = it.speech;
       if (s != null && dx * dx + dy * dy > 16) {
-        final tagTop = it.at.dy - spacing.tagSize(it.name, it.icon != null).height * it.near;
+        final tagTop = it.at.dy - spacing.tagSize(it.name, it.icon != null, korean).height * it.near;
         leaders.add((Offset(it.at.dx + dx, tagTop - dy), Offset(it.at.dx, tagTop), accentOf(it.name)));
       }
       children.add(
@@ -91,9 +93,9 @@ class BubbleLayer extends StatelessWidget {
                   if (s != null)
                     Transform.translate(
                       offset: Offset(dx / it.near, -dy / it.near),
-                      child: _Bubble(speech: s, wall: wall, textScale: textScale, highContrast: highContrast),
+                      child: _Bubble(speech: s, wall: wall, textScale: textScale, highContrast: highContrast, korean: korean),
                     ),
-                  _NameTag(name: it.name, icon: it.icon, selected: stage.selected == it.name),
+                  _NameTag(name: it.name, icon: it.icon, selected: stage.selected == it.name, korean: korean),
                 ],
               ),
             ),
@@ -125,8 +127,8 @@ class _Item {
 /// Measured bubble and tag sizes, and the eased bubble offsets.
 class _Spacing {
   final BubbleSmoother smoother = BubbleSmoother();
-  final Map<(int, String?, double, bool), Size> _bubbles = {};
-  final Map<(String, bool), Size> _tags = {};
+  final Map<(int, String?, double, bool, bool), Size> _bubbles = {};
+  final Map<(String, bool, bool), Size> _tags = {};
   double? _lastWall;
 
   double tick(double wall) {
@@ -135,16 +137,18 @@ class _Spacing {
     return dt;
   }
 
-  Size bubbleSize(Speech s, double scale, bool highContrast) {
+  Size bubbleSize(Speech s, double scale, bool highContrast, bool korean) {
     if (_bubbles.length > 64) _bubbles.clear();
-    return _bubbles.putIfAbsent((s.id, s.text, scale, highContrast), () {
+    return _bubbles.putIfAbsent((s.id, s.text, scale, highContrast, korean), () {
       final thought = s.kind == SpeechKind.thought;
       final text = s.text;
       final border = highContrast ? 6 : 4;
       final painter = TextPainter(
         text: TextSpan(
           text: text ?? '...',
-          style: text == null ? _dotsStyle(scale, highContrast) : _textStyle(thought: thought, scale: scale, highContrast: highContrast),
+          style: text == null
+              ? _dotsStyle(scale, highContrast)
+              : _textStyle(thought: thought, scale: scale, highContrast: highContrast, korean: korean, text: text),
         ),
         textAlign: TextAlign.center,
         textDirection: TextDirection.ltr,
@@ -155,9 +159,9 @@ class _Spacing {
     });
   }
 
-  Size tagSize(String name, bool icon) => _tags.putIfAbsent((name, icon), () {
+  Size tagSize(String name, bool icon, bool korean) => _tags.putIfAbsent((name, icon, korean), () {
     final painter = TextPainter(
-      text: TextSpan(text: name, style: _tagStyle),
+      text: TextSpan(text: name, style: _tagStyle(korean)),
       textDirection: TextDirection.ltr,
     )..layout();
     final size = Size(painter.width + 14 + 3 + (icon ? 15 : 0), painter.height + 4 + 3 + 4);
@@ -191,27 +195,41 @@ class LeaderLines extends CustomPainter {
 }
 
 const double _bubbleMaxWidth = 250;
-const TextStyle _tagStyle = TextStyle(color: Colors.white, fontSize: 11.5, fontWeight: FontWeight.w800);
+TextStyle _tagStyle(bool korean) => Face.ui.on(
+  const TextStyle(color: Colors.white, fontSize: 11.5, fontWeight: FontWeight.w800),
+  korean: korean,
+);
 TextStyle _dotsStyle(double scale, bool highContrast) =>
     TextStyle(fontSize: 18 * scale, height: 0.9, fontWeight: FontWeight.w900, color: highContrast ? Colors.black : ink, letterSpacing: 2);
 
-TextStyle _textStyle({required bool thought, required double scale, required bool highContrast}) => TextStyle(
-  fontSize: 13 * scale,
-  height: 1.25,
-  color: highContrast
-      ? Colors.black
-      : thought
-      ? const Color(0xFF4A4560)
-      : ink,
-  fontStyle: thought ? FontStyle.italic : FontStyle.normal,
-  fontWeight: highContrast ? FontWeight.w800 : FontWeight.w600,
+TextStyle _textStyle({
+  required bool thought,
+  required double scale,
+  required bool highContrast,
+  required bool korean,
+  required String text,
+}) => Face.display.on(
+  TextStyle(
+    fontSize: 13 * scale,
+    height: 1.25,
+    color: highContrast
+        ? Colors.black
+        : thought
+        ? const Color(0xFF4A4560)
+        : ink,
+    fontStyle: thought ? FontStyle.italic : FontStyle.normal,
+    fontWeight: highContrast ? FontWeight.w800 : FontWeight.w600,
+  ),
+  korean: korean,
+  text: text,
 );
 
 class _NameTag extends StatelessWidget {
-  const _NameTag({required this.name, required this.icon, required this.selected});
+  const _NameTag({required this.name, required this.icon, required this.selected, required this.korean});
   final String name;
   final IconData? icon;
   final bool selected;
+  final bool korean;
 
   @override
   Widget build(BuildContext context) {
@@ -227,7 +245,7 @@ class _NameTag extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(name, style: _tagStyle),
+          Text(name, style: _tagStyle(korean)),
           if (icon != null) ...[const SizedBox(width: 3), Icon(icon, size: 12, color: Colors.white)],
         ],
       ),
@@ -236,11 +254,12 @@ class _NameTag extends StatelessWidget {
 }
 
 class _Bubble extends StatelessWidget {
-  const _Bubble({required this.speech, required this.wall, required this.textScale, required this.highContrast});
+  const _Bubble({required this.speech, required this.wall, required this.textScale, required this.highContrast, required this.korean});
   final Speech speech;
   final double wall;
   final double textScale;
   final bool highContrast;
+  final bool korean;
 
   @override
   Widget build(BuildContext context) {
@@ -252,7 +271,7 @@ class _Bubble extends StatelessWidget {
         : Text(
             text,
             textAlign: TextAlign.center,
-            style: _textStyle(thought: thought, scale: textScale, highContrast: highContrast),
+            style: _textStyle(thought: thought, scale: textScale, highContrast: highContrast, korean: korean, text: text),
           );
     final accent = highContrast ? Colors.black : accentOf(speech.who);
     final fill = highContrast

@@ -6,6 +6,7 @@ import '../l10n/app_localizations.dart';
 import '../render/stage.dart';
 import '../ui/bubble_layout.dart';
 import '../ui/bubbles.dart';
+import '../ui/fonts.dart';
 import '../ui/palette.dart';
 import 'timeline.dart';
 
@@ -42,7 +43,8 @@ class CutsceneOverlay extends StatelessWidget {
     final children = <Widget>[];
     final leaders = <(Offset, Offset, Color)>[];
     final l = L10n.of(context);
-    final offsets = _stackDreams(spacing, bar, dots, l);
+    final korean = koreanUi(context);
+    final offsets = _stackDreams(spacing, bar, dots, l, korean);
     for (final (cue, alpha) in player.texts) {
       final text = cue.text ?? dots;
       switch (cue.kind) {
@@ -55,7 +57,7 @@ class CutsceneOverlay extends StatelessWidget {
               child: Opacity(
                 opacity: alpha,
                 child: Center(
-                  child: _Subtitle(speaker: cue.speaker, text: text, scale: textScale, highContrast: highContrast),
+                  child: _Subtitle(speaker: cue.speaker, text: text, scale: textScale, highContrast: highContrast, korean: korean),
                 ),
               ),
             ),
@@ -83,6 +85,7 @@ class CutsceneOverlay extends StatelessWidget {
                     scale: textScale,
                     highContrast: highContrast,
                     song: cue.kind == TextKind.song,
+                    korean: korean,
                   ),
                 ),
               ),
@@ -94,7 +97,7 @@ class CutsceneOverlay extends StatelessWidget {
               child: Opacity(
                 opacity: alpha,
                 child: Center(
-                  child: _Title(title: text, subtitle: cue.subtitle, scale: textScale),
+                  child: _Title(title: text, subtitle: cue.subtitle, scale: textScale, korean: korean),
                 ),
               ),
             ),
@@ -143,14 +146,14 @@ class CutsceneOverlay extends StatelessWidget {
   /// Lays out the dream and song bubbles like speech bubbles, so the
   /// festival's singers and the night's dreamers never cover each other or
   /// the subtitle, and stay between the letterbox bars.
-  Map<TextCue, (double, double)> _stackDreams(_DreamSpacing spacing, double bar, String dots, L10n l) {
+  Map<TextCue, (double, double)> _stackDreams(_DreamSpacing spacing, double bar, String dots, L10n l, bool korean) {
     final requests = <BubbleRequest>[];
     final byId = <String, TextCue>{};
     final keepClear = <Box>[];
     for (final (cue, _) in player.texts) {
       final text = cue.text ?? dots;
       if (cue.kind == TextKind.subtitle) {
-        final sub = spacing.subtitleSize(cue.speaker, text, textScale, math.max(0.0, size.width - 80));
+        final sub = spacing.subtitleSize(cue.speaker, text, textScale, math.max(0.0, size.width - 80), korean);
         keepClear.add(Box((size.width - sub.width) / 2, size.height - bar - 22 - sub.height, sub.width, sub.height));
         continue;
       }
@@ -158,7 +161,7 @@ class CutsceneOverlay extends StatelessWidget {
       final anchor = cue.anchor;
       final at = anchor == null ? null : stage.toScreen(anchor, size);
       if (at == null) continue;
-      final b = spacing.dreamSize(cue, _dreamText(cue, text), textScale, highContrast, _dreamLabel(cue, l));
+      final b = spacing.dreamSize(cue, _dreamText(cue, text), textScale, highContrast, _dreamLabel(cue, l), korean);
       final id = '${identityHashCode(cue)}';
       byId[id] = cue;
       requests.add(BubbleRequest(id, Box(at.dx - b.width / 2, at.dy - b.height, b.width, b.height)));
@@ -184,8 +187,8 @@ String? _dreamLabel(TextCue cue, L10n l) {
 /// Measured dream, song and subtitle sizes, and the eased dream offsets.
 class _DreamSpacing {
   final BubbleSmoother smoother = BubbleSmoother();
-  final Map<(TextCue, String, double, bool, String?), Size> _dreams = {};
-  final Map<(String?, String, double, double), Size> _subtitles = {};
+  final Map<(TextCue, String, double, bool, String?, bool), Size> _dreams = {};
+  final Map<(String?, String, double, double, bool), Size> _subtitles = {};
   double? _lastWall;
 
   double tick(double wall) {
@@ -194,16 +197,16 @@ class _DreamSpacing {
     return dt;
   }
 
-  Size dreamSize(TextCue cue, String text, double scale, bool highContrast, String? label) {
+  Size dreamSize(TextCue cue, String text, double scale, bool highContrast, String? label, bool korean) {
     if (_dreams.length > 64) _dreams.clear();
-    return _dreams.putIfAbsent((cue, text, scale, highContrast, label), () {
+    return _dreams.putIfAbsent((cue, text, scale, highContrast, label, korean), () {
       final song = cue.kind == TextKind.song;
       final border = highContrast ? 6.0 : 4.0;
       final inner = 300 * scale - 32 - border;
       final body = TextPainter(
         text: TextSpan(
           text: text,
-          style: _dreamStyle(scale, highContrast, song: song),
+          style: _dreamStyle(scale, highContrast, song: song, korean: korean, text: text),
         ),
         textAlign: TextAlign.center,
         textDirection: TextDirection.ltr,
@@ -212,7 +215,7 @@ class _DreamSpacing {
       body.dispose();
       if (label != null) {
         final painter = TextPainter(
-          text: TextSpan(text: label, style: _speakerStyle(scale)),
+          text: TextSpan(text: label, style: _speakerStyle(scale, korean)),
           textDirection: TextDirection.ltr,
         )..layout(maxWidth: inner);
         width = math.max(width, painter.width);
@@ -223,9 +226,9 @@ class _DreamSpacing {
     });
   }
 
-  Size subtitleSize(String? speaker, String text, double scale, double maxWidth) {
+  Size subtitleSize(String? speaker, String text, double scale, double maxWidth, bool korean) {
     if (_subtitles.length > 16) _subtitles.clear();
-    return _subtitles.putIfAbsent((speaker, text, scale, maxWidth), () {
+    return _subtitles.putIfAbsent((speaker, text, scale, maxWidth, korean), () {
       final painter = TextPainter(
         text: TextSpan(
           children: [
@@ -236,7 +239,7 @@ class _DreamSpacing {
               ),
             TextSpan(text: text),
           ],
-          style: _subtitleStyle(scale),
+          style: _subtitleStyle(scale, korean),
         ),
         textAlign: TextAlign.center,
         textDirection: TextDirection.ltr,
@@ -248,24 +251,35 @@ class _DreamSpacing {
   }
 }
 
-TextStyle _subtitleStyle(double scale) => TextStyle(fontSize: 19 * scale, height: 1.35, color: Colors.white, fontWeight: FontWeight.w600);
+TextStyle _subtitleStyle(double scale, bool korean) => Face.ui.on(
+  TextStyle(fontSize: 19 * scale, height: 1.35, color: Colors.white, fontWeight: FontWeight.w600),
+  korean: korean,
+);
 
-TextStyle _speakerStyle(double scale) => TextStyle(fontSize: 11 * scale, fontWeight: FontWeight.w900);
+TextStyle _speakerStyle(double scale, bool korean) => Face.ui.on(
+  TextStyle(fontSize: 11 * scale, fontWeight: FontWeight.w900),
+  korean: korean,
+);
 
-TextStyle _dreamStyle(double scale, bool highContrast, {required bool song}) => TextStyle(
-  fontSize: 14 * scale,
-  height: 1.3,
-  fontStyle: song ? FontStyle.normal : FontStyle.italic,
-  fontWeight: highContrast ? FontWeight.w800 : FontWeight.w600,
-  color: highContrast ? Colors.black : ink,
+TextStyle _dreamStyle(double scale, bool highContrast, {required bool song, required bool korean, required String text}) => Face.display.on(
+  TextStyle(
+    fontSize: 14 * scale,
+    height: 1.3,
+    fontStyle: song ? FontStyle.normal : FontStyle.italic,
+    fontWeight: highContrast ? FontWeight.w800 : FontWeight.w600,
+    color: highContrast ? Colors.black : ink,
+  ),
+  korean: korean,
+  text: text,
 );
 
 class _Subtitle extends StatelessWidget {
-  const _Subtitle({required this.speaker, required this.text, required this.scale, required this.highContrast});
+  const _Subtitle({required this.speaker, required this.text, required this.scale, required this.highContrast, required this.korean});
   final String? speaker;
   final String text;
   final double scale;
   final bool highContrast;
+  final bool korean;
 
   @override
   Widget build(BuildContext context) => Container(
@@ -288,18 +302,26 @@ class _Subtitle extends StatelessWidget {
         ],
       ),
       textAlign: TextAlign.center,
-      style: _subtitleStyle(scale),
+      style: _subtitleStyle(scale, korean),
     ),
   );
 }
 
 class _Dream extends StatelessWidget {
-  const _Dream({required this.speaker, required this.text, required this.scale, required this.highContrast, required this.song});
+  const _Dream({
+    required this.speaker,
+    required this.text,
+    required this.scale,
+    required this.highContrast,
+    required this.song,
+    required this.korean,
+  });
   final String? speaker;
   final String text;
   final double scale;
   final bool highContrast;
   final bool song;
+  final bool korean;
 
   @override
   Widget build(BuildContext context) {
@@ -340,12 +362,12 @@ class _Dream extends StatelessWidget {
               if (speaker != null)
                 Text(
                   song ? speaker! : L10n.of(context).dreams(speaker!),
-                  style: _speakerStyle(scale).copyWith(color: highContrast ? Colors.black : edge),
+                  style: _speakerStyle(scale, korean).copyWith(color: highContrast ? Colors.black : edge),
                 ),
               Text(
                 text,
                 textAlign: TextAlign.center,
-                style: _dreamStyle(scale, highContrast, song: song),
+                style: _dreamStyle(scale, highContrast, song: song, korean: korean, text: text),
               ),
             ],
           ),
@@ -357,10 +379,11 @@ class _Dream extends StatelessWidget {
 }
 
 class _Title extends StatelessWidget {
-  const _Title({required this.title, required this.subtitle, required this.scale});
+  const _Title({required this.title, required this.subtitle, required this.scale, required this.korean});
   final String title;
   final String? subtitle;
   final double scale;
+  final bool korean;
 
   @override
   Widget build(BuildContext context) => Column(
@@ -369,7 +392,11 @@ class _Title extends StatelessWidget {
       Text(
         title,
         textAlign: TextAlign.center,
-        style: TextStyle(fontSize: 66 * scale, fontWeight: FontWeight.w900, color: gold, letterSpacing: 1, shadows: _glow),
+        style: Face.display.on(
+          TextStyle(fontSize: 66 * scale, fontWeight: FontWeight.w900, color: gold, letterSpacing: 1, shadows: _glow),
+          korean: korean,
+          text: title,
+        ),
       ),
       if (subtitle != null)
         Text(
