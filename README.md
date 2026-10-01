@@ -47,8 +47,8 @@ The ending rules, in order (`lib/sim/endings.dart`):
 1. **Drama Llama**: four or more false beliefs, or two or more of: harmony
    below 0.5, a Pip-Mo rift, Bramble exposed and declined, no festival
    winner.
-2. **Harmony Festival**: none of those signs, a festival winner, no false
-   belief left, harmony 1.5 or more and mean trust in Dash 1.5 or more.
+2. **Harmony Festival**: a festival winner, no false belief left, harmony
+   1.5 or more, mean trust in Dash 1.5 or more, and no Pip-Mo rift.
 3. **Quiet Valley** otherwise.
 
 Dash's levers: compliments, gifts and help build trust; a pleased llama

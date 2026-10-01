@@ -58,9 +58,10 @@ List<String> dramaSigns(Influence i) => [
 ///
 /// 1. Drama Llama: at least [dramaFalseBeliefs] false beliefs, or two or
 ///    more other [dramaSigns].
-/// 2. Harmony Festival: no drama signs, the festival crowned a winner, no
-///    false belief left, harmony at least [harmonyNeeded] and mean trust in
-///    Dash at least [trustNeeded].
+/// 2. Harmony Festival: the festival crowned a winner, no false belief is
+///    left, harmony is at least [harmonyNeeded], mean trust in Dash at least
+///    [trustNeeded], and Pip and Mo did not fall out. (A single other sign,
+///    such as Bramble's crush going badly, does not spoil it.)
 /// 3. Quiet Valley otherwise.
 EndingVerdict decideEnding(Influence i) {
   final signs = dramaSigns(i);
@@ -71,7 +72,8 @@ EndingVerdict decideEnding(Influence i) {
     if (i.harmony >= harmonyNeeded) 'harmony ${i.harmony.toStringAsFixed(1)}',
     if (i.meanTrust >= trustNeeded) 'the llamas trust Dash (${i.meanTrust.toStringAsFixed(1)})',
   ];
-  if (signs.isEmpty && harmony.length == 4) return EndingVerdict(Ending.harmonyFestival, harmony);
+  final rift = i.pipMo == PipMoArc.rift;
+  if (!rift && harmony.length == 4) return EndingVerdict(Ending.harmonyFestival, harmony);
   return EndingVerdict(Ending.quietValley, [
     ...signs,
     if (i.falseBeliefs.isNotEmpty) '${i.falseBeliefs.length} false belief${i.falseBeliefs.length == 1 ? '' : 's'} left',

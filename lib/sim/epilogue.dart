@@ -52,15 +52,16 @@ String epiloguePrompt(Village v, Llama l, Influence i) {
   final warm = _extreme(l, warmest: true), cold = _extreme(l, warmest: false);
   final facts = relevantFacts(v, l, limit: 4);
   final arc = _arcFor(l, i);
+  final he = _pronoun[l.name] ?? 'they';
   return [
-    'Festival week in Llama Village is over. ${l.name}, the ${l.job} (${l.traits}), ${_festivalRole(v, l)}.',
+    'Festival week in Llama Village is over. ${l.name} ($he), the ${l.job} (${l.traits}), ${_festivalRole(v, l)}.',
     'Mood at the end: ${l.moodWord}. Closest to ${warm?.$1}; coolest toward ${cold?.$1}. '
         'Feels ${feelingWord(l.friendship['Dash'] ?? 0)} Dash, the little blue bird.',
     if (arc.isNotEmpty) 'Also: $arc.',
     'What ${l.name} knows: ${facts.map((f) => f.text).join(' ')}',
     '',
-    'Write one sentence, under 22 words, past tense, third person, about what became of ${l.name} after the festival, '
-        'like the last page of a storybook. No quotes, no name prefix.',
+    'Write one sentence, under 22 words, past tense, third person ("$he"), about what became of ${l.name} after the festival, '
+        'like the last page of a storybook. Use one concrete detail from above. No quotes, no name prefix.',
   ].join('\n');
 }
 

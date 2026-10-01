@@ -51,7 +51,11 @@ void main() {
       _host(
         PauseMenu(
           when: 'Day 2, 10:00',
-          slots: {'slot1': null, 'slot2': SaveInfo('slot2', savedAt: DateTime(2026), day: 1, time: '09:00'), 'slot3': null},
+          slots: {
+            'slot1': null,
+            'slot2': SaveInfo('slot2', savedAt: DateTime(2026), day: 1, time: '09:00'),
+            'slot3': null,
+          },
           onResume: () {},
           onSave: (slot) async => saved.add(slot),
           onSettings: () {},

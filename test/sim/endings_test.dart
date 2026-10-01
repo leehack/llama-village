@@ -32,7 +32,12 @@ void main() {
     expect(decideEnding(influence(falseBeliefs: 1)).ending, Ending.quietValley);
     expect(decideEnding(influence(trust: 1)).ending, Ending.quietValley);
     expect(decideEnding(influence(festival: false)).ending, Ending.quietValley);
-    expect(decideEnding(influence(pipMo: PipMoArc.rift)).ending, Ending.quietValley, reason: 'one drama sign spoils harmony');
+    expect(decideEnding(influence(pipMo: PipMoArc.rift)).ending, Ending.quietValley, reason: 'a Pip-Mo rift spoils harmony');
+    expect(
+      decideEnding(influence(bramble: BrambleArc.exposedDeclined)).ending,
+      Ending.harmonyFestival,
+      reason: "Bramble's crush going badly alone does not",
+    );
   });
 
   test('enough lies make Drama Llama on their own', () {
