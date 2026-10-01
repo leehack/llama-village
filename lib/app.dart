@@ -948,7 +948,7 @@ class VillageHomeState extends State<VillageHome> with SingleTickerProviderState
     if (page != MenuPage.none)
       Scrim(
         child: switch (page) {
-          MenuPage.settings => SettingsPanel(settings: settings, onClick: sound.click, onClose: closePage),
+          MenuPage.settings => SettingsPanel(settings: settings, onClick: sound.click, onClose: closePage, maxHeight: _panelHeight),
           MenuPage.credits => CreditsView(onClose: closePage),
           MenuPage.endings => EndingsGallery(unlocked: unlocked, onClose: closePage),
           MenuPage.none => const SizedBox.shrink(),
@@ -994,6 +994,9 @@ class VillageHomeState extends State<VillageHome> with SingleTickerProviderState
       child: SceneView(stage.scene, key: _sceneKey, autoTick: false, cameraBuilder: (_) => stage.rig.camera()),
     ),
   );
+
+  /// Tall enough for every setting in a full-size window; it scrolls below.
+  double get _panelHeight => math.max(240, _size.height - 100);
 
   VoidCallback _clicky(VoidCallback action) => () {
     sound.click();
@@ -1061,7 +1064,7 @@ class VillageHomeState extends State<VillageHome> with SingleTickerProviderState
           left: 14,
           child: SettingsPanel(
             settings: settings,
-            maxHeight: math.max(240, _size.height - 100),
+            maxHeight: _panelHeight,
             onClick: sound.click,
             onClose: _clicky(() => setState(() => showSettings = false)),
           ),
@@ -1128,7 +1131,12 @@ class VillageHomeState extends State<VillageHome> with SingleTickerProviderState
       if (pauseMenu)
         Scrim(
           child: showSettings
-              ? SettingsPanel(settings: settings, onClick: sound.click, onClose: _clicky(() => setState(() => showSettings = false)))
+              ? SettingsPanel(
+                  settings: settings,
+                  onClick: sound.click,
+                  onClose: _clicky(() => setState(() => showSettings = false)),
+                  maxHeight: _panelHeight,
+                )
               : PauseMenu(
                   when: 'Day ${v.now.day}, ${v.now.hhmm}',
                   slots: slots,
