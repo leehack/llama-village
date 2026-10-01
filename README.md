@@ -32,7 +32,7 @@ release build on an M4 Max, from the self-test's per-call metrics (the
 | Evening reflections (dreams) | gemma-4-E2B | One first-person sentence about the day, shown as the night's dream bubble and fed into the next morning's plan | Free text | about 0.6 s |
 | Cutscene lines | gemma-4-E2B | Clover's festival announcement and each singer's song line | Free text | 0.25-0.5 s |
 | Epilogue cards | gemma-4-E2B | One storybook-style sentence per llama from its final state and what it knows | Free text | about 0.35 s each |
-| The storybook | gemma-4-E2B | One fairy-tale page per day and one for the ending, retold from that day's digest of what really happened | Free text, one paragraph of 80-120 words, streamed onto the page; a page written by rules if it fails | 2.2 s per page (3.1 s), about 14 s for the book |
+| The storybook | gemma-4-E2B | One fairy-tale page per day and one for the ending, retold from that day's digest of what really happened | Free text, one paragraph of 80-120 words, streamed onto the page; a page written by rules if it fails | 1.6-2.2 s per page (3.1 s), 10-14 s for the book |
 | Casual-topic choice | Laya (optional) | Picks what a llama brings up in small talk among the options the rules allow (never its own secret unless confessing, never news the listener told it); a topic tied to a strong goal is chosen by the rules | One choice among the options | about 0.1 s |
 
 Which facts go into a prompt is a rule (`relevantFacts` scores goals,
