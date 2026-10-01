@@ -4,19 +4,24 @@ import 'dart:ui' show AppExitResponse, AppExitType;
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_scene/scene.dart' hide Material;
 import 'package:vector_math/vector_math.dart' as vm;
 
 import 'ai/models.dart';
 import 'autoplay.dart';
+import 'frame_throttle.dart';
 import 'render/stage.dart';
 import 'self_test.dart';
+import 'settings.dart';
 import 'sim/canned.dart';
 import 'sim/dash.dart';
 import 'sim/village.dart';
 import 'ui/bubbles.dart';
 import 'ui/panels.dart';
+import 'ui/settings_panel.dart';
 
 class VillageApp extends StatelessWidget {
   const VillageApp({super.key, required this.test});
@@ -41,12 +46,18 @@ class VillageHome extends StatefulWidget {
   State<VillageHome> createState() => VillageHomeState();
 }
 
-class VillageHomeState extends State<VillageHome> {
+class VillageHomeState extends State<VillageHome> with SingleTickerProviderStateMixin {
   final VillageStage stage = VillageStage();
   final ValueNotifier<int> frame = ValueNotifier(0);
   final ValueNotifier<int> slow = ValueNotifier(0);
   final FocusNode focus = FocusNode();
   late final AppLifecycleListener _lifecycle;
+  late final Ticker _vsync;
+  final FrameThrottle _throttle = FrameThrottle(VillageSettings.defaultFps);
+  final GlobalKey _sceneKey = GlobalKey();
+  RenderObject? _scenePaint;
+  VillageSettings settings = VillageSettings.ephemeral();
+  bool showSettings = false;
 
   Phase phase = Phase.loading;
   String label = 'Building the village…';
@@ -80,12 +91,14 @@ class VillageHomeState extends State<VillageHome> {
     super.initState();
     _lifecycle = AppLifecycleListener(onExitRequested: _onExitRequested);
     test.start();
+    _vsync = createTicker(_onVsync)..start();
     unawaited(_boot());
   }
 
   @override
   void dispose() {
     _lifecycle.dispose();
+    _vsync.dispose();
     frame.dispose();
     slow.dispose();
     focus.dispose();
@@ -96,6 +109,10 @@ class VillageHomeState extends State<VillageHome> {
   // ------------------------------------------------------------ boot
 
   Future<void> _boot() async {
+    final fps = test.fps;
+    settings = fps != null ? (VillageSettings.ephemeral()..fps = fps) : await VillageSettings.load();
+    _throttle.fps = settings.fps;
+    settings.addListener(() => _throttle.fps = settings.fps);
     final scene = stage.load(const ['Pip', 'Mo', 'June', 'Bramble', 'Clover']).then((_) => _sceneReady = true);
     final cfg = ModelConfig.resolve();
     config = cfg;
@@ -229,6 +246,31 @@ class VillageHomeState extends State<VillageHome> {
   }
 
   // ------------------------------------------------------------ loop
+
+  void _onVsync(Duration elapsed) {
+    final dt = _throttle.onVsync(elapsed);
+    if (dt == null) return;
+    _tick(dt);
+    _repaintScene();
+  }
+
+  /// The SceneView runs without its own ticker (which would render on every
+  /// vsync), so a rendered frame marks its painter dirty directly.
+  void _repaintScene() {
+    var paint = _scenePaint;
+    if (paint == null || !paint.attached) {
+      paint = _scenePaint = _findCustomPaint(_sceneKey.currentContext?.findRenderObject());
+    }
+    paint?.markNeedsPaint();
+  }
+
+  static RenderCustomPaint? _findCustomPaint(RenderObject? root) {
+    if (root == null) return null;
+    if (root is RenderCustomPaint) return root;
+    RenderCustomPaint? found;
+    root.visitChildren((child) => found ??= _findCustomPaint(child));
+    return found;
+  }
 
   void _tick(double dt) {
     final v = village;
@@ -466,7 +508,9 @@ class VillageHomeState extends State<VillageHome> {
       stage.rig.pan(e.panDelta.dx, e.panDelta.dy);
       if (e.scale != 1) stage.rig.zoom(1 / math.pow(e.scale, 0.08).toDouble());
     },
-    child: SceneView(stage.scene, onTick: (elapsed, dt) => _tick(dt), cameraBuilder: (_) => stage.rig.camera()),
+    child: RepaintBoundary(
+      child: SceneView(stage.scene, key: _sceneKey, autoTick: false, cameraBuilder: (_) => stage.rig.camera()),
+    ),
   );
 
   List<Widget> _overlay(Village v) => [
@@ -488,9 +532,16 @@ class VillageHomeState extends State<VillageHome> {
           onFollow: follow,
           followName: stage.rig.followName,
           modelLabel: modelLabel,
+          onSettings: () => setState(() => showSettings = !showSettings),
         ),
       ),
     ),
+    if (showSettings)
+      Positioned(
+        top: 80,
+        left: 14,
+        child: SettingsPanel(settings: settings, onClose: () => setState(() => showSettings = false)),
+      ),
     Positioned(
       left: 14,
       bottom: 14,

@@ -42,6 +42,7 @@ class TopBar extends StatelessWidget {
     required this.onFollow,
     required this.followName,
     required this.modelLabel,
+    required this.onSettings,
   });
 
   final Village village;
@@ -52,6 +53,7 @@ class TopBar extends StatelessWidget {
   final VoidCallback onFollow;
   final String? followName;
   final String modelLabel;
+  final VoidCallback onSettings;
 
   @override
   Widget build(BuildContext context) {
@@ -96,6 +98,7 @@ class TopBar extends StatelessWidget {
             tip: 'Follow the selected llama or Dash (F)',
             onTap: onFollow,
           ),
+          _IconButton(icon: Icons.settings, tip: 'Settings', onTap: onSettings),
           const SizedBox(width: 8),
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,

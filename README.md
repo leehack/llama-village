@@ -36,6 +36,11 @@ rumour and a storm warning) play out differently every run.
   clock waits at dawn while the llamas write the day's plans.
 - The **village log** (bottom left) lists events, conversations, who
   learned what, and story-thread turns.
+- The **gear** button opens Settings: a frame-rate cap of 30, 60
+  (default) or 120 fps (120 only matters on a ProMotion display). The cap
+  skips scene renders between display refreshes; the sim and animations
+  run on real time, so their speed does not change. Settings are saved
+  with shared_preferences.
 
 Speech bubbles show "…" while the model is still writing a line; thought
 bubbles (rounded, italic) show what an idle llama is thinking.
@@ -125,7 +130,8 @@ conversation, Dash's options, the inspector, the storm, night), logs frame
 rates split by whether the model was generating, and quits. The hooks
 are inert unless their environment variables are set (`VILLAGE_CAPTURE`,
 `VILLAGE_AUTOPLAY`, `VILLAGE_EXIT`, `VILLAGE_MS_PER_MINUTE`,
-`VILLAGE_CANNED`, `VILLAGE_QUIT_AFTER`, `VILLAGE_CLOSE_AFTER`); see
+`VILLAGE_CANNED`, `VILLAGE_FPS`, `VILLAGE_QUIT_AFTER`,
+`VILLAGE_CLOSE_AFTER`); see
 `lib/self_test.dart`.
 
 ## Layout

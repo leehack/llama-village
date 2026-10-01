@@ -13,6 +13,7 @@ import 'package:flutter/widgets.dart';
 /// * `VILLAGE_AUTOPLAY=1` runs the capture script (see `autoplay.dart`).
 /// * `VILLAGE_EXIT=1` quits once the script is done.
 /// * `VILLAGE_MS_PER_MINUTE=n` runs the clock faster for test runs.
+/// * `VILLAGE_FPS=n` caps the frame rate at 30, 60 or 120 for the run.
 class SelfTest {
   SelfTest._(this._env) : capture = _env['VILLAGE_CAPTURE'] == '1', autoplay = _env['VILLAGE_AUTOPLAY'] == '1';
 
@@ -27,6 +28,9 @@ class SelfTest {
   bool get canned => _env['VILLAGE_CANNED'] == '1';
   int? get seed => int.tryParse(_env['VILLAGE_SEED'] ?? '');
 
+  /// Frame-rate cap for this run, overriding (and not saving) the setting.
+  int? get fps => int.tryParse(_env['VILLAGE_FPS'] ?? '');
+
   final GlobalKey boundaryKey = GlobalKey();
   final Set<String> taken = {};
   String? _dir;
@@ -34,6 +38,7 @@ class SelfTest {
   final List<double> _raster = [], _build = [];
   final List<double> _total = [];
   int _frames = 0;
+  int _rendered = 0;
   int _busyFrames = 0;
 
   /// Milliseconds of sim and scene-sync work per frame.
@@ -60,6 +65,7 @@ class SelfTest {
   /// Called once per rendered frame by the game loop.
   void frame() {
     if (!capture) return;
+    _rendered++;
     if (generating()) _busyFrames++;
   }
 
@@ -78,10 +84,13 @@ class SelfTest {
       return s[(q * (s.length - 1)).round()].toStringAsFixed(1);
     }
 
-    final fps = _frames / seconds;
+    // Flutter frames run at the display's vsync rate; the scene renders on
+    // the subset the frame-rate cap lets through.
+    final fps = _rendered / seconds;
+    final vsync = _frames / seconds;
     final capturing = _capturing;
     _capturing = _busy;
-    final busy = _frames == 0 ? 0.0 : (_busyFrames / _frames).clamp(0.0, 1.0);
+    final busy = _rendered == 0 ? 0.0 : (_busyFrames / _rendered).clamp(0.0, 1.0);
     if (!capturing) {
       windows.add((fps, busy));
       for (final t in _total) {
@@ -89,7 +98,7 @@ class SelfTest {
       }
     }
     log(
-      'PERF fps=${fps.toStringAsFixed(1)} gen=${(busy * 100).round()}% raster p50=${pct(_raster, .5)} '
+      'PERF fps=${fps.toStringAsFixed(1)} vsync=${vsync.toStringAsFixed(0)} gen=${(busy * 100).round()}% raster p50=${pct(_raster, .5)} '
       'p99=${pct(_raster, .99)} build p50=${pct(_build, .5)} p99=${pct(_build, .99)} '
       'frame max=${pct(_total, 1)} ms sim p50=${pct(simMs, .5)} p99=${pct(simMs, .99)} '
       'scene p50=${pct(sceneMs, .5)} p99=${pct(sceneMs, .99)}${capturing ? ' (capture)' : ''}',
@@ -97,6 +106,7 @@ class SelfTest {
     simMs.clear();
     sceneMs.clear();
     _frames = 0;
+    _rendered = 0;
     _busyFrames = 0;
     _raster.clear();
     _build.clear();

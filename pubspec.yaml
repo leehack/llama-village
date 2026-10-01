@@ -13,6 +13,7 @@ dependencies:
   flutter_scene: 0.23.0
   hooks: ^2.0.0
   llamadart: ^0.9.0
+  shared_preferences: 2.5.5
   vector_math: ^2.1.4
 
 dev_dependencies:
