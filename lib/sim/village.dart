@@ -222,6 +222,21 @@ class Village {
     events.emit('begin', {});
   }
 
+  /// Ends every conversation at once, without outcomes, so nobody is left
+  /// talking through a night skip.
+  void abandonConversations() {
+    for (final c in active) {
+      c.abandoned = true;
+      for (final l in [c.a, c.b]) {
+        l.activity = Activity('idle', now, start: now);
+        l.lastConversationEnd = now;
+        speech.remove(l.name);
+      }
+      log.note('${c.a.name} and ${c.b.name} say goodnight.');
+    }
+    active.clear();
+  }
+
   /// The festival has been judged: the week is over.
   bool get weekOver => festival.state == 'judged' || now.day > festivalDay;
 
@@ -557,7 +572,7 @@ class Village {
   }
 
   void _generateTurn(Conversation c, int index) {
-    if (_closed) return;
+    if (_closed || c.abandoned) return;
     final s = c.speakerAt(index);
     final o = c.other(s);
     final prompt = turnPrompt(this, c, index);
@@ -577,6 +592,7 @@ class Village {
         .then((text) {
           final fallback = text.startsWith('\u0000');
           final line = Line(c.id, index, s.name, o.name, fallback ? text.substring(1) : text, at, known, uiMs)..fallback = fallback;
+          if (c.abandoned) return;
           c.lines.add(line);
           lines.add(line);
           if (lines.length > 400) lines.removeAt(0);

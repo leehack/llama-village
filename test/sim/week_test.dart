@@ -1,5 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:llama_village/sim/canned.dart';
 import 'package:llama_village/sim/clock.dart';
+import 'package:llama_village/sim/village.dart';
 import 'package:llama_village/sim/week.dart';
 
 import 'harness.dart';
@@ -60,5 +62,30 @@ void main() {
     expect(v.storm_.state, 'passed');
     expect(v.cast.every((l) => l.schedule.length == 8), isTrue);
     expect(v.done, isEmpty, reason: 'nobody talks during the jump');
+  });
+
+  test('a night skip cuts conversations short: nobody keeps talking and no more lines come', () async {
+    final v = Village(
+      chat: CannedChat(delay: const Duration(milliseconds: 20)),
+      embed: HashEmbed(),
+      seed: 3,
+      msPerMinute: 10,
+    );
+    await v.begin();
+    for (var i = 0; i < 2000 && v.active.isEmpty; i++) {
+      v.advance(10);
+      await Future<void>.delayed(const Duration(milliseconds: 1));
+    }
+    final c = v.active.first;
+    expect(c.generationDone, isFalse);
+    final said = c.lines.length;
+    v.abandonConversations();
+    expect(v.active, isEmpty);
+    expect(c.a.activity.kind, 'idle');
+    expect(c.b.activity.kind, 'idle');
+    await Future<void>.delayed(const Duration(milliseconds: 300));
+    expect(c.lines.length, lessThanOrEqualTo(said + 1), reason: 'at most the line already being written lands');
+    expect(c.generationDone, isFalse);
+    expect(c.outcomeDone, isFalse);
   });
 }

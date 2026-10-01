@@ -345,8 +345,9 @@ Cutscene endingScene(SceneContext c, EndingVerdict verdict, Influence i) {
         duration: end,
         camera: [
           CameraKey(0, c.current),
-          CameraKey(3, c.shot(pond, across + vm.Vector3(1, 0, 0), dist: 18, up: 3.5, aim: 0.5, fov: 0.55)),
-          CameraKey(end, c.shot(pond, across + vm.Vector3(-0.6, 0, 0), dist: 22, up: 5, aim: 0.5, fov: 0.55), ease: Ease.linear),
+          // From the far shore, the pond in front and the village beyond.
+          CameraKey(3, c.shot(pond, -across + vm.Vector3(0.3, 0, 0.3), dist: 15, up: 4.5, aim: 1.5, fov: 0.6)),
+          CameraKey(end, c.shot(pond, -across + vm.Vector3(-0.3, 0, 0.3), dist: 17, up: 6, aim: 1.5, fov: 0.6), ease: Ease.linear),
         ],
         letterbox: _bars(end + 1),
         texts: [

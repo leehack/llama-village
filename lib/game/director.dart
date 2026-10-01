@@ -100,7 +100,10 @@ class Director {
       nextDay: dawn.day,
       // Through 22:00 (reflections) and 04:30 (plans) while everyone sleeps;
       // the clock reaches 06:00, and the llamas wake, at the dawn shot.
-      startNight: () => v.skipTo(GameTime(dawn.day, 4 * 60 + 31)),
+      startNight: () {
+        v.abandonConversations();
+        v.skipTo(GameTime(dawn.day, 4 * 60 + 31));
+      },
       startDawn: () => _dawn = dawn,
       dawnReady: () => _dawn == null,
       dream: (l) => reflectionOf(l, evening),

@@ -58,6 +58,9 @@ class Conversation {
   final List<String> notes = [];
   final List<String> bystanders = [];
 
+  /// Cut short (the night skip): no more turns or outcome.
+  bool abandoned = false;
+
   /// The line waiting for the UI to say its bubble is up.
   Line? awaitingAck;
   double ackDeadlineMs = 0;
