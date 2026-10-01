@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../sim/endings.dart';
 import '../../sim/influence.dart';
 import '../palette.dart';
+import '../portrait.dart';
 import 'menu_kit.dart';
 
 /// One card per llama with its epilogue line ("…" while it is written).
@@ -43,9 +44,15 @@ class EpilogueView extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      name,
-                      style: menuText(19 * textScale, weight: FontWeight.w900, color: accentOf(name)),
+                    Row(
+                      children: [
+                        LlamaPortrait(name, size: 46 * textScale),
+                        const SizedBox(width: 10),
+                        Text(
+                          name,
+                          style: menuText(19 * textScale, weight: FontWeight.w900, color: accentOf(name)),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 8),
                     Expanded(

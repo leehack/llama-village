@@ -6,6 +6,7 @@ import 'package:vector_math/vector_math.dart' as vm;
 import 'ambient/creatures.dart';
 import 'ambient/layout.dart';
 import 'app.dart';
+import 'character_tour.dart';
 import 'render/quality.dart';
 import 'sim/dash.dart';
 import 'sim/geo.dart';
@@ -17,6 +18,8 @@ import 'sim/village.dart';
 ///   midday, the storm, the golden and blue hours, night with fireflies),
 ///   the animals (chickens by the bakery, ducks on the pond, cats on a
 ///   roof) and a crowded conversation's bubbles, then quits.
+/// * `VILLAGE_TOUR=chars` stages the characters for their captures (see
+///   `character_tour.dart`).
 /// * `VILLAGE_TOUR=perf` measures the frame rate at each graphics quality,
 ///   with the model generating and with the village paused (idle).
 ///
@@ -41,8 +44,14 @@ class RenderTour {
   bool _gameRequested = false;
   bool _started = false;
 
+  CharacterTour? _chars;
+
   void start() {
     home.test.log('TOUR start $mode');
+    if (mode == 'chars') {
+      _chars = CharacterTour(home)..start();
+      return;
+    }
     home.setSpeed(mode == 'perf' ? 1 : 2);
     if (mode == 'perf') {
       _perfPlan();
@@ -157,6 +166,11 @@ class RenderTour {
       if (home.village == null || home.phase != Phase.playing) return;
       _started = true;
       start();
+    }
+    final chars = _chars;
+    if (chars != null) {
+      chars.tick(dt);
+      return;
     }
     _t += dt;
     _since += dt;

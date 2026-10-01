@@ -28,6 +28,7 @@ flutter:
   assets:
     - flutter_scene_generated/
     - assets/audio/
+    - assets/portraits/
 
 hooks:
   user_defines:

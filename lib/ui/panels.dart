@@ -8,6 +8,7 @@ import '../sim/places.dart';
 import '../sim/village.dart';
 import '../sim/week.dart';
 import 'palette.dart';
+import 'portrait.dart';
 
 TextStyle _t(double size, {FontWeight weight = FontWeight.w600, Color color = Colors.white, FontStyle? style}) =>
     TextStyle(fontSize: size, fontWeight: weight, color: color, fontStyle: style, height: 1.3);
@@ -434,6 +435,8 @@ class Inspector extends StatelessWidget {
               ),
               child: Row(
                 children: [
+                  LlamaPortrait(l.name),
+                  const SizedBox(width: 10),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
