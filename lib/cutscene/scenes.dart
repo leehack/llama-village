@@ -312,12 +312,11 @@ Cutscene endingScene(SceneContext c, EndingVerdict verdict, Influence i) {
       final keys = <CameraKey>[CameraKey(0, c.current)];
       for (var k = 0; k < names.length; k++) {
         final p = c.llama(names[k]);
-        // Quick, tilted close-ups from the audience side, alternating left and right.
-        final turn = k.isEven ? 0.45 : -0.45;
-        final dir = vm.Vector3(front.x * math.cos(turn) + front.z * math.sin(turn), 0, front.z * math.cos(turn) - front.x * math.sin(turn));
+        // Quick close-ups from the audience side, alternating left and right.
+        final side = vm.Vector3(k.isEven ? 0.55 : -0.55, 0, 0);
         keys
-          ..add(CameraKey(1.2 + k * 2.4, c.shot(p, dir, dist: 5.2, up: 1.1, aim: 1.7, fov: 0.42), ease: Ease.out))
-          ..add(CameraKey(3.2 + k * 2.4, c.shot(p, dir, dist: 4.6, up: 0.9, aim: 1.7, fov: 0.4), ease: Ease.linear));
+          ..add(CameraKey(1.2 + k * 2.4, c.shot(p, front + side, dist: 6.8, up: 1.7, aim: 1.6, fov: 0.48), ease: Ease.out))
+          ..add(CameraKey(3.2 + k * 2.4, c.shot(p, front + side * 0.8, dist: 6.0, up: 1.5, aim: 1.6, fov: 0.46), ease: Ease.linear));
       }
       keys.add(CameraKey(end, c.shot(hill, front + vm.Vector3(0.8, 0, 0), dist: 34, up: 20, aim: 1, fov: 0.6)));
       return Cutscene(
