@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'render/quality.dart';
+
 /// Player settings, persisted with shared_preferences.
 class VillageSettings extends ChangeNotifier {
   VillageSettings._(this._prefs);
@@ -18,6 +20,7 @@ class VillageSettings extends ChangeNotifier {
   double _music = defaultMusicVolume;
   double _sfx = defaultSfxVolume;
   bool _muted = false;
+  GraphicsQuality _quality = GraphicsQuality.high;
 
   static Future<VillageSettings> load() async {
     final prefs = await SharedPreferences.getInstance();
@@ -27,6 +30,7 @@ class VillageSettings extends ChangeNotifier {
     s._music = (prefs.getDouble('musicVolume') ?? defaultMusicVolume).clamp(0.0, 1.0);
     s._sfx = (prefs.getDouble('sfxVolume') ?? defaultSfxVolume).clamp(0.0, 1.0);
     s._muted = prefs.getBool('muted') ?? false;
+    s._quality = GraphicsQuality.parse(prefs.getString('graphicsQuality'));
     return s;
   }
 
@@ -61,6 +65,14 @@ class VillageSettings extends ChangeNotifier {
     if (value == _muted) return;
     _muted = value;
     _prefs?.setBool('muted', value);
+    notifyListeners();
+  }
+
+  GraphicsQuality get quality => _quality;
+  set quality(GraphicsQuality value) {
+    if (value == _quality) return;
+    _quality = value;
+    _prefs?.setString('graphicsQuality', value.name);
     notifyListeners();
   }
 }

@@ -84,16 +84,18 @@ class LlamaActor {
       ..baseColorFactor = src.baseColorFactor.clone()
       ..roughnessFactor = 0.8
       ..metallicFactor = 0;
-    void sheen(vm.Vector3 c) => m
+    void sheen(vm.Vector3 c, {double roughness = 0.45}) => m
       ..sheenColor = vm.Vector4(c.x, c.y, c.z, 1)
-      ..sheenRoughness = 0.45;
+      ..sheenRoughness = roughness;
     switch (src.name) {
       case 'Wool':
+        // A broad, bright sheen reads as fuzz catching the light at the
+        // silhouette, which is what makes wool look soft.
         final c = _lin(woolHex);
         m
           ..baseColorFactor = vm.Vector4(c.x, c.y, c.z, 1)
-          ..roughnessFactor = 0.95;
-        sheen(c * 1.05);
+          ..roughnessFactor = 0.92;
+        sheen(c * 1.15 + vm.Vector3.all(0.06), roughness: 0.6);
       case 'Scarf':
         final c = _lin(accentHex);
         m.baseColorFactor = vm.Vector4(c.x, c.y, c.z, 1);

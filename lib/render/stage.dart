@@ -8,6 +8,7 @@ import '../sim/geo.dart';
 import '../sim/village.dart';
 import 'actors.dart';
 import 'look.dart';
+import 'quality.dart';
 import 'world.dart';
 
 /// An orbit camera around a ground target that can follow an actor.
@@ -82,6 +83,8 @@ class VillageStage {
   final Map<String, LlamaActor> llamas = {};
   final DashActor dash = DashActor();
   final CameraRig rig = CameraRig();
+  GraphicsQuality _quality = GraphicsQuality.high;
+  bool _loaded = false;
   late final Node _ring;
   final List<Node> _rain = [];
   double _rainY = 0;
@@ -112,6 +115,17 @@ class VillageStage {
       _rain.add(n);
       scene.add(n);
     }
+    _loaded = true;
+    quality = _quality;
+  }
+
+  GraphicsQuality get quality => _quality;
+
+  /// Switches the costly passes.
+  set quality(GraphicsQuality q) {
+    _quality = q;
+    if (!_loaded) return;
+    sky.quality = q;
   }
 
   /// Rain falls in two stacked curtains that wrap around, so a storm costs

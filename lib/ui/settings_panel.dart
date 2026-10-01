@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../render/quality.dart';
 import '../settings.dart';
 import 'palette.dart';
 
@@ -55,6 +56,19 @@ class SettingsPanel extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           const Text('120 fps needs a ProMotion display.', style: TextStyle(fontSize: 11, color: Colors.white60)),
+          const SizedBox(height: 10),
+          const Text('Graphics quality', style: _label),
+          const SizedBox(height: 6),
+          SegmentedButton<GraphicsQuality>(
+            showSelectedIcon: false,
+            segments: [for (final q in GraphicsQuality.values) ButtonSegment(value: q, label: Text(q.label))],
+            selected: {settings.quality},
+            onSelectionChanged: (s) {
+              onClick();
+              settings.quality = s.first;
+            },
+            style: SegmentedButton.styleFrom(foregroundColor: Colors.white, selectedForegroundColor: ink, selectedBackgroundColor: gold),
+          ),
           const SizedBox(height: 10),
           _volume('Music', settings.musicVolume, (v) => settings.musicVolume = v),
           _volume('Sound effects', settings.sfxVolume, (v) => settings.sfxVolume = v),
