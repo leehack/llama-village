@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:llama_village/sim/canned.dart';
+import 'package:llama_village/sim/cast.dart';
 import 'package:llama_village/sim/clock.dart';
 import 'package:llama_village/sim/village.dart';
 import 'package:llama_village/sim/week.dart';
@@ -87,5 +88,34 @@ void main() {
     expect(c.lines.length, lessThanOrEqualTo(said + 1), reason: 'at most the line already being written lands');
     expect(c.generationDone, isFalse);
     expect(c.outcomeDone, isFalse);
+  });
+
+  test('before the festival, chats elsewhere break off and Dash cannot hold anyone back', () async {
+    final v = Village(
+      chat: CannedChat(delay: const Duration(milliseconds: 20)),
+      embed: HashEmbed(),
+      seed: 3,
+      msPerMinute: 10,
+    );
+    await v.begin();
+    await v.jumpTo(festivalDay);
+    v.now = const GameTime(festivalDay, 12 * 60);
+    for (var i = 0; i < 4000 && v.active.every((c) => c.place == 'hilltop'); i++) {
+      v.advance(10);
+      await Future<void>.delayed(const Duration(milliseconds: 1));
+    }
+    final away = v.active.where((c) => c.place != 'hilltop').toList();
+    expect(away, isNotEmpty);
+    final mo = v.byName('Mo');
+    v.skipTo(const GameTime(festivalDay, festivalMinute - 25));
+    for (final c in away) {
+      expect(c.abandoned, isTrue);
+      expect(v.active, isNot(contains(c)));
+    }
+    mo
+      ..place = 'bakery'
+      ..activity = Activity('idle', v.now);
+    expect(await v.dash.talk(mo), isEmpty, reason: 'festival rush');
+    expect(v.dash.notice, contains('hurrying'));
   });
 }

@@ -1,4 +1,5 @@
 import '../sim/cast.dart';
+import '../sim/clock.dart';
 import '../sim/dash.dart';
 import '../sim/village.dart';
 
@@ -30,6 +31,7 @@ class PlayerBot {
 
   void tick(Village v) {
     if (preset == BotPreset.quiet || v.paused || v.isNight || v.weekOver) return;
+    if (v.now.day == festivalDay && v.now.minute >= 14 * 60) return;
     final dash = v.dash;
     final visit = dash.visit;
     if (visit == null) {

@@ -222,19 +222,30 @@ class Village {
     events.emit('begin', {});
   }
 
-  /// Ends every conversation at once, without outcomes, so nobody is left
-  /// talking through a night skip.
-  void abandonConversations() {
-    for (final c in active) {
+  /// Ends conversations at once, without outcomes: all of them, so nobody
+  /// is left talking through a night skip, or those [where] says.
+  void abandonConversations({bool Function(Conversation c)? where, String why = 'say goodnight'}) {
+    for (final c in active.where(where ?? (_) => true).toList()) {
       c.abandoned = true;
+      active.remove(c);
       for (final l in [c.a, c.b]) {
         l.activity = Activity('idle', now, start: now);
         l.lastConversationEnd = now;
         speech.remove(l.name);
       }
-      log.note('${c.a.name} and ${c.b.name} say goodnight.');
+      log.note('${c.a.name} and ${c.b.name} $why.');
     }
-    active.clear();
+  }
+
+  /// Twenty-five minutes before the festival, everyone still chatting
+  /// elsewhere breaks off and heads for the hilltop.
+  void _callToFestival() {
+    abandonConversations(where: (c) => c.place != 'hilltop', why: 'break off to hurry to the festival');
+    final visit = dash.visit;
+    if (visit != null && visit.target.place != 'hilltop') {
+      dash.leave();
+      dash.say('${visit.target.name} hurries off to the festival.');
+    }
   }
 
   /// The festival has been judged: the week is over.
@@ -326,6 +337,7 @@ class Village {
   void _minute() {
     if (now.minute == 6 * 60 && now.day > 1) _morning();
     if (now.minute == 22 * 60) _evening();
+    if (now.day == festivalDay && now.minute == festivalMinute - 25) _callToFestival();
     if (now.minute == 4 * 60 + 30 && !_plannedTomorrow) {
       _plannedTomorrow = true;
       planning = true;
@@ -453,13 +465,13 @@ class Village {
   }
 
   /// On festival day nobody starts a chat on the way to the hilltop.
-  bool _festivalRush(Llama l) =>
+  bool festivalRush(Llama l) =>
       now.day == festivalDay && now.minute >= 14 * 60 + 30 && now.minute < festivalMinute + 40 && l.place != 'hilltop';
 
   bool _available(Llama l) =>
       !offline &&
       !l.asleep &&
-      !_festivalRush(l) &&
+      !festivalRush(l) &&
       _chatty.contains(l.activity.kind) &&
       !(storm && l.outdoors) &&
       !isNight &&

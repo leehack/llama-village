@@ -129,6 +129,10 @@ class Dash {
       say('${l.name} is asleep. Try again in the morning.');
       return Future.value(const []);
     }
+    if (v.festivalRush(l)) {
+      say('${l.name} is hurrying to the festival.');
+      return Future.value(const []);
+    }
     goal = null;
     goalPlace = null;
     final dv = DashVisit(l, v.uiMs);
