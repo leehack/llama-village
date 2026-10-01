@@ -9,8 +9,8 @@ import 'sim/geo.dart';
 import 'sim/village.dart';
 
 /// `VILLAGE_TOUR=chars` (with `VILLAGE_CAPTURE=1`): stages the llamas and
-/// Dash for the character captures, then quits. A lineup in a neutral pose,
-/// an expression sheet, each llama walking (and one galloping), Dash
+/// Dash for the character captures, then quits. A lineup in a neutral pose
+/// (and with the inspector open), an expression sheet, each llama walking (and one galloping), Dash
 /// flying, hovering, landing, cheering and drooping, and a conversation
 /// with heads turning to the speaker.
 class CharacterTour {
@@ -82,6 +82,8 @@ class CharacterTour {
       }),
       _Step('lineup_neutral', 2.5, () {}),
       _Step('lineup_front', 1.8, () => _view(_at(_cx, _cz, 1.0), yaw: 0.0, pitch: 0.05, distance: 15)),
+      _Step('lineup_inspector', 1.2, () => home.select('June')),
+      _Step(null, 0, () => home.select(null)),
       _Step(null, 0, () {
         for (final (i, n) in _names.indexed) {
           home.stage.llamas[n]!.staged = (x: _cx + (i - 2) * 2.7, z: _cz, yaw: math.pi / 2, look: null);
@@ -102,12 +104,11 @@ class CharacterTour {
           _lineup(spacing: 1.9, face: face);
           _view(_at(_cx, _cz, 1.45), yaw: 0.1, pitch: 0.06, distance: 11);
         }),
-      // Each llama walking at its own natural pace, followed side-on.
+      // Each llama walking at its in-game pace, followed side-on.
       for (final n in _names) ...[
         _Step(null, 0, () {
           _unstageAllBut(n);
-          final spec = llamaSpecs[n]!;
-          _walkers[n] = (_cx - 6, _cz, spec.strideMetres / spec.walkSeconds);
+          _walkers[n] = (_cx - 6, _cz, v.byName(n).walkPace);
           _walkT = 0;
         }),
         for (var k = 0; k < 3; k++) _Step('walk_${n.toLowerCase()}_$k', k == 0 ? 1.6 : llamaSpecs[n]!.walkSeconds / 3, () {}),
