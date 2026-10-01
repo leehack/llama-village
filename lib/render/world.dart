@@ -62,6 +62,7 @@ class VillageWorld {
 
   void build() {
     _ground();
+    _paths();
     _water();
     for (final place in placeCoordinates.keys) {
       if (isHut(place)) _hut(place);
@@ -102,11 +103,9 @@ class VillageWorld {
 
   void _ground() {
     final b = MeshBuilder();
-    final segs = pathSegments();
-    final grassA = rgb(0x86BF4E), grassB = rgb(0x7AB345), grassC = rgb(0x93C957);
-    final hill = rgb(0xA3CC63), dirt = rgb(0xC7A26A), dirtDark = rgb(0xB48F5A), sand = rgb(0xE0CB93), mud = rgb(0x6E8F5A);
+    final grassA = rgb(0x84BD4C), grassB = rgb(0x6FAA42), hill = rgb(0xA6CE66);
+    final sand = rgb(0xE0CB93), mud = rgb(0x6E8F5A);
     final (px, pz) = placeCoordinates['pond']!;
-    final plazas = [for (final p in placeCoordinates.keys) (standPoint(p), p == 'bakery' ? 5.5 : 2.6)];
     const cell = 1.25;
     const lo = -62.0, hi = 56.0;
     final n = ((hi - lo) / cell).round();
@@ -129,17 +128,12 @@ class VillageWorld {
       final pond = math.sqrt((c.x - px) * (c.x - px) + (c.z - pz) * (c.z - pz));
       if (pond < 7.6) return mud;
       if (pond < 8.9) return sand;
-      final pd = _pathDistance(c.x, c.z, segs);
-      if (pd < 1.05) return salt % 3 == 0 ? dirtDark : dirt;
-      for (final ((sx, sz), r) in plazas) {
-        if ((c.x - sx) * (c.x - sx) + (c.z - sz) * (c.z - sz) < r * r) return salt % 3 == 0 ? dirtDark : dirt;
-      }
-      if (c.y > 2.5) return salt % 2 == 0 ? hill : grassC;
-      return switch (salt % 5) {
-        0 => grassB,
-        1 => grassC,
-        _ => grassA,
-      };
+      // Soft meadow patches, with a faint per-facet shimmer.
+      final patch = 0.5 + 0.5 * math.sin(c.x * 0.11 + math.sin(c.z * 0.17) * 1.7) * math.cos(c.z * 0.09 - c.x * 0.04);
+      final grass = grassB + (grassA - grassB) * patch;
+      final up = ((c.y - 1.2) / 3.5).clamp(0.0, 1.0);
+      final base = grass + (hill - grass) * up;
+      return base * (0.97 + 0.06 * ((salt % 7) / 6));
     }
 
     for (var i = 0; i < n; i++) {
@@ -171,6 +165,50 @@ class VillageWorld {
         ..triangle(t0, m1, m0, rim)
         ..triangle(m0, m1, b1, s.isEven ? soil : soilDark)
         ..triangle(m0, b1, b0, s.isEven ? soil : soilDark);
+    }
+    _add(b.build(), _matte, shadows: false);
+  }
+
+  /// Dirt paths as ribbons draped over the ground, with round joints and
+  /// small plazas in front of every place. One colour, so overlaps never
+  /// flicker.
+  void _paths() {
+    final b = MeshBuilder();
+    final dirt = rgb(0xC9A36B);
+    const lift = 0.07, half = 1.15;
+    vm.Vector3 at(double x, double z) => _v(x, groundHeight(x, z) + lift, z);
+    void disc(P2 c, double r) {
+      const seg = 14;
+      for (var i = 0; i < seg; i++) {
+        final a0 = 2 * math.pi * i / seg, a1 = 2 * math.pi * (i + 1) / seg;
+        b.triangle(
+          at(c.$1, c.$2),
+          at(c.$1 + math.cos(a0) * r, c.$2 + math.sin(a0) * r),
+          at(c.$1 + math.cos(a1) * r, c.$2 + math.sin(a1) * r),
+          dirt,
+        );
+      }
+    }
+
+    for (final ((ax, az), (bx, bz)) in pathSegments()) {
+      final len = dist((ax, az), (bx, bz));
+      final steps = math.max(1, (len / 0.9).ceil());
+      final nx = -(bz - az) / len * half, nz = (bx - ax) / len * half;
+      for (var i = 0; i < steps; i++) {
+        final t0 = i / steps, t1 = (i + 1) / steps;
+        final x0 = ax + (bx - ax) * t0, z0 = az + (bz - az) * t0;
+        final x1 = ax + (bx - ax) * t1, z1 = az + (bz - az) * t1;
+        final l0 = at(x0 + nx, z0 + nz), r0 = at(x0 - nx, z0 - nz), l1 = at(x1 + nx, z1 + nz), r1 = at(x1 - nx, z1 - nz);
+        b
+          ..triangle(l0, r0, r1, dirt)
+          ..triangle(l0, r1, l1, dirt);
+      }
+      disc((ax, az), half);
+      disc((bx, bz), half);
+    }
+    for (final p in placeCoordinates.keys) {
+      if (p == 'pond' || p == 'hilltop') continue;
+      disc(standPoint(p), p == 'bakery' ? 5.0 : 2.4);
     }
     _add(b.build(), _matte, shadows: false);
   }
@@ -298,22 +336,31 @@ class VillageWorld {
     final b = MeshBuilder();
     final leaf = [rgb(0x3F8A3A), rgb(0x4C9A40), rgb(0x357A33)];
     final berry = [rgb(0xC42B4A), rgb(0x4B3B9A), rgb(0xD94060)];
-    final spots = <(double, double)>[
-      (-2.8, -2.2),
-      (-0.6, -3.4),
-      (1.8, -2.6),
-      (3.6, -0.8),
-      (-3.8, 0.4),
-      (0.6, -1.0),
-      (3.0, 1.6),
-      (-1.6, 1.4),
+    // Local frame: +z faces the square; llamas stand at z = 4.
+    final at = _placeAt('berry bushes');
+    final base = at.getTranslation().y;
+    double ground(double x, double z) {
+      final w = at.transformed3(_v(x, 0, z));
+      return groundHeight(w.x, w.z) - base;
+    }
+
+    const spots = <(double, double)>[
+      (-4.2, -1.0),
+      (-2.4, -2.8),
+      (0.0, -3.4),
+      (2.4, -2.8),
+      (4.2, -1.0),
+      (-1.2, -0.6),
+      (1.4, -0.4),
+      (5.2, 1.4),
+      (-5.4, 1.2),
     ];
     for (final (x, z) in spots) {
-      final s = 0.7 + r.nextDouble() * 0.45;
-      final g = groundHeight(16 + x, 16 + z) - groundHeight(16, 16);
+      final s = 0.75 + r.nextDouble() * 0.45;
+      final g = ground(x, z);
       b.sphere(_v(x, g + s * 0.75, z), _v(s * 1.1, s * 0.85, s * 1.0), leaf[r.nextInt(3)], segments: 9, rings: 6);
       b.sphere(_v(x + 0.4 * s, g + s * 1.15, z + 0.2), _v(s * 0.7, s * 0.6, s * 0.7), leaf[r.nextInt(3)], segments: 8, rings: 5);
-      for (var k = 0; k < 9; k++) {
+      for (var k = 0; k < 10; k++) {
         final a = r.nextDouble() * 2 * math.pi, h = 0.4 + r.nextDouble() * 0.9;
         b.sphere(
           _v(x + math.cos(a) * s * 1.02, g + s * h, z + math.sin(a) * s * 0.95),
@@ -325,17 +372,16 @@ class VillageWorld {
       }
     }
     final wood = rgb(0x8A5A33);
-    for (var i = 0; i < 6; i++) {
-      final x = -4.5 + i * 1.8;
-      b.box(_v(x, 0.5, -4.6), _v(0.14, 1.0, 0.14), wood);
+    for (var i = 0; i < 7; i++) {
+      final x = -5.4 + i * 1.8;
+      b.box(_v(x, ground(x, -5.0) + 0.5, -5.0), _v(0.14, 1.0, 0.14), wood);
     }
     b
-      ..box(_v(0, 0.75, -4.6), _v(9.2, 0.1, 0.08), wood)
-      ..box(_v(0, 0.4, -4.6), _v(9.2, 0.1, 0.08), wood)
-      ..cylinder(_v(1.6, 0.25, 2.6), 0.4, 0.5, 1, rgb(0xB0824D), segments: 9)
-      ..sphere(_v(1.6, 0.52, 2.6), _v(0.33, 0.12, 0.33), rgb(0xB72E48));
-    final (ax, az) = placeCoordinates['berry bushes']!;
-    _add(b.build(), _soft, at: vm.Matrix4.translation(_v(ax, groundHeight(ax, az), az)));
+      ..box(_v(0, ground(0, -5) + 0.75, -5.0), _v(11, 0.1, 0.08), wood)
+      ..box(_v(0, ground(0, -5) + 0.4, -5.0), _v(11, 0.1, 0.08), wood)
+      ..cylinder(_v(-2.6, ground(-2.6, 2.0) + 0.25, 2.0), 0.4, 0.5, 1, rgb(0xB0824D), segments: 9)
+      ..sphere(_v(-2.6, ground(-2.6, 2.0) + 0.52, 2.0), _v(0.33, 0.12, 0.33), rgb(0xB72E48));
+    _add(b.build(), _soft, at: at);
 
     final fb = MeshBuilder();
     for (var i = 0; i < 7; i++) {
@@ -348,9 +394,7 @@ class VillageWorld {
           [rgb(0xF6D447), rgb(0xF08AC0), rgb(0xFFFFFF)][i % 3],
         );
     }
-    final (sx, sz) = standPoint('berry bushes');
-    wildflowers = _add(fb.build(), _soft, at: vm.Matrix4.translation(_v(sx + 1.4, groundHeight(sx + 1.4, sz - 1.8), sz - 1.8)))
-      ..visible = false;
+    wildflowers = _add(fb.build(), _soft, at: at.clone()..translateByVector3(_v(2.6, ground(2.6, 1.6), 1.6)))..visible = false;
   }
 
   void _hilltop() {

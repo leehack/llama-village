@@ -94,19 +94,26 @@ class VillageModels implements ChatModel, EmbedModel, TopicChooser {
     LlamaEngine.configureLogging(level: LlamaLogLevel.none);
     final opened = <LlamaEngine>[];
     DecisionEngine? decisions;
-    Future<LlamaEngine> open(String path, {required int contextSize, int parallel = 1}) async {
+    Future<LlamaEngine> open(String path, {required int contextSize, int parallel = 1, int microBatch = 0}) async {
       final engine = LlamaEngine(LlamaBackend());
       opened.add(engine);
       await engine.loadModel(
         path,
-        modelParams: ModelParams(contextSize: contextSize, gpuLayers: ModelParams.maxGpuLayers, maxParallelSequences: parallel),
+        modelParams: ModelParams(
+          contextSize: contextSize,
+          gpuLayers: ModelParams.maxGpuLayers,
+          maxParallelSequences: parallel,
+          microBatchSize: microBatch,
+        ),
       );
       return engine;
     }
 
     try {
       onProgress?.call('Loading the dialogue model (gemma-4-E2B)…', 0.05);
-      final chat = await open(config.chat!, contextSize: 4096);
+      // Small prompt micro-batches keep each GPU submission short, so the
+      // renderer's frames slip in between them instead of waiting.
+      final chat = await open(config.chat!, contextSize: 4096, microBatch: 128);
       onProgress?.call('Loading the embedding model (EmbeddingGemma)…', 0.55);
       final embed = await open(config.embed!, contextSize: 2048, parallel: 8);
       LlamaEngine? laya;

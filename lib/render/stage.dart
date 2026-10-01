@@ -12,18 +12,18 @@ import 'world.dart';
 
 /// An orbit camera around a ground target that can follow an actor.
 class CameraRig {
-  vm.Vector3 target = vm.Vector3(1, 0, -6);
+  vm.Vector3 target = vm.Vector3(1, 0, -5);
   double yaw = 0;
-  double pitch = 0.66;
-  double distance = 78;
+  double pitch = 0.74;
+  double distance = 64;
   static const double fov = 28 * math.pi / 180;
 
   /// Called each frame for the point to follow; null for a free camera.
   vm.Vector3 Function()? follow;
   String? followName;
 
-  vm.Vector3 _target = vm.Vector3(1, 0, -6);
-  double _yaw = 0, _pitch = 0.66, _distance = 78;
+  vm.Vector3 _target = vm.Vector3(1, 0, -5);
+  double _yaw = 0, _pitch = 0.74, _distance = 64;
 
   void orbit(double dx, double dy) {
     yaw -= dx * 0.006;
@@ -46,10 +46,10 @@ class CameraRig {
   void overview() {
     follow = null;
     followName = null;
-    target = vm.Vector3(1, 0, -6);
+    target = vm.Vector3(1, 0, -5);
     yaw = 0;
-    pitch = 0.66;
-    distance = 78;
+    pitch = 0.74;
+    distance = 64;
   }
 
   void update(double dt) {
@@ -79,6 +79,8 @@ class VillageStage {
   final DashActor dash = DashActor();
   final CameraRig rig = CameraRig();
   late final Node _ring;
+  final List<Node> _rain = [];
+  double _rainY = 0;
   String? selected;
   double _wall = 0;
 
@@ -97,6 +99,28 @@ class VillageStage {
       ..castsShadows = false
       ..visible = false;
     scene.add(_ring);
+    final rain = rainCurtain();
+    final wet = pbr(rough: 0.3, emissive: vm.Vector3(0.7, 0.8, 1.0), emissiveStrength: 0.6);
+    for (var i = 0; i < 2; i++) {
+      final n = Node(mesh: Mesh(rain, wet))
+        ..castsShadows = false
+        ..visible = false;
+      _rain.add(n);
+      scene.add(n);
+    }
+  }
+
+  /// Rain falls in two stacked curtains that wrap around, so a storm costs
+  /// two draw calls.
+  void _updateRain(Village v, double dt) {
+    final on = v.storm;
+    _rainY = (_rainY + dt * 22) % rainHeight;
+    for (var i = 0; i < _rain.length; i++) {
+      _rain[i].visible = on;
+      if (on) {
+        _rain[i].localTransform = vm.Matrix4.translation(vm.Vector3(0, rainHeight * (i + 1) - _rainY - 4, -4));
+      }
+    }
   }
 
   void update(Village v, double dt) {
@@ -110,6 +134,7 @@ class VillageStage {
       if (l.name == 'Pip') a.scarfShown = v.scarf.state == 'returned';
     }
     dash.update(v, dt, _wall);
+    _updateRain(v, dt);
     final sel = selected == null ? null : llamas[selected];
     _ring.visible = sel != null && sel.visible;
     if (sel != null) {

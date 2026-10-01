@@ -356,8 +356,8 @@ class OptionsPanel extends StatelessWidget {
     return _Card(
       light: true,
       padding: const EdgeInsets.fromLTRB(14, 10, 10, 10),
-      child: SizedBox(
-        width: 560,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 580),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -371,7 +371,13 @@ class OptionsPanel extends StatelessWidget {
                   style: _t(15, weight: FontWeight.w900, color: ink),
                 ),
                 const SizedBox(width: 8),
-                Text('at ${theP(l.place)} · ${l.moodWord}', style: _t(12, color: const Color(0xFF8A8796))),
+                Flexible(
+                  child: Text(
+                    'at ${theP(l.place)} · ${l.moodWord}',
+                    overflow: TextOverflow.ellipsis,
+                    style: _t(12, color: const Color(0xFF8A8796)),
+                  ),
+                ),
                 const Spacer(),
                 IconButton(
                   tooltip: 'Leave (Esc)',
@@ -394,7 +400,9 @@ class OptionsPanel extends StatelessWidget {
         if (spinner) const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2.5, color: dashBlue)),
         if (icon != null) Icon(icon, color: dashBlue, size: 20),
         const SizedBox(width: 10),
-        Text(text, style: _t(14, color: ink)),
+        Flexible(
+          child: Text(text, style: _t(14, color: ink)),
+        ),
       ],
     ),
   );
@@ -677,8 +685,9 @@ class HelpHint extends StatelessWidget {
   Widget build(BuildContext context) => _Card(
     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
     child: Text(
-      'Click a llama: Dash flies over to talk  ·  Right-click: inspect only  ·  Click ground: fly there  ·  WASD: fly\n'
+      'Click a llama: Dash flies over to talk  ·  Right-click: inspect only  ·  Click ground or WASD: fly\n'
       'Drag: orbit  ·  Right-drag / two fingers: pan  ·  Scroll / pinch: zoom  ·  Space: pause  ·  F: follow  ·  O: overview',
+      textAlign: TextAlign.center,
       style: _t(11, color: Colors.white70),
     ),
   );

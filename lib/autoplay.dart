@@ -80,7 +80,10 @@ class Autoplay {
       case 4:
         final visit = v.dash.visit;
         if (visit != null && visit.stage == VisitStage.choosing && visit.options != null && _since > 1) {
-          _shot('3_dash_options');
+          if (!home.test.taken.contains('3_dash_options')) {
+            _shot('3_dash_options');
+            return;
+          }
           home.choose(0);
           _next();
         } else if (visit == null && _since > 2 || _since > 90) {
@@ -114,6 +117,10 @@ class Autoplay {
           _next();
         }
       case 8:
+        if (v.storm && !home.test.taken.contains('4b_storm') && _since > 2) {
+          _shot('4b_storm');
+          return;
+        }
         final hour = v.now.minute / 60;
         if (hour >= 21.6 || hour < 5) {
           home.setSpeed(1);

@@ -232,11 +232,17 @@ class VillageHomeState extends State<VillageHome> {
     }
     if (v == null || !_sceneReady) return;
     final step = math.min(dt, 0.1);
+    final watch = Stopwatch()..start();
     if (phase == Phase.playing) {
       _steer(v);
       v.advance(step * 1000);
     }
+    final simDone = watch.elapsedMicroseconds;
     stage.update(v, step);
+    if (test.capture) {
+      test.simMs.add(simDone / 1000);
+      test.sceneMs.add((watch.elapsedMicroseconds - simDone) / 1000);
+    }
     test.frame();
     _autoplay?.tick(dt);
     frame.value++;
@@ -494,20 +500,18 @@ class VillageHomeState extends State<VillageHome> {
               Inspector(data: v.inspect(stage.selected!), cast: v.cast, onClose: () => select(null), onTalk: () => talkTo(stage.selected!)),
         ),
       ),
+    // Between the log (left) and the inspector (right).
     Positioned(
-      left: 0,
-      right: 0,
+      left: 420,
+      right: stage.selected == null ? 14 : 388,
       bottom: 16,
       child: Center(
         child: ValueListenableBuilder<int>(
           valueListenable: frame,
           builder: (context, _, _) {
             final visit = v.dash.visit;
-            if (visit == null) return const Padding(padding: EdgeInsets.only(left: 380), child: HelpHint());
-            return Padding(
-              padding: EdgeInsets.only(left: _size.width > 1300 ? 0 : 380, right: stage.selected == null ? 0 : 380),
-              child: OptionsPanel(visit: visit, onChoose: choose, onMore: v.dash.sayMore, onLeave: v.dash.leave),
-            );
+            if (visit == null) return const HelpHint();
+            return OptionsPanel(visit: visit, onChoose: choose, onMore: v.dash.sayMore, onLeave: v.dash.leave);
           },
         ),
       ),

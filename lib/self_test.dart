@@ -35,6 +35,10 @@ class SelfTest {
   final List<double> _total = [];
   int _frames = 0;
   int _busyFrames = 0;
+
+  /// Milliseconds of sim and scene-sync work per frame.
+  final List<double> simMs = [], sceneMs = [];
+  bool _capturing = false;
   final Stopwatch _clock = Stopwatch();
 
   /// Whether the dialogue model is generating, sampled once per frame.
@@ -64,9 +68,7 @@ class SelfTest {
       _frames++;
       _raster.add(t.rasterDuration.inMicroseconds / 1000);
       _build.add(t.buildDuration.inMicroseconds / 1000);
-      final total = t.totalSpan.inMicroseconds / 1000;
-      _total.add(total);
-      if (total > worstFrameMs) worstFrameMs = total;
+      _total.add(t.totalSpan.inMicroseconds / 1000);
     }
     final seconds = _clock.elapsedMilliseconds / 1000;
     if (seconds < 2) return;
@@ -77,13 +79,23 @@ class SelfTest {
     }
 
     final fps = _frames / seconds;
+    final capturing = _capturing;
+    _capturing = _busy;
     final busy = _frames == 0 ? 0.0 : (_busyFrames / _frames).clamp(0.0, 1.0);
-    windows.add((fps, busy));
+    if (!capturing) {
+      windows.add((fps, busy));
+      for (final t in _total) {
+        if (t > worstFrameMs) worstFrameMs = t;
+      }
+    }
     log(
       'PERF fps=${fps.toStringAsFixed(1)} gen=${(busy * 100).round()}% raster p50=${pct(_raster, .5)} '
       'p99=${pct(_raster, .99)} build p50=${pct(_build, .5)} p99=${pct(_build, .99)} '
-      'frame max=${pct(_total, 1)} ms',
+      'frame max=${pct(_total, 1)} ms sim p50=${pct(simMs, .5)} p99=${pct(simMs, .99)} '
+      'scene p50=${pct(sceneMs, .5)} p99=${pct(sceneMs, .99)}${capturing ? ' (capture)' : ''}',
     );
+    simMs.clear();
+    sceneMs.clear();
     _frames = 0;
     _busyFrames = 0;
     _raster.clear();
@@ -115,6 +127,7 @@ class SelfTest {
     final dir = _dir;
     if (dir == null || _busy || taken.contains(name)) return;
     _busy = true;
+    _capturing = true;
     taken.add(name);
     try {
       await SchedulerBinding.instance.endOfFrame;
