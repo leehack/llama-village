@@ -218,6 +218,7 @@ class WeekAutoplay {
       }
       return;
     }
+    if (home.pauseMenu) return;
     if (_following == null) {
       final c = v.active.where((c) => v.speech[c.a.name]?.text != null || v.speech[c.b.name]?.text != null).firstOrNull;
       if (c == null) return;
