@@ -105,7 +105,7 @@ class BubbleLayer extends StatelessWidget {
       child: Stack(
         clipBehavior: Clip.none,
         children: [
-          if (leaders.isNotEmpty) Positioned.fill(child: CustomPaint(painter: _Leaders(leaders))),
+          if (leaders.isNotEmpty) Positioned.fill(child: CustomPaint(painter: LeaderLines(leaders))),
           ...children,
         ],
       ),
@@ -166,9 +166,10 @@ class _Spacing {
   });
 }
 
-/// Thin lines from a lifted bubble down to its speaker's name tag.
-class _Leaders extends CustomPainter {
-  _Leaders(this.lines);
+/// Thin lines from a lifted bubble down to its speaker's name tag (or, in
+/// a cutscene, to the spot a dream bubble belongs to).
+class LeaderLines extends CustomPainter {
+  LeaderLines(this.lines);
   final List<(Offset, Offset, Color)> lines;
 
   @override
@@ -186,7 +187,7 @@ class _Leaders extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_Leaders old) => true;
+  bool shouldRepaint(LeaderLines old) => true;
 }
 
 const double _bubbleMaxWidth = 250;

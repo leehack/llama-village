@@ -1,6 +1,10 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../render/stage.dart';
+import '../ui/bubble_layout.dart';
+import '../ui/bubbles.dart';
 import '../ui/palette.dart';
 import 'timeline.dart';
 
@@ -27,11 +31,16 @@ class CutsceneOverlay extends StatelessWidget {
   final bool highContrast;
   final double wall;
 
+  static final Expando<_DreamSpacing> _spacing = Expando();
+
   @override
   Widget build(BuildContext context) {
     final bar = size.height * 0.11 * player.letterbox;
     final dots = '.' * (1 + (wall * 3).floor() % 3);
+    final spacing = _spacing[player] ??= _DreamSpacing();
     final children = <Widget>[];
+    final leaders = <(Offset, Offset, Color)>[];
+    final offsets = _stackDreams(spacing, bar, dots);
     for (final (cue, alpha) in player.texts) {
       final text = cue.text ?? dots;
       switch (cue.kind) {
@@ -53,17 +62,22 @@ class CutsceneOverlay extends StatelessWidget {
           final anchor = cue.anchor;
           final at = anchor == null ? null : stage.toScreen(anchor, size);
           if (at == null) continue;
+          final (dx, dy) = offsets[cue] ?? (0.0, 0.0);
+          if (dx * dx + dy * dy > 16) {
+            final color = cue.speaker == null || highContrast ? Colors.white : accentOf(cue.speaker!);
+            leaders.add((Offset(at.dx + dx, at.dy - dy), at, color.withValues(alpha: color.a * alpha)));
+          }
           children.add(
             Positioned(
-              left: at.dx,
-              top: at.dy,
+              left: at.dx + dx,
+              top: at.dy - dy,
               child: FractionalTranslation(
                 translation: const Offset(-0.5, -1),
                 child: Opacity(
                   opacity: alpha,
                   child: _Dream(
                     speaker: cue.speaker,
-                    text: cue.kind == TextKind.song && cue.text != null ? '♪ $text ♪' : text,
+                    text: _dreamText(cue, text),
                     scale: textScale,
                     highContrast: highContrast,
                     song: cue.kind == TextKind.song,
@@ -109,6 +123,7 @@ class CutsceneOverlay extends StatelessWidget {
             height: bar,
             child: const ColoredBox(color: Colors.black),
           ),
+          if (leaders.isNotEmpty) Positioned.fill(child: CustomPaint(painter: LeaderLines(leaders))),
           ...children,
           Positioned(
             right: 20,
@@ -122,7 +137,120 @@ class CutsceneOverlay extends StatelessWidget {
       ),
     );
   }
+
+  /// Lays out the dream and song bubbles like speech bubbles, so the
+  /// festival's singers and the night's dreamers never cover each other or
+  /// the subtitle, and stay between the letterbox bars.
+  Map<TextCue, (double, double)> _stackDreams(_DreamSpacing spacing, double bar, String dots) {
+    final requests = <BubbleRequest>[];
+    final byId = <String, TextCue>{};
+    final keepClear = <Box>[];
+    for (final (cue, _) in player.texts) {
+      final text = cue.text ?? dots;
+      if (cue.kind == TextKind.subtitle) {
+        final sub = spacing.subtitleSize(cue.speaker, text, textScale, math.max(0.0, size.width - 80));
+        keepClear.add(Box((size.width - sub.width) / 2, size.height - bar - 22 - sub.height, sub.width, sub.height));
+        continue;
+      }
+      if (cue.kind != TextKind.dream && cue.kind != TextKind.song) continue;
+      final anchor = cue.anchor;
+      final at = anchor == null ? null : stage.toScreen(anchor, size);
+      if (at == null) continue;
+      final b = spacing.dreamSize(cue, _dreamText(cue, text), textScale, highContrast);
+      final id = '${identityHashCode(cue)}';
+      byId[id] = cue;
+      requests.add(BubbleRequest(id, Box(at.dx - b.width / 2, at.dy - b.height, b.width, b.height)));
+    }
+    if (requests.isEmpty) return const {};
+    final laid = spacing.smoother.step(
+      layoutBubbles(requests, keepClear: keepClear, screen: Box(8, bar + 8, size.width - 16, size.height - 2 * bar - 16)),
+      spacing.tick(wall),
+    );
+    return {for (final MapEntry(:key, :value) in laid.entries) byId[key]!: value};
+  }
 }
+
+String _dreamText(TextCue cue, String text) => cue.kind == TextKind.song && cue.text != null ? '♪ $text ♪' : text;
+
+/// Measured dream, song and subtitle sizes, and the eased dream offsets.
+class _DreamSpacing {
+  final BubbleSmoother smoother = BubbleSmoother();
+  final Map<(TextCue, String, double, bool), Size> _dreams = {};
+  final Map<(String?, String, double, double), Size> _subtitles = {};
+  double? _lastWall;
+
+  double tick(double wall) {
+    final dt = _lastWall == null ? 1.0 : (wall - _lastWall!).clamp(0.0, 1.0);
+    _lastWall = wall;
+    return dt;
+  }
+
+  Size dreamSize(TextCue cue, String text, double scale, bool highContrast) {
+    if (_dreams.length > 64) _dreams.clear();
+    return _dreams.putIfAbsent((cue, text, scale, highContrast), () {
+      final song = cue.kind == TextKind.song;
+      final border = highContrast ? 6.0 : 4.0;
+      final inner = 300 * scale - 32 - border;
+      final body = TextPainter(
+        text: TextSpan(
+          text: text,
+          style: _dreamStyle(scale, highContrast, song: song),
+        ),
+        textAlign: TextAlign.center,
+        textDirection: TextDirection.ltr,
+      )..layout(maxWidth: inner);
+      var width = body.width, height = body.height;
+      body.dispose();
+      final speaker = cue.speaker;
+      if (speaker != null) {
+        final label = TextPainter(
+          text: TextSpan(text: song ? speaker : '$speaker dreams…', style: _speakerStyle(scale)),
+          textDirection: TextDirection.ltr,
+        )..layout(maxWidth: inner);
+        width = math.max(width, label.width);
+        height += label.height;
+        label.dispose();
+      }
+      return Size(width + 32 + border, height + 22 + border + (song ? 0 : 3 + 12 + 3 + 7));
+    });
+  }
+
+  Size subtitleSize(String? speaker, String text, double scale, double maxWidth) {
+    if (_subtitles.length > 16) _subtitles.clear();
+    return _subtitles.putIfAbsent((speaker, text, scale, maxWidth), () {
+      final painter = TextPainter(
+        text: TextSpan(
+          children: [
+            if (speaker != null)
+              TextSpan(
+                text: '$speaker  ',
+                style: const TextStyle(fontWeight: FontWeight.w900),
+              ),
+            TextSpan(text: text),
+          ],
+          style: _subtitleStyle(scale),
+        ),
+        textAlign: TextAlign.center,
+        textDirection: TextDirection.ltr,
+      )..layout(maxWidth: math.max(0.0, math.min(820 * scale, maxWidth) - 36));
+      final size = Size(painter.width + 36 + 4, painter.height + 20 + 4);
+      painter.dispose();
+      return size;
+    });
+  }
+}
+
+TextStyle _subtitleStyle(double scale) => TextStyle(fontSize: 19 * scale, height: 1.35, color: Colors.white, fontWeight: FontWeight.w600);
+
+TextStyle _speakerStyle(double scale) => TextStyle(fontSize: 11 * scale, fontWeight: FontWeight.w900);
+
+TextStyle _dreamStyle(double scale, bool highContrast, {required bool song}) => TextStyle(
+  fontSize: 14 * scale,
+  height: 1.3,
+  fontStyle: song ? FontStyle.normal : FontStyle.italic,
+  fontWeight: highContrast ? FontWeight.w800 : FontWeight.w600,
+  color: highContrast ? Colors.black : ink,
+);
 
 class _Subtitle extends StatelessWidget {
   const _Subtitle({required this.speaker, required this.text, required this.scale, required this.highContrast});
@@ -152,7 +280,7 @@ class _Subtitle extends StatelessWidget {
         ],
       ),
       textAlign: TextAlign.center,
-      style: TextStyle(fontSize: 19 * scale, height: 1.35, color: Colors.white, fontWeight: FontWeight.w600),
+      style: _subtitleStyle(scale),
     ),
   );
 }
@@ -202,20 +330,11 @@ class _Dream extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               if (speaker != null)
-                Text(
-                  song ? speaker! : '$speaker dreams…',
-                  style: TextStyle(fontSize: 11 * scale, fontWeight: FontWeight.w900, color: highContrast ? Colors.black : edge),
-                ),
+                Text(song ? speaker! : '$speaker dreams…', style: _speakerStyle(scale).copyWith(color: highContrast ? Colors.black : edge)),
               Text(
                 text,
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 14 * scale,
-                  height: 1.3,
-                  fontStyle: song ? FontStyle.normal : FontStyle.italic,
-                  fontWeight: highContrast ? FontWeight.w800 : FontWeight.w600,
-                  color: highContrast ? Colors.black : ink,
-                ),
+                style: _dreamStyle(scale, highContrast, song: song),
               ),
             ],
           ),
