@@ -1,6 +1,26 @@
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+/// How long speech stays up: [pace] multiplies each bubble's display time.
+enum TextSpeed {
+  slow(1.5),
+  normal(1.0),
+  fast(0.7);
+
+  const TextSpeed(this.pace);
+  final double pace;
+}
+
+/// UI text scale for bubbles, subtitles and cards.
+enum TextSize {
+  normal(1.0),
+  large(1.2),
+  larger(1.4);
+
+  const TextSize(this.scale);
+  final double scale;
+}
+
 /// Player settings, persisted with shared_preferences.
 class VillageSettings extends ChangeNotifier {
   VillageSettings._(this._prefs);
@@ -12,12 +32,18 @@ class VillageSettings extends ChangeNotifier {
   static const int defaultFps = 60;
   static const double defaultMusicVolume = 0.5;
   static const double defaultSfxVolume = 0.7;
+  static const List<int> speedChoices = [1, 2, 4];
 
   final SharedPreferences? _prefs;
   int _fps = defaultFps;
   double _music = defaultMusicVolume;
   double _sfx = defaultSfxVolume;
   bool _muted = false;
+  TextSpeed _textSpeed = TextSpeed.normal;
+  int _defaultSpeed = 1;
+  TextSize _textSize = TextSize.normal;
+  bool _reducedMotion = false;
+  bool _highContrast = false;
 
   static Future<VillageSettings> load() async {
     final prefs = await SharedPreferences.getInstance();
@@ -27,6 +53,12 @@ class VillageSettings extends ChangeNotifier {
     s._music = (prefs.getDouble('musicVolume') ?? defaultMusicVolume).clamp(0.0, 1.0);
     s._sfx = (prefs.getDouble('sfxVolume') ?? defaultSfxVolume).clamp(0.0, 1.0);
     s._muted = prefs.getBool('muted') ?? false;
+    s._textSpeed = TextSpeed.values.where((e) => e.name == prefs.getString('textSpeed')).firstOrNull ?? TextSpeed.normal;
+    final speed = prefs.getInt('defaultSpeed');
+    if (speed != null && speedChoices.contains(speed)) s._defaultSpeed = speed;
+    s._textSize = TextSize.values.where((e) => e.name == prefs.getString('textSize')).firstOrNull ?? TextSize.normal;
+    s._reducedMotion = prefs.getBool('reducedMotion') ?? false;
+    s._highContrast = prefs.getBool('highContrast') ?? false;
     return s;
   }
 
@@ -61,6 +93,49 @@ class VillageSettings extends ChangeNotifier {
     if (value == _muted) return;
     _muted = value;
     _prefs?.setBool('muted', value);
+    notifyListeners();
+  }
+
+  TextSpeed get textSpeed => _textSpeed;
+  set textSpeed(TextSpeed value) {
+    if (value == _textSpeed) return;
+    _textSpeed = value;
+    _prefs?.setString('textSpeed', value.name);
+    notifyListeners();
+  }
+
+  /// The time speed a new game or a loaded save starts at.
+  int get defaultSpeed => _defaultSpeed;
+  set defaultSpeed(int value) {
+    if (!speedChoices.contains(value) || value == _defaultSpeed) return;
+    _defaultSpeed = value;
+    _prefs?.setInt('defaultSpeed', value);
+    notifyListeners();
+  }
+
+  TextSize get textSize => _textSize;
+  set textSize(TextSize value) {
+    if (value == _textSize) return;
+    _textSize = value;
+    _prefs?.setString('textSize', value.name);
+    notifyListeners();
+  }
+
+  /// Shortens camera moves and turns off camera shake.
+  bool get reducedMotion => _reducedMotion;
+  set reducedMotion(bool value) {
+    if (value == _reducedMotion) return;
+    _reducedMotion = value;
+    _prefs?.setBool('reducedMotion', value);
+    notifyListeners();
+  }
+
+  /// Black-on-white speech bubbles with a heavy outline.
+  bool get highContrast => _highContrast;
+  set highContrast(bool value) {
+    if (value == _highContrast) return;
+    _highContrast = value;
+    _prefs?.setBool('highContrast', value);
     notifyListeners();
   }
 }

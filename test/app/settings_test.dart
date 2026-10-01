@@ -51,4 +51,38 @@ void main() {
     VillageSettings.ephemeral().fps = 30;
     expect((await SharedPreferences.getInstance()).getInt('fps'), isNull);
   });
+
+  test('gameplay and accessibility settings default sensibly and persist', () async {
+    SharedPreferences.setMockInitialValues({});
+    final s = await VillageSettings.load();
+    expect(s.textSpeed, TextSpeed.normal);
+    expect(s.defaultSpeed, 1);
+    expect(s.textSize, TextSize.normal);
+    expect(s.reducedMotion, isFalse);
+    expect(s.highContrast, isFalse);
+    var notified = 0;
+    s.addListener(() => notified++);
+    s
+      ..textSpeed = TextSpeed.slow
+      ..defaultSpeed = 4
+      ..defaultSpeed = 3
+      ..textSize = TextSize.larger
+      ..reducedMotion = true
+      ..highContrast = true;
+    expect(notified, 5, reason: 'an unsupported speed is ignored');
+    final again = await VillageSettings.load();
+    expect(again.textSpeed.pace, 1.5);
+    expect(again.defaultSpeed, 4);
+    expect(again.textSize.scale, 1.4);
+    expect(again.reducedMotion, isTrue);
+    expect(again.highContrast, isTrue);
+  });
+
+  test('unknown stored values fall back to the defaults', () async {
+    SharedPreferences.setMockInitialValues({'textSpeed': 'warp', 'textSize': 'huge', 'defaultSpeed': 32});
+    final s = await VillageSettings.load();
+    expect(s.textSpeed, TextSpeed.normal);
+    expect(s.textSize, TextSize.normal);
+    expect(s.defaultSpeed, 1);
+  });
 }
