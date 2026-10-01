@@ -69,8 +69,8 @@ void main() {
         expect(user, contains('Pip, Mo, June, Bramble, Clover, Dash'), reason: what);
       }
     }
-    expect(asks['Dash\'s options']!.single.$2, contains('Keep the JSON keys in English'));
-    expect(asks['Dash\'s options']!.single.$3, isTrue, reason: 'the options are grammar-constrained JSON');
+    expect(asks['Dash\'s options']!.first.$2, contains('Keep the JSON keys in English'));
+    expect(asks['Dash\'s options']!.first.$3, isTrue, reason: 'the options are grammar-constrained JSON');
     final internal = [...ko.where('Write your plan for today'), ...ko.where('For each llama: mood change')];
     expect(internal, isNotEmpty);
     for (final (system, user, _) in internal) {
@@ -122,6 +122,29 @@ void main() {
     expect(rumour.keywordHit('Mo의 빵은 정말 맛있어.'), isFalse);
     expect(v.kb['bramble_poems'].keywordHit('June에게 시를 쓰는 건 바로 나야.'), isTrue);
     expect(v.kb['storm_forecast'].keywordHit("Un orage va éclater cet après-midi, je vous préviens."), isTrue);
+  });
+
+  test('an answer in the wrong language does not count', () async {
+    expect(speaksIn('June이 웃었어요.', Lang.ko), isTrue);
+    expect(speaksIn('Bramble watched the lanterns fade.', Lang.ko), isFalse);
+    expect(speaksIn("Bramble regarda les lanternes s'éteindre.", Lang.fr), isTrue);
+    expect(speaksIn('Bramble watched the lanterns fade.', Lang.fr), isFalse);
+    final v = Village(chat: CannedChat(), embed: HashEmbed(), seed: 1, msPerMinute: 10)..lang = Lang.ko;
+    final english = await v.chat.text<String>(
+      'thought',
+      0,
+      'x',
+      parse: (raw) => 'An English thought here.',
+      fallback: () => '',
+      seed: 1,
+      lang: Lang.ko,
+    );
+    expect(english, '', reason: 'retried, then the fallback');
+    expect(v.metrics.json['thought']!['fallback'], 1);
+    expect(
+      dashOptionsFrom({'gossip': 'June hides berries under her bed.', 'help': '내가 반죽 좀 도와줄까?'}, ['gossip', 'help'], lang: Lang.ko),
+      isNull,
+    );
   });
 
   test('Korean lines are not mistaken for repeats', () {

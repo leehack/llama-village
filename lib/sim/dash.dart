@@ -379,14 +379,17 @@ class Dash {
           Priority.dashOptions,
           asked,
           dashOptionSchema(picked),
-          validate: (json) => dashOptionsFrom(json, picked) != null,
+          validate: (json) => dashOptionsFrom(json, picked, lang: v.lang) != null,
           fallback: () => const {},
           maxTokens: tokensFor(v.lang, 220),
           temp: 0.85,
           seed: v.rng.nextInt(1 << 30),
           lang: v.lang,
         )
-        .then((json) => dashOptionsFrom(json, picked, about: about, praiseAbout: praiseAbout, tell: tell?.id, item: item) ?? canned())
+        .then(
+          (json) =>
+              dashOptionsFrom(json, picked, about: about, praiseAbout: praiseAbout, tell: tell?.id, item: item, lang: v.lang) ?? canned(),
+        )
         .then((options) {
           if (visit != dv) return;
           dv.options = options;
@@ -605,13 +608,14 @@ List<DashOption>? dashOptionsFrom(
   String? praiseAbout,
   String? tell,
   String? item,
+  Lang lang = Lang.en,
 }) {
   final found = <String, String>{};
   for (final i in picked) {
     final raw = json[i];
     if (raw is! String) continue;
     final text = cleanLine(raw.replaceAll(RegExp(r'^<|>$'), ''));
-    if (text.split(' ').length >= 3) found[i] = text;
+    if (text.split(' ').length >= 3 && speaksIn(text, lang)) found[i] = text;
   }
   if (found.length < 3) return null;
   return [

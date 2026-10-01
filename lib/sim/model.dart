@@ -209,7 +209,9 @@ class ChatRuntime {
         } catch (_) {
           break;
         }
-        final value = parse(raw);
+        var value = parse(raw);
+        // An answer in the wrong language is retried like one that does not parse.
+        if (value is String && !speaksIn(value, lang)) value = null;
         if (value != null) {
           metrics.count(type, attempt == 0 ? 'first_try' : 'after_retry');
           return value;

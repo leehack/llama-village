@@ -200,7 +200,7 @@ String? parseStoryPage(String raw) {
   if (end < 0) return null;
   text = text.substring(0, end + 1).trim();
   final sentences = RegExp(r'[.!?…。]').allMatches(text).length;
-  if (text.length < 120 || sentences < 2) return null;
+  if (text.length < 50 || sentences < 2) return null;
   return text.length > 1400 ? null : text;
 }
 

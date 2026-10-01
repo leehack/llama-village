@@ -50,6 +50,14 @@ String speakIn(Lang lang, {bool json = false, bool story = false}) => switch (la
   ].join(' '),
 };
 
+/// Whether [text] is written in [lang], to reject an answer the model gave
+/// in English anyway: Korean needs Hangul; French must not read as English.
+bool speaksIn(String text, Lang lang) => switch (lang) {
+  Lang.en => true,
+  Lang.ko => RegExp('[가-힣]').hasMatch(text),
+  Lang.fr => !RegExp(r'\b(the|and|was|were|with|you|your|is|are)\b', caseSensitive: false).hasMatch(text),
+};
+
 /// [prompt] with [lang]'s closing instruction.
 String inLang(String prompt, Lang lang, {bool json = false, bool story = false}) =>
     lang == Lang.en ? prompt : '$prompt\n\n${speakIn(lang, json: json, story: story)}';
