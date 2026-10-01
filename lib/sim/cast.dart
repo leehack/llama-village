@@ -83,6 +83,10 @@ class Llama {
 
   /// (when, with whom, summary) of past conversations.
   final List<(GameTime, String, String)> diary = [];
+
+  /// (when, with whom, fact id) of the topics this llama brought up, so it
+  /// does not raise the same one again and again.
+  final List<(GameTime, String, String)> topicsRaised = [];
   final Set<String> searched = {};
   final List<String> reflections = [];
 

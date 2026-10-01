@@ -453,12 +453,13 @@ class Village {
         continue;
       }
       final prompt = reflectionPrompt(l, day);
+      final at = now;
       chat
           .text<String>(
             'reflection',
             Priority.dashOptions,
             prompt,
-            parse: (raw) => parseLine(raw, [l.name]),
+            parse: (raw) => checkLine(parseLine(raw, [l.name]), at: at),
             fallback: () => quietEveningIn(lang),
             maxTokens: tokensFor(lang, 50),
             seed: rng.nextInt(1 << 30),
@@ -607,9 +608,16 @@ class Village {
     return f.kind == FactKind.deed && f.text.startsWith('${b.name} ') || (f.id.startsWith('argument') && f.text.contains(b.name));
   }
 
+  /// How long a raised topic counts against raising it again.
+  static const int topicCooldown = 4 * 60;
+
   TopicCase topicCase(Llama a, Llama b) {
     final goals = goalsFor(a);
     final options = <TopicOption>[];
+    final lately = [
+      for (final (at, _, topic) in a.topicsRaised)
+        if (now.minutesSince(at) < topicCooldown) topic,
+    ];
     for (final f in relevantFacts(this, a, listener: b, limit: 8)) {
       final k = f.knownBy[a.name]!;
       final goalW = goals.where((g) => g.topic == f.id).fold<double>(0, (m, g) => math.max(m, g.weight));
@@ -628,6 +636,8 @@ class Village {
           juicy:
               f.kind == FactKind.rumour || (f.kind == FactKind.secret && !own) || (f.kind == FactKind.deed && !f.id.startsWith('argument')),
           public: k.how == 'announced' || f.knownBy.length >= 5,
+          toldListener: a.topicsRaised.any((t) => t.$2 == b.name && t.$3 == f.id),
+          raisedLately: lately.where((t) => t == f.id).length,
         ),
       );
     }
@@ -636,15 +646,27 @@ class Village {
     ], options);
   }
 
-  Future<void> _openConversation(Conversation c) async {
+  /// Picks what [c]'s opener brings up.
+  Future<void> pickTopic(Conversation c) async {
     final tc = topicCase(c.a, c.b);
-    if (tc.options.isNotEmpty) {
-      final watch = Stopwatch()..start();
-      final (topic, source) = await gatedTopic(laya, tc);
-      if (source == 'laya') metrics.add(CallRecord('topic_laya', watch.elapsedMicroseconds / 1000));
-      c.topic = topic;
-      c.topicSource = source;
-    }
+    if (tc.options.isEmpty) return;
+    final watch = Stopwatch()..start();
+    final (topic, source) = await gatedTopic(laya, tc);
+    if (source == 'laya') metrics.add(CallRecord('topic_laya', watch.elapsedMicroseconds / 1000));
+    // Everything worth saying was already said to this listener: small talk.
+    if (tc.options.firstWhere((o) => o.id == topic).toldListener) return;
+    c.topic = topic;
+    c.topicSource = source;
+    c.a.topicsRaised.add((now, c.b.name, topic));
+    if (c.a.topicsRaised.length > 60) c.a.topicsRaised.removeAt(0);
+  }
+
+  /// [line], unless it gets the time of day wrong for [at] (now by
+  /// default); a null answer is written once more, then falls back.
+  String? checkLine(String? line, {GameTime? at}) => line == null || timeSlip(line, at ?? now, lang) ? null : line;
+
+  Future<void> _openConversation(Conversation c) async {
+    await pickTopic(c);
     log.talkStarted(c, kb);
     _generateTurn(c, 0);
   }
@@ -661,7 +683,7 @@ class Village {
           'dialogue',
           Priority.dialogue,
           prompt,
-          parse: (raw) => parseLine(raw, [s.name, o.name], previous: [for (final l in c.lines) l.text]),
+          parse: (raw) => checkLine(parseLine(raw, [s.name, o.name], previous: [for (final l in c.lines) l.text]), at: at),
           fallback: () {
             final lines = fallbackLinesIn(lang);
             return '\u0000${lines[rng.nextInt(lines.length)]}';
@@ -800,13 +822,14 @@ class Village {
   void think(Llama l) {
     _lastThought[l.name] = now;
     final prompt = thoughtPrompt(l);
+    final at = now;
     final pending = _say(l.name, null, SpeechKind.thought);
     chat
         .text<String>(
           'thought',
           Priority.thought,
           prompt,
-          parse: (raw) => parseLine(raw, [l.name]),
+          parse: (raw) => checkLine(parseLine(raw, [l.name]), at: at),
           fallback: () => '',
           maxTokens: tokensFor(lang, 32),
           seed: rng.nextInt(1 << 30),
@@ -841,8 +864,11 @@ class Village {
         'You are ${l.name} (${pronounOf(l.name)}), the ${l.job} (${l.traits}). Mood: ${l.moodWord}. ${_doing(l)} $need',
         if (goals.isNotEmpty) 'What you want: ${goals.take(2).map((g) => g.text).join('; ')}.',
         'On your mind: ${facts.map((f) => f.text).join(' ')}',
+        clockNote(now),
         '',
-        'Write one short private thought, first person, in character, under 14 words. No quotes, no name prefix.',
+        'Write one short private thought that ${l.name} thinks to themself about one specific thing above, under 14 words, '
+            'in ${l.name}\'s own voice: first person ("I", "my"), never "${l.name}" or "${pronounOf(l.name)}", '
+            'not a description of what ${l.name} is doing. No quotes, no name prefix.',
       ].join('\n'),
       lang,
     );
@@ -854,13 +880,16 @@ class Village {
     final today = l.diary.where((d) => d.$1.day == day).toList().reversed.take(3).toList();
     return inLang(
       [
-        'You are ${l.name}, the ${l.job} (${l.traits}). Mood: ${l.moodWord}. It is the night of day $day; you lie down in your hut.',
+        'You are ${l.name} (${pronounOf(l.name)}), the ${l.job} (${l.traits}). Mood: ${l.moodWord}. '
+            'It is the night of day $day, bedtime.',
         'What you know:',
         for (final f in facts) '- ${f.text} (${kb.label(l.name, f, now)})',
         if (today.isNotEmpty) 'Today you talked with: ${today.map((d) => '${d.$2} (${d.$3})').join('; ')}',
+        clockNote(now),
         '',
-        'In first person and in character, write one sentence about one specific thing that happened today (name who or what) '
-            'and how you feel about it. Only mention what you know.',
+        'In first person ("I") and in character, write one sentence about one specific thing that happened today (name who or what) '
+            'and how you feel about it, in the past tense; anything still to come is tomorrow or later. '
+            'Not about going to bed, the moon or the stars. Only mention what you know.',
       ].join('\n'),
       lang,
     );

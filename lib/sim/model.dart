@@ -143,7 +143,7 @@ class ChatRuntime {
   static const String system =
       'You write a lively, slightly dramatic village soap opera about talking llamas. '
       'Keep every line short, concrete and in character. Characters only mention things listed '
-      'as known to them; they never invent other secrets. Never use emojis. Never mention being an AI.';
+      'as known to them; they never invent other secrets. Never use emojis. Never mention being an AI. $castGenders';
 
   /// [system], plus the language the player reads for calls in [lang].
   static String systemIn(Lang lang) => lang == Lang.en ? system : '$system ${writeIn(lang)}';

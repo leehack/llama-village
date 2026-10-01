@@ -31,13 +31,22 @@ release build on an M4 Max, from the self-test's per-call metrics (the
 | Morning plans | gemma-4-E2B | Each llama plans its day from what it knows and wants | Free text, `HH place \| activity` lines, parsed; a work-day plan if that fails | 1.4-2.8 s each, five per morning while the clock waits at 05:59 |
 | Evening reflections (dreams) | gemma-4-E2B | One first-person sentence about the day, shown as the night's dream bubble and fed into the next morning's plan | Free text | about 0.6 s |
 | Cutscene lines | gemma-4-E2B | Clover's festival announcement and each singer's song line | Free text | 0.25-0.5 s |
-| Epilogue cards | gemma-4-E2B | One storybook-style sentence per llama from its final state and what it knows | Free text | about 0.35 s each |
+| Epilogue cards | gemma-4-E2B | One warm storybook-style sentence per llama from its final state, what it knows and its weightiest moments of the week | Free text | about 0.35 s each |
 | The storybook | gemma-4-E2B | One fairy-tale page per day and one for the ending, retold from that day's digest of what really happened | Free text, one paragraph of 80-120 words, streamed onto the page; a page written by rules if it fails | 1.6-2.2 s per page (3.1 s), 10-14 s for the book |
-| Casual-topic choice | Laya (optional) | Picks what a llama brings up in small talk among the options the rules allow (never its own secret unless confessing, never news the listener told it); a topic tied to a strong goal is chosen by the rules | One choice among the options | about 0.1 s |
+| Casual-topic choice | Laya (optional) | Picks what a llama brings up in small talk among the options the rules allow (never its own secret unless confessing, never news the listener told it, never what it already told this listener); a topic tied to a strong goal is chosen by the rules | One choice among the options | about 0.1 s |
 
 Which facts go into a prompt is a rule (`relevantFacts` scores goals,
 recency, secrets and the listener); the embeddings only check what was
-said. Every job whose output the player reads runs in the chosen language
+said. So is novelty: a llama remembers the topics it raised, never brings
+one up twice with the same listener (it makes small talk instead) and
+rests a topic it has raised a few times in the last four game hours, so
+Bramble does not tell everyone, every hour, that the bread rumour is
+false. Thoughts, reflections and lines are told the clock (day, hour,
+what is tomorrow) and to speak of the past in the past tense; a line
+that still calls a part of today that is over "to come" ("the storm will
+hit this afternoon" at bedtime), or greets the wrong time of day, is
+written once more and then dropped or replaced (`timeSlip` in
+`lib/sim/lang.dart`). Every job whose output the player reads runs in the chosen language
 (see Languages); plans, outcomes and topic choices stay English.
 
 ### What is not AI, and why
@@ -261,8 +270,11 @@ dialogue, thoughts, evening reflections, Dash's options and the replies,
 the epilogue cards, the cutscene lines and the storybook. The prompts
 stay in English, since the sim's facts, goals and intents are English;
 each one ends with a short instruction in the target language (with the
-game's names for the Berry Festival, the Golden Bell and so on), and the
-call runs under a system prompt that names the language. The names Pip,
+game's names for the Berry Festival, the Golden Bell and so on, a short
+style note, and who is female and who is male in that language's own
+words, since French agreement depends on it: "Mo est content"), and the
+call runs under a system prompt that names the language and the cast's
+pronouns. The names Pip,
 Mo, June, Bramble, Clover and Dash are never translated; Korean output
 that spells them in Hangul (피프, 브램블) gets them back in English
 letters, with the particle fixed to match (Pip이, Mo가). Plans,
@@ -283,7 +295,10 @@ in English, so in Korean and French the note names only the place.
 
 An epilogue card is grounded in the same ending facts as the
 storybook's last page: the ending that was decided, the festival winner
-and how the village stands. A line that names a different winner, or a
+and how the village stands. It also gets that llama's three weightiest
+moments of the week from the storybook's journal, the storybook register
+and an example sentence in the language (about another llama, so it is
+not copied), and asks for one concrete detail and a gentle, hopeful end. A line that names a different winner, or a
 llama fainting who did not, is written once more and then replaced by
 the rule-made line.
 
@@ -525,6 +540,13 @@ memory returns to its baseline on the title screen. A locked screen or a
 sleeping display sends no vsync, which stops the game; for an unattended
 run, `VILLAGE_KEEP_TICKING=1` steps the game and pumps frames itself
 meanwhile.
+
+`dart run tool/writing_sample.dart <en|ko|fr> <out.md> [seed]` loads the
+real models without the app and writes a sample of what the llamas write
+in that language (which topic Bramble brings up conversation after
+conversation, two conversations, daytime thoughts, the bedtime
+reflections before the storm and the epilogue cards), for checking the
+writing after a prompt change.
 
 `VILLAGE_TOUR=shots` (with `VILLAGE_CAPTURE=1`) starts a new game and
 follows one day without the week's cutscenes, capturing the looks and

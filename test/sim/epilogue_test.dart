@@ -6,6 +6,7 @@ import 'package:llama_village/sim/epilogue.dart';
 import 'package:llama_village/sim/influence.dart';
 import 'package:llama_village/sim/lang.dart';
 import 'package:llama_village/sim/model.dart';
+import 'package:llama_village/sim/story.dart';
 import 'package:llama_village/sim/village.dart';
 
 class _Fixed implements ChatModel {
@@ -74,6 +75,27 @@ void main() {
     expect(epiloguePrompt(v, v.byName('Clover'), i), contains('ran the Berry Festival'));
   });
 
+  test('the epilogue prompt names the llama\'s own moments of the week and shows the tone in its language', () {
+    final v = Village(chat: CannedChat(), embed: HashEmbed(), seed: 1)..lang = Lang.ko;
+    v.festival
+      ..state = 'judged'
+      ..winner = 'Mo';
+    v.journal.beats.addAll([
+      StoryBeat(1, 2, 9 * 60, 'thread', 'Mo baked a honey loaf for Pip.', 5, who: ['Mo', 'Pip']),
+      StoryBeat(2, 3, 15 * 60, 'world', 'A storm hit the village.', 6),
+      StoryBeat(3, 4, 11 * 60, 'talk', 'June and Clover talked at the bakery.', 2, who: ['June', 'Clover']),
+    ]);
+    final i = measure(v);
+    final mo = epiloguePrompt(v, v.byName('Mo'), i);
+    expect(mo, contains("Mo's week:"));
+    expect(mo, contains('(day 2, in the morning) Mo baked a honey loaf for Pip.'));
+    expect(mo, isNot(contains('June and Clover talked')));
+    // The example sentence is never about the llama being written.
+    expect(mo, contains('June은'));
+    expect(epiloguePrompt(v, v.byName('Pip'), i), contains('Mo는'));
+    expect(mo, endsWith(speakIn(Lang.ko, story: true)));
+  });
+
   test('a failed generation falls back to a deterministic line', () async {
     final v = Village(chat: _Broken(), embed: HashEmbed(), seed: 1);
     v.festival
@@ -117,6 +139,17 @@ void main() {
     expect(prompt, contains('Only Pip won the Golden Bell'));
     final facts = endingFacts(v, i, verdict).map((f) => f.english).toList();
     expect(facts, contains('Pip won the Golden Bell at the Berry Festival.'));
+  });
+
+  test('a line about the week in general, not naming its llama, is written again', () async {
+    final script = _Scripted([
+      'La semaine de la fête était finie, et la Vallée des Baies demeura tranquille.',
+      'Clover rangea ses lanternes en souriant, déjà pleine d\'idées pour la fête de l\'an prochain.',
+    ]);
+    final v = judged(script, lang: Lang.fr);
+    final line = await epilogueLine(v, v.byName('Clover'), measure(v));
+    expect(script.calls, 2);
+    expect(line, startsWith('Clover rangea ses lanternes'));
   });
 
   test('a line naming the wrong winner is written again, then replaced by the rules', () async {

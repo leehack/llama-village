@@ -41,6 +41,7 @@ void main() {
     expect(v.embed.cache, isNotEmpty, reason: 'conversations embed what was said');
     expect(v.kb.transfers, isNotEmpty);
     expect(v.cast.any((l) => l.diary.isNotEmpty), isTrue);
+    expect(v.cast.any((l) => l.topicsRaised.isNotEmpty), isTrue, reason: 'the topics raised are saved, so none repeats after a load');
 
     final copy = _reload(v);
     expect(_save(copy), _save(v));

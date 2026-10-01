@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:llama_village/sim/canned.dart';
+import 'package:llama_village/sim/clock.dart';
 import 'package:llama_village/sim/dash.dart';
 import 'package:llama_village/sim/dialogue.dart';
 import 'package:llama_village/sim/epilogue.dart';
@@ -33,6 +34,25 @@ class _Recorder implements ChatModel {
   }
 
   Iterable<(String, String, bool)> where(String marker) => calls.where((c) => c.$2.contains(marker));
+}
+
+/// Answers with [answers] in turn.
+class _Script implements ChatModel {
+  _Script(this.answers);
+  final List<String> answers;
+  int _next = 0;
+
+  @override
+  Future<String> complete(
+    String system,
+    String user, {
+    required int maxTokens,
+    required double temp,
+    required int seed,
+    List<String> stop = const [],
+    Map<String, dynamic>? jsonSchema,
+    void Function(String text)? onText,
+  }) async => answers[_next++ % answers.length];
 }
 
 /// A day on [lang]: plans, talk, thoughts, a visit from Dash and the evening.
@@ -90,7 +110,7 @@ void main() {
   test('the epilogue, the cutscene lines and the storybook carry the language too', () {
     final v = testVillage()..lang = Lang.fr;
     final i = measure(v);
-    expect(epiloguePrompt(v, v.byName('Pip'), i), endsWith(speakIn(Lang.fr)));
+    expect(epiloguePrompt(v, v.byName('Pip'), i), endsWith(speakIn(Lang.fr, story: true)));
     expect(announcementPrompt(Lang.fr), contains('français'));
     expect(songPrompt('Mo', Lang.ko), contains('한국어'));
     expect(announcementPrompt(Lang.en), isNot(contains('français')));
@@ -164,5 +184,54 @@ void main() {
     expect(o.map((x) => x.intent), picked);
     expect(cannedOptionIn(Lang.ko, 'praise', name: 'June', praiseAbout: 'Pip'), '어제 Pip이 네 칭찬을 엄청 하더라.');
     expect(cannedOptionIn(Lang.fr, 'gift', name: 'June', item: 'a jar of honey'), "Je t'ai apporté un pot de miel.");
+  });
+
+  test('the time of day: a part of today that is over is not still to come, and greetings fit the hour', () {
+    const bedtime = GameTime(2, 22 * 60), noon = GameTime(3, 12 * 60 + 30), dawn = GameTime(3, 7 * 60);
+    expect(timeSlip('The storm will hit this afternoon, mark my words.', bedtime, Lang.en), isTrue);
+    expect(timeSlip('The storm will hit tomorrow afternoon.', bedtime, Lang.en), isFalse);
+    expect(timeSlip('I baked bread this afternoon and it was lovely.', bedtime, Lang.en), isFalse);
+    expect(timeSlip("It'll rain this afternoon, I'm sure.", noon, Lang.en), isFalse);
+    expect(timeSlip("I'll finish the scarf this morning.", noon, Lang.en), isTrue);
+    expect(timeSlip("L'orage va éclater cet après-midi !", bedtime, Lang.fr), isTrue);
+    expect(timeSlip("L'orage éclatera cet après-midi.", bedtime, Lang.fr), isTrue);
+    expect(timeSlip("Cet après-midi, j'ai cueilli des baies.", bedtime, Lang.fr), isFalse);
+    expect(timeSlip('오늘 오후에 폭풍이 몰아칠 거야.', bedtime, Lang.ko), isTrue);
+    expect(timeSlip('내일 오후에 폭풍이 올 거야.', bedtime, Lang.ko), isFalse);
+    expect(timeSlip('오늘 오후에 빵을 구웠어.', bedtime, Lang.ko), isFalse);
+    expect(timeSlip('Good night, Pip!', dawn, Lang.en), isTrue);
+    expect(timeSlip('Good night, Pip!', bedtime, Lang.en), isFalse);
+    expect(timeSlip('Good morning, Mo!', dawn, Lang.en), isFalse);
+    expect(timeSlip('Good morning, Mo!', bedtime, Lang.en), isTrue);
+    expect(timeSlip('Bonne nuit, June.', noon, Lang.fr), isTrue);
+    expect(timeSlip('좋은 아침이야, Clover!', bedtime, Lang.ko), isTrue);
+  });
+
+  test('a slip of the clock is written once more, then the line falls back', () async {
+    Future<List<String>> thoughts(List<String> answers) async {
+      final v = Village(chat: _Script(answers), embed: HashEmbed(), seed: 1, msPerMinute: 10, autoAck: true)
+        ..now = const GameTime(2, 21 * 60);
+      final bramble = v.byName('Bramble');
+      expect(v.thoughtPrompt(bramble), contains('Now: Day 2'));
+      expect(v.reflectionPrompt(bramble, 2), contains('tomorrow is day 3'));
+      v.think(bramble);
+      await settle();
+      return bramble.thoughts;
+    }
+
+    expect(await thoughts(['The storm will hit this afternoon, I know it.', 'The storm comes tomorrow afternoon, I know it.']), [
+      'The storm comes tomorrow afternoon, I know it.',
+    ]);
+    expect(await thoughts(['The storm will hit this afternoon.', 'Good morning, clouds, the storm will come this afternoon.']), isEmpty);
+  });
+
+  test('every call knows who is female and who is male; French and Korean say it in their own words', () {
+    expect(ChatRuntime.systemIn(Lang.fr), contains('Mo and Bramble are male'));
+    expect(speakIn(Lang.fr), contains('Mo, Bramble et Dash sont des mâles'));
+    expect(speakIn(Lang.fr), contains('Mo est content'));
+    expect(speakIn(Lang.ko), contains('Mo, Bramble은 남자'));
+    final v = testVillage()..lang = Lang.fr;
+    final c = Conversation(1, v.byName('June'), v.byName('Mo'), 'bakery', v.now, 0);
+    expect(turnPrompt(v, c, 0), contains('Mo (he)'));
   });
 }

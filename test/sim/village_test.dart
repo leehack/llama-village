@@ -3,6 +3,7 @@ import 'package:llama_village/sim/cast.dart';
 import 'package:llama_village/sim/clock.dart';
 import 'package:llama_village/sim/canned.dart';
 import 'package:llama_village/sim/dash.dart';
+import 'package:llama_village/sim/dialogue.dart';
 import 'package:llama_village/sim/log.dart';
 import 'package:llama_village/sim/village.dart';
 
@@ -137,5 +138,28 @@ void main() {
     final u = pip.llama.lastDecision!.options.map((o) => o.utility).toList();
     expect(u, orderedEquals([...u]..sort((a, b) => b.compareTo(a))));
     expect(pip.goals, isNotEmpty);
+  });
+
+  test('a llama does not keep bringing up the same topic: not twice to one listener, and less often to everyone', () async {
+    final v = testVillage()..now = const GameTime(2, 10 * 60);
+    v.kb.learn('Bramble', 'bread_rumour', 'told', v.now, from: 'Pip', believes: false);
+    final bramble = v.byName('Bramble');
+    Future<String?> talk(String to) async {
+      final c = Conversation(0, bramble, v.byName(to), bramble.place, v.now, 0);
+      await v.pickTopic(c);
+      v.now = v.now.plus(20);
+      return c.topic;
+    }
+
+    final listeners = ['Pip', 'Pip', 'Clover', 'June', 'Mo', 'Clover'];
+    final topics = [for (final to in listeners) await talk(to)];
+    // Bramble's two strong goals (the storm warning, setting the bread
+    // rumour straight) lead, but nothing is told twice to one listener
+    // and the talk moves on to other things.
+    expect(topics.take(4), containsAll(['storm_forecast', 'bread_truth']));
+    final pairs = [for (var k = 0; k < topics.length; k++) (listeners[k], topics[k])];
+    expect(pairs.toSet(), hasLength(pairs.length));
+    expect(topics.toSet().length, greaterThanOrEqualTo(4));
+    expect(bramble.topicsRaised, hasLength(topics.length));
   });
 }

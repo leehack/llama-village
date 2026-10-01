@@ -157,6 +157,9 @@ Map<String, Object?> _llama(Llama l, GameTime now) {
     'reflections': [...l.reflections],
     'reflectedDay': l.reflectedDay,
     'thoughts': [...l.thoughts],
+    'topicsRaised': [
+      for (final (at, who, topic) in l.topicsRaised) [at.absolute, who, topic],
+    ],
   };
 }
 
@@ -198,6 +201,12 @@ void _loadLlama(Llama l, Map<String, Object?> m) {
   l.thoughts
     ..clear()
     ..addAll((m['thoughts'] as List).cast<String>());
+  l.topicsRaised
+    ..clear()
+    ..addAll([
+      for (final t in m['topicsRaised'] as List? ?? const [])
+        (GameTime.fromAbsolute((t as List)[0] as int), t[1] as String, t[2] as String),
+    ]);
 }
 
 Map<String, Object?> _kb(KnowledgeBase kb) => {

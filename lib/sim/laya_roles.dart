@@ -14,6 +14,8 @@ class TopicOption {
     this.recent = false,
     this.juicy = false,
     this.public = false,
+    this.toldListener = false,
+    this.raisedLately = 0,
   });
   final String id;
   final String short;
@@ -28,6 +30,12 @@ class TopicOption {
   final bool recent;
   final bool juicy;
   final bool public;
+
+  /// The opener already brought this up with this listener.
+  final bool toldListener;
+
+  /// How often the opener brought this up with anyone in the last few hours.
+  final int raisedLately;
 }
 
 class TopicCase {
@@ -64,6 +72,11 @@ double topicScore(TopicCase c, TopicOption o) {
   if (o.aboutListener) s += 0.3;
   if (o.recent) s += 0.3;
   if (o.juicy && (c.traits.contains('nosy') || c.traits.contains('chatty'))) s += 0.6;
+  // Novelty: a topic already told to this listener, or raised over and
+  // over today, outweighs even a strong goal ("the bread rumour is false"
+  // to everyone, every hour).
+  if (o.toldListener) s -= 2.5;
+  s -= 0.7 * o.raisedLately;
   return s;
 }
 
@@ -81,9 +94,10 @@ String topicState(TopicCase c) => [
 ].join(' ');
 
 /// Rules veto the options a llama would not volunteer (its own secret unless
-/// confessing, or news the listener told it); Laya picks among the rest.
+/// confessing, news the listener told it, something it already told this
+/// listener, or a topic it keeps raising); Laya picks among the rest.
 TopicCase vetoed(TopicCase c) {
-  final kept = c.options.where((o) => !(o.ownSecret && !o.confessing) && !o.fromListener).toList();
+  final kept = c.options.where((o) => !(o.ownSecret && !o.confessing) && !o.fromListener && !o.toldListener && o.raisedLately < 2).toList();
   return kept.isEmpty ? c : TopicCase(c.speaker, c.traits, c.listener, c.feeling, c.place, c.time, c.goals, kept, label: c.label);
 }
 

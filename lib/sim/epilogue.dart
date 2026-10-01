@@ -7,6 +7,7 @@ import 'influence.dart';
 import 'lang.dart';
 import 'model.dart';
 import 'said.dart';
+import 'story.dart';
 import 'village.dart';
 
 const Map<String, String> _pronoun = {'Pip': 'she', 'Mo': 'he', 'June': 'she', 'Bramble': 'he', 'Clover': 'she'};
@@ -103,11 +104,42 @@ List<Said> endingFacts(Village v, Influence i, EndingVerdict verdict) {
   ];
 }
 
-/// The model prompt for [l]'s epilogue card: its final state, what it knows
-/// and how the week ended, nothing else.
+/// [l]'s weightiest moments of the week from the storybook's journal, in
+/// the order they happened.
+List<StoryBeat> weekMoments(Village v, Llama l, {int limit = 3}) {
+  final mine = [
+    for (final b in v.journal.beats)
+      if (b.who.contains(l.name) || b.text.contains(l.name)) b,
+  ]..sort((a, b) => a.weight != b.weight ? b.weight.compareTo(a.weight) : a.seq.compareTo(b.seq));
+  return mine.take(limit).toList()..sort((a, b) => a.seq.compareTo(b.seq));
+}
+
+/// A model epilogue line to set the tone, about someone other than
+/// [name], so it is not copied.
+String _example(Lang lang, String name) {
+  final mo = name != 'Mo';
+  return switch (lang) {
+    Lang.en =>
+      mo
+          ? 'Mo kept baking honey loaves after the festival, and every morning he left the warmest one on Pip\'s doorstep.'
+          : 'June pinned the unsigned poems above her bed, and on quiet evenings she read them aloud to the berry bushes.',
+    Lang.ko =>
+      mo
+          ? 'Mo는 축제가 끝난 뒤에도 매일 아침 꿀빵을 구워, 가장 따끈한 한 덩이를 Pip의 문 앞에 살며시 놓아두었답니다.'
+          : 'June은 이름 없는 시들을 침대 머리맡에 붙여 두고, 조용한 저녁이면 베리 덤불에게 소리 내어 읽어 주었답니다.',
+    Lang.fr =>
+      mo
+          ? 'Après la fête, Mo continua de cuire ses pains au miel, et chaque matin il déposait le plus chaud devant la porte de Pip.'
+          : 'June épingla les poèmes sans signature au-dessus de son lit, et les soirs tranquilles, elle les lisait aux buissons de baies.',
+  };
+}
+
+/// The model prompt for [l]'s epilogue card: its final state, what it knows,
+/// its moments of the week and how the week ended, nothing else.
 String epiloguePrompt(Village v, Llama l, Influence i, {EndingVerdict? verdict}) {
   final warm = _extreme(l, warmest: true), cold = _extreme(l, warmest: false);
   final facts = relevantFacts(v, l, limit: 4);
+  final moments = weekMoments(v, l);
   final arc = arcFor(l, i);
   final he = _pronoun[l.name] ?? 'they';
   final winner = v.festival.winner;
@@ -118,14 +150,18 @@ String epiloguePrompt(Village v, Llama l, Influence i, {EndingVerdict? verdict})
     '',
     'Festival week in Llama Village is over. ${l.name} ($he), the ${l.job} (${l.traits}), ${_festivalRole(v, l)}.',
     'Mood at the end: ${l.moodWord}. Closest to ${warm?.$1}; coolest toward ${cold?.$1}. '
-        'Feels ${feelingWord(l.friendship['Dash'] ?? 0)} Dash, the little blue bird.',
+        'Of Dash, the little blue bird, ${l.name} would say: "I ${feelingWord(l.friendship['Dash'] ?? 0)} him."',
     if (arc.isNotEmpty) 'Also: $arc.',
+    if (moments.isNotEmpty) ...['${l.name}\'s week:', for (final b in moments) '- (day ${b.day}, ${partOfDay(b.minute)}) ${b.text}'],
     'What ${l.name} knows: ${facts.map((f) => f.text).join(' ')}',
     '',
-    'Write one sentence, under 22 words, past tense, third person ("$he"), about what became of ${l.name} after the festival, '
-        'like the last page of a storybook. Use one concrete detail from above. No quotes, no name prefix.',
+    'Write one warm, specific sentence, under 26 words, past tense, third person ("$he"), about what became of ${l.name} '
+        'after the festival, like the tender last page of a storybook. It is about ${l.name}, not the week or the valley: '
+        'build it on one concrete thing from ${l.name}\'s week or what ${l.name} knows (an object, a place, a friend by name), '
+        'and end on a gentle, hopeful note. Begin with "${l.name}". No quotes.',
+    'The kind of sentence wanted (do not copy it): ${_example(v.lang, l.name)}',
   ].join('\n');
-  return inLang(prompt, v.lang);
+  return inLang(prompt, v.lang, story: true);
 }
 
 enum _Role { won, fainted, sang, missed, ran, watched }
@@ -266,10 +302,11 @@ Future<String> epilogueLine(Village v, Llama l, Influence i, {EndingVerdict? ver
   epiloguePrompt(v, l, i, verdict: verdict),
   parse: (raw) {
     final line = parseLine(raw, [l.name]);
-    return line == null || line.length > 180 || epilogueContradicts(line, v, l) ? null : line;
+    // A line that never names its llama is about the week in general.
+    return line == null || line.length > 220 || !line.contains(l.name) || epilogueContradicts(line, v, l) ? null : line;
   },
   fallback: () => fallbackEpilogue(v, l, i),
-  maxTokens: tokensFor(v.lang, 48),
+  maxTokens: tokensFor(v.lang, 60),
   seed: 4242 + l.slot,
   lang: v.lang,
 );

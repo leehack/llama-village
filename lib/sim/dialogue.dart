@@ -74,6 +74,15 @@ class Conversation {
 
 String _whenLabel(GameTime t) => 'Day ${t.day} of festival week (${dayLabel(t.day)}), ${t.hhmm}, ${t.partOfDay}';
 
+/// The clock and how to speak of time from it, for prompts written at [t]:
+/// without it the model reads "the storm hits on the afternoon of day 3"
+/// as "this afternoon", whatever the hour.
+String clockNote(GameTime t) => [
+  'Now: ${_whenLabel(t)}. Today is day ${t.day}; tomorrow is day ${t.day + 1}.',
+  'What happened earlier is past: speak of it in the past tense. For what is still to come, say when in words that fit the clock now '
+      '("tomorrow afternoon", not "this afternoon" once the afternoon is over).',
+].join(' ');
+
 /// Up to [limit] facts for a prompt, most relevant first.
 List<Fact> relevantFacts(Village v, Llama l, {Llama? listener, String? topic, int limit = 7}) {
   final goals = v.goalsFor(l);
@@ -102,7 +111,8 @@ String personaBlock(Village v, Llama l, Llama listener, {String? topic}) {
   final facts = relevantFacts(v, l, listener: listener, topic: topic);
   final memory = [for (final d in l.diary.reversed.where((d) => d.$2 == listener.name).take(1)) '${v.now.relative(d.$1)}: ${d.$3}'];
   return [
-    'You are ${l.name} (${pronounOf(l.name)}), the ${l.job}: ${l.traits}. Mood: ${l.moodWord}. You ${feelingWord(l.friendship[listener.name] ?? 0)} ${listener.name}.',
+    'You are ${l.name} (${pronounOf(l.name)}), the ${l.job}: ${l.traits}. Mood: ${l.moodWord}. '
+        'You ${feelingWord(l.friendship[listener.name] ?? 0)} ${listener.name} (${pronounOf(listener.name)}).',
     if (l.items.contains("Pip's red scarf")) "You are carrying Pip's red scarf, which you found.",
     if (goals.isNotEmpty) 'What you want: ${goals.take(2).map((g) => g.text).join('; ')}.',
     'What you know (only these; you know nothing else about anyone\'s secrets):',

@@ -1,3 +1,5 @@
+import 'clock.dart';
+
 /// The language the llamas speak and the storybook is written in. The sim's
 /// facts, goals and intents stay in English, and so do the prompts; every
 /// prompt whose output the player reads ends with a short instruction in
@@ -15,6 +17,11 @@ const String _names = 'Pip, Mo, June, Bramble, Clover, Dash';
 /// Each llama's pronoun, for prompts (French agreement depends on it).
 String pronounOf(String name) =>
     const {'Pip': 'she', 'Mo': 'he', 'June': 'she', 'Bramble': 'he', 'Clover': 'she', 'Dash': 'he'}[name] ?? 'they';
+
+/// Who is female and who is male, for the system prompt: without it the
+/// model guesses, and French agreement goes wrong ("Mo est contente").
+const String castGenders =
+    'Pip, June and Clover are female (she/her); Mo and Bramble are male (he/him); Dash is a little blue bird (he/him).';
 
 /// The English instruction naming the language, for the system prompt and
 /// the end of each prompt.
@@ -34,7 +41,11 @@ String speakIn(Lang lang, {bool json = false, bool story = false}) => switch (la
   Lang.ko => [
     json ? 'Keep the JSON keys in English and write every value in Korean.' : writeIn(lang),
     if (json) 'JSON 키는 영어 그대로 두고, 값(대사)은 모두 자연스러운 한국어로 쓰세요.' else '반드시 자연스러운 한국어로만 쓰세요.',
-    if (story) '"옛날 옛적에"처럼 다정한 동화 말투(…했어요, …했답니다)로 쓰세요.',
+    if (story)
+      '"옛날 옛적에"처럼 다정한 동화 말투(…했어요, …했답니다)로 쓰세요.'
+    else
+      '말투: 친한 이웃끼리 쓰는 다정한 반말로, 짧고 생생하게. "그녀는", "~하는 것이다" 같은 번역투 대신 이름과 일상 말을 쓰세요. 속마음과 혼잣말은 1인칭(나)으로 쓰세요.',
+    'Pip, June, Clover는 여자, Mo, Bramble은 남자, Dash는 작은 파랑새(남자)예요.',
     '이름은 $_names처럼 영어 철자 그대로 쓰세요(피프, 모, 준처럼 한글로 옮기지 마세요).',
     '용어: Berry Festival은 베리 축제, Golden Bell은 황금 종, Berry Valley는 베리 골짜기, lantern은 등불, llama는 라마.',
   ].join(' '),
@@ -44,7 +55,13 @@ String speakIn(Lang lang, {bool json = false, bool story = false}) => switch (la
       'Garde les clés JSON en anglais ; écris toutes les valeurs (les répliques) en français naturel.'
     else
       'Écris uniquement en français naturel.',
-    if (story) 'Prends le ton doux d\'un conte (« Il était une fois… »), au passé simple.',
+    if (story)
+      'Prends le ton doux d\'un conte (« Il était une fois… »), au passé simple.'
+    else
+      'Style : français parlé, vivant et naturel, phrases courtes, tutoiement entre voisins, sans anglicismes ; '
+          'pensées et souvenirs à la première personne (je).',
+    'Genre : Pip, June et Clover sont des femelles (elle) ; Mo, Bramble et Dash sont des mâles (il). '
+        'Accorde adjectifs et participes : « Mo est content, il est parti », « June est contente, elle est partie ».',
     'Garde les noms ($_names) tels quels.',
     'Vocabulaire : Berry Festival = la fête des Baies, Golden Bell = la Cloche d\'or, Berry Valley = la Vallée des Baies, lantern = lanterne, llama = lama.',
   ].join(' '),
@@ -294,3 +311,44 @@ String polish(String text, Lang lang) => switch (lang) {
         .replaceAll(RegExp('(the )?Golden Bell', caseSensitive: false), "Cloche d'or")
         .replaceAllMapped(RegExp(r'\b([Ll])lama'), (m) => '${m.group(1)}ama'),
 };
+
+/// Phrases for this morning, this afternoon and this evening in each
+/// language, with the hour each part of the day is over.
+const List<(int, Map<Lang, String>)> _partsOfToday = [
+  (12, {Lang.en: r'\bthis morning\b', Lang.fr: r'\bce matin\b', Lang.ko: '오늘 아침'}),
+  (18, {Lang.en: r'\bthis afternoon\b', Lang.fr: r"\bcet apr[eè]s-midi\b", Lang.ko: '오늘 오후'}),
+  (22, {Lang.en: r'\bthis evening\b', Lang.fr: r'\bce soir\b', Lang.ko: '오늘 저녁'}),
+];
+
+final Map<Lang, RegExp> _future = {
+  Lang.en: RegExp(r"\b(will|won't|going to|gonna|about to|soon|coming|later)\b|\w'll\b", caseSensitive: false),
+  Lang.fr: RegExp(r'\b(va|vas|vont|vais|allons|allez|bientôt|plus tard|\w+(era|eront|erai|eras|ira|iront))\b', caseSensitive: false),
+  Lang.ko: RegExp('거야|거예요|거래|것 같|겠|곧|이따|다가오|몰려오|예정'),
+};
+
+/// Greetings that only fit part of the day: (phrase, first hour, last
+/// hour), wrapping past midnight when the first is later than the last.
+const Map<Lang, List<(String, int, int)>> _greetings = {
+  Lang.en: [(r'\bgood morning\b', 4, 11), (r'\bgood evening\b', 17, 23), (r'\bgood ?night\b', 19, 4)],
+  Lang.fr: [(r'\bbonsoir\b', 17, 23), (r'\bbonne nuit\b', 19, 4)],
+  Lang.ko: [('좋은 아침', 4, 11), ('잘 자', 19, 4), ('굿나잇', 19, 4)],
+};
+
+/// Whether [text], written at [at], gets the time of day wrong: a part of
+/// today that is already over spoken of as still to come ("the storm will
+/// hit this afternoon" at bedtime), or a greeting for another time of day.
+/// A cheap check on the model's lines; a slip is written once more.
+bool timeSlip(String text, GameTime at, Lang lang) {
+  final hour = at.hour;
+  for (final sentence in text.split(RegExp(r'(?<=[.!?。])\s+|\n'))) {
+    final ahead = _future[lang]!.hasMatch(sentence);
+    for (final (over, phrases) in _partsOfToday) {
+      if (ahead && hour >= over && RegExp(phrases[lang]!, caseSensitive: false).hasMatch(sentence)) return true;
+    }
+  }
+  for (final (phrase, from, to) in _greetings[lang]!) {
+    final fits = from <= to ? hour >= from && hour <= to : hour >= from || hour <= to;
+    if (!fits && RegExp(phrase, caseSensitive: false).hasMatch(text)) return true;
+  }
+  return false;
+}
