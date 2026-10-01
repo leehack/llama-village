@@ -455,6 +455,7 @@ class VillageHomeState extends State<VillageHome> with SingleTickerProviderState
       ..textPace = settings.textSpeed.pace
       ..paused = false;
     test.generating = () => v.chat.queue.busy;
+    test.running = () => [?v.chat.queue.runningType, ?v.embed.queue.runningType].join('+');
     final preset = botPresetFrom(test.bot);
     final camera = _camera = StoryCamera(stage: stage, boundary: _sceneShotKey, log: test.log);
     v.events.listeners.add((e) => camera.onEvent(v, e));

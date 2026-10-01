@@ -6,6 +6,7 @@ import 'package:vector_math/vector_math.dart' as vm;
 import 'ambient/creatures.dart';
 import 'ambient/layout.dart';
 import 'app.dart';
+import 'autoplay.dart';
 import 'character_tour.dart';
 import 'render/quality.dart';
 import 'sim/dash.dart';
@@ -391,8 +392,9 @@ class RenderTour {
 
     for (final (scene, _) in _scenes) {
       for (final q in GraphicsQuality.values.reversed) {
-        final gen = _results[(scene, q, true)] ?? const [];
-        final idle = _results[(scene, q, false)] ?? const [];
+        final gen = _results[(scene, q, true)];
+        final idle = _results[(scene, q, false)];
+        if (gen == null || idle == null) continue;
         final busy = gen.where((w) => w.$2 >= 0.7);
         final quiet = idle.where((w) => w.$2 <= 0.1);
         home.test.log(
@@ -410,6 +412,16 @@ class RenderTour {
     home.test.log('TOUR animals ${home.stage.life.all.map((c) => '${c.species.name}${c.index}:${c.act.name}').join(' ')}');
     home.test.log('TOUR sounds ${home.animalSounds.played}');
     home.test.log('TOUR done in ${_t.toStringAsFixed(0)} s at ${v.now.label}');
+    if (mode == 'perf') {
+      logCalls(home.test, v);
+      final t = home.test;
+      for (final e in t.framesBy.entries) {
+        final stalls = t.stallsBy[e.key] ?? 0;
+        t.log(
+          'PERF_STALLS ${e.key.isEmpty ? 'idle' : e.key}: $stalls of ${e.value} frames (${(100 * stalls / e.value).toStringAsFixed(1)}%)',
+        );
+      }
+    }
     if (home.test.exitWhenDone) home.quit();
   }
 }

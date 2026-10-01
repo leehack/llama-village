@@ -92,6 +92,13 @@ class SelfTest {
   /// Whether the dialogue model is generating, sampled once per frame.
   bool Function() generating = () => false;
 
+  /// The model jobs running now ("dialogue+embed_check"), for the stall count.
+  String Function() running = () => '';
+
+  /// Rendered frames, and those more than 20 ms after the previous one, by
+  /// the model jobs running when they were rendered.
+  final Map<String, int> framesBy = {}, stallsBy = {};
+
   /// (fps, share of frames with the model generating, milliseconds between
   /// rendered frames) per two-second window.
   final List<(double, double, List<double>)> windows = [];
@@ -112,6 +119,9 @@ class SelfTest {
     if (!capture) return;
     _rendered++;
     if (dt > 0) _intervals.add(dt * 1000);
+    final jobs = running();
+    framesBy[jobs] = (framesBy[jobs] ?? 0) + 1;
+    if (dt > 0.020) stallsBy[jobs] = (stallsBy[jobs] ?? 0) + 1;
     if (generating()) _busyFrames++;
   }
 
