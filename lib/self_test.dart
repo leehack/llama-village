@@ -25,7 +25,8 @@ import 'settings.dart';
 /// * `VILLAGE_QUIT_AT=menu|cutscene|generation|story` quits at that moment.
 /// * `VILLAGE_MEMLOG=10` logs memory and collection sizes every 10 s
 ///   (see `game/mem_probe.dart`); `VILLAGE_REPLAY=<seconds>` adds two short
-///   games after the week script, each left by "Save and quit to menu".
+///   games after the week script, each left by "Save and quit to menu";
+///   `VILLAGE_KEEP_TICKING=1` keeps the game going while the screen is locked.
 /// * `VILLAGE_LANG=en|ko|fr` sets the language for the run; like
 ///   `VILLAGE_FPS`, it makes the run's settings unsaved defaults.
 class SelfTest {
@@ -51,6 +52,10 @@ class SelfTest {
   /// `VILLAGE_REPLAY=<seconds>`: the week script then plays two more games
   /// that long each, leaving each through "Save and quit to menu".
   double? get replaySeconds => double.tryParse(_env['VILLAGE_REPLAY'] ?? '');
+
+  /// `VILLAGE_KEEP_TICKING=1`: keep the game running without vsync (a
+  /// locked screen or a sleeping display), for unattended soak runs.
+  bool get keepTicking => _env['VILLAGE_KEEP_TICKING'] == '1';
 
   /// Seconds between `VILLAGE MEM` lines, or null for none.
   double? get memLogSeconds => double.tryParse(_env['VILLAGE_MEMLOG'] ?? '');

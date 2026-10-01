@@ -210,6 +210,7 @@ class VillageHomeState extends State<VillageHome> with SingleTickerProviderState
     _lifecycle = AppLifecycleListener(onExitRequested: _onExitRequested);
     test.start();
     _vsync = createTicker(_onVsync)..start();
+    if (test.keepTicking) _keepTicking = Timer.periodic(const Duration(milliseconds: 50), (_) => _tickWithoutVsync());
     unawaited(_boot());
   }
 
@@ -227,6 +228,7 @@ class VillageHomeState extends State<VillageHome> with SingleTickerProviderState
   void dispose() {
     _lifecycle.dispose();
     _vsync.dispose();
+    _keepTicking?.cancel();
     frame.dispose();
     slow.dispose();
     storyTick.dispose();
@@ -708,7 +710,19 @@ class VillageHomeState extends State<VillageHome> with SingleTickerProviderState
 
   // ------------------------------------------------------------ loop
 
+  Timer? _keepTicking;
+  final Stopwatch _sinceVsync = Stopwatch()..start();
+
+  /// VILLAGE_KEEP_TICKING: a locked screen or a sleeping display sends no
+  /// vsync, so a soak run steps the game and pumps frames itself meanwhile.
+  void _tickWithoutVsync() {
+    if (_sinceVsync.elapsedMilliseconds < 250 || _shutdown != null) return;
+    _tick(0.05);
+    SchedulerBinding.instance.scheduleWarmUpFrame();
+  }
+
   void _onVsync(Duration elapsed) {
+    _sinceVsync.reset();
     final dt = _throttle.onVsync(elapsed);
     if (dt == null) return;
     _tick(dt);

@@ -521,7 +521,10 @@ embedding cache, bubbles, scene nodes, Flutter's image cache, audio
 voices and whether the models are loaded); see `lib/game/mem_probe.dart`.
 `VILLAGE_REPLAY=90` makes the week script then play two more games of
 90 s each, each left through "Save and quit to menu", to check that
-memory returns to its baseline on the title screen.
+memory returns to its baseline on the title screen. A locked screen or a
+sleeping display sends no vsync, which stops the game; for an unattended
+run, `VILLAGE_KEEP_TICKING=1` steps the game and pumps frames itself
+meanwhile.
 
 `VILLAGE_TOUR=shots` (with `VILLAGE_CAPTURE=1`) starts a new game and
 follows one day without the week's cutscenes, capturing the looks and
