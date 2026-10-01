@@ -33,6 +33,18 @@ flutter:
     - flutter_scene_generated/
     - assets/audio/
     - assets/portraits/
+  fonts:
+    - family: GowunDodum
+      fonts:
+        - asset: assets/fonts/gowundodum/GowunDodum-Regular.ttf
+    - family: Jua
+      fonts:
+        - asset: assets/fonts/jua/Jua-Regular.ttf
+    - family: GowunBatang
+      fonts:
+        - asset: assets/fonts/gowunbatang/GowunBatang-Regular.ttf
+        - asset: assets/fonts/gowunbatang/GowunBatang-Bold.ttf
+          weight: 700
 
 hooks:
   user_defines:
