@@ -12,6 +12,7 @@ import 'package:flutter_scene/scene.dart' hide Material;
 import 'package:vector_math/vector_math.dart' as vm;
 
 import 'ai/models.dart';
+import 'ambient/animal_sounds.dart';
 import 'audio/soloud_out.dart';
 import 'audio/soundscape.dart';
 import 'autoplay.dart';
@@ -21,6 +22,7 @@ import 'game/bot.dart';
 import 'game/director.dart';
 import 'game/save_store.dart';
 import 'game/week_autoplay.dart';
+import 'render_tour.dart';
 import 'render/stage.dart';
 import 'self_test.dart';
 import 'settings.dart';
@@ -29,6 +31,7 @@ import 'sim/clock.dart';
 import 'sim/dash.dart';
 import 'sim/endings.dart';
 import 'sim/epilogue.dart';
+import 'sim/geo.dart';
 import 'sim/influence.dart';
 import 'sim/snapshot.dart';
 import 'sim/village.dart';
@@ -87,6 +90,11 @@ class VillageHomeState extends State<VillageHome> with SingleTickerProviderState
   final SoloudOut _audio = SoloudOut();
   late final Soundscape sound = Soundscape(_audio, onPlay: (name, volume) => test.log('AUDIO $name vol=${volume.toStringAsFixed(2)}'));
   late final _StageView _view = _StageView(this);
+  late final AnimalSounds animalSounds = AnimalSounds(
+    _audio,
+    onPlay: (name, volume) => test.log('AUDIO $name vol=${volume.toStringAsFixed(2)}'),
+  );
+  RenderTour? _tour;
 
   Phase phase = Phase.loading;
   MenuPage page = MenuPage.none;
@@ -213,6 +221,8 @@ class VillageHomeState extends State<VillageHome> with SingleTickerProviderState
     test.log('MENU shown');
     if (test.autoplay) _autoplay = Autoplay(this)..start();
     if (test.weekScript) _week = WeekAutoplay(this)..start();
+    final tour = RenderTour.requested;
+    if (tour != null) _tour = RenderTour(this, tour);
   }
 
   void _loadModels() {
@@ -290,6 +300,8 @@ class VillageHomeState extends State<VillageHome> with SingleTickerProviderState
 
   void _applySettings() {
     _throttle.fps = settings.fps;
+    stage.quality = settings.quality;
+    animalSounds.sfxVolume = settings.sfxVolume;
     sound
       ..musicVolume = settings.musicVolume
       ..sfxVolume = settings.sfxVolume;
@@ -389,14 +401,16 @@ class VillageHomeState extends State<VillageHome> with SingleTickerProviderState
     setState(() {
       busy = null;
       village = v;
-      director = Director(
-        v: v,
-        stage: stage,
-        settings: settings,
-        log: test.log,
-        onDawn: (day) => unawaited(_autosave(day)),
-        onWeekOver: _weekOver,
-      );
+      director = _tour != null
+          ? null
+          : Director(
+              v: v,
+              stage: stage,
+              settings: settings,
+              log: test.log,
+              onDawn: (day) => unawaited(_autosave(day)),
+              onWeekOver: _weekOver,
+            );
       bot = preset == null ? null : PlayerBot(preset);
       phase = Phase.playing;
       page = MenuPage.none;
@@ -615,6 +629,7 @@ class VillageHomeState extends State<VillageHome> with SingleTickerProviderState
     } else {
       sound.ambience(v, step);
     }
+    animalSounds.update(stage.life.calls, _view, step, groundAt: groundHeight);
     if (test.capture) {
       test.simMs.add(simDone / 1000);
       test.sceneMs.add((watch.elapsedMicroseconds - simDone) / 1000);
@@ -623,6 +638,7 @@ class VillageHomeState extends State<VillageHome> with SingleTickerProviderState
     _autoplay?.tick(dt);
     _week?.tick(dt);
     _quitTest();
+    _tour?.tick(dt);
     frame.value++;
     _slowAcc += dt;
     if (_slowAcc > 0.25) {

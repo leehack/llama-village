@@ -3,6 +3,7 @@ import 'package:flutter/scheduler.dart';
 
 import '../render/stage.dart';
 import '../sim/village.dart';
+import 'bubble_layout.dart';
 import 'palette.dart';
 
 /// Name tags and speech/thought bubbles, pinned above each speaker's head.
@@ -26,11 +27,13 @@ class BubbleLayer extends StatelessWidget {
   final double textScale;
   final bool highContrast;
 
+  static final Expando<_Spacing> _spacing = Expando();
+
   @override
   Widget build(BuildContext context) {
-    final children = <Widget>[];
     final eye = stage.rig.eye;
-    final entries = <(double, Widget)>[];
+    final spacing = _spacing[village] ??= _Spacing();
+    final items = <_Item>[];
     final names = [...village.cast.map((l) => l.name), 'Dash'];
     for (final name in names) {
       final head = stage.headOf(name);
@@ -44,35 +47,164 @@ class BubbleLayer extends StatelessWidget {
       if (s != null && s.text != null && s.shownAtMs == null) {
         SchedulerBinding.instance.addPostFrameCallback((_) => village.ackBubble(s.id));
       }
-      entries.add((
-        depth,
+      items.add(_Item(name, p, depth, near, s, l == null ? null : activityIcon(l.activity.kind)));
+    }
+
+    // Keep bubbles in a crowd from covering each other or the name tags.
+    final tags = <Box>[];
+    final requests = <BubbleRequest>[];
+    for (final it in items) {
+      final tag = spacing.tagSize(it.name, it.icon != null) * it.near;
+      tags.add(Box(it.at.dx - tag.width / 2, it.at.dy - tag.height, tag.width, tag.height));
+      final s = it.speech;
+      if (s == null) continue;
+      final b = spacing.bubbleSize(s, textScale, highContrast) * it.near;
+      requests.add(BubbleRequest(it.name, Box(it.at.dx - b.width / 2, it.at.dy - tag.height - b.height, b.width, b.height)));
+    }
+    final offsets = spacing.smoother.step(
+      layoutBubbles(requests, keepClear: tags, screen: Box(8, 8, size.width - 16, size.height - 16)),
+      spacing.tick(wall),
+    );
+
+    final leaders = <(Offset, Offset, Color)>[];
+    items.sort((a, b) => b.depth.compareTo(a.depth));
+    final children = <Widget>[];
+    for (final it in items) {
+      final (dx, dy) = offsets[it.name] ?? (0.0, 0.0);
+      final s = it.speech;
+      if (s != null && dx * dx + dy * dy > 16) {
+        final tagTop = it.at.dy - spacing.tagSize(it.name, it.icon != null).height * it.near;
+        leaders.add((Offset(it.at.dx + dx, tagTop - dy), Offset(it.at.dx, tagTop), accentOf(it.name)));
+      }
+      children.add(
         Positioned(
-          left: p.dx,
-          top: p.dy,
+          left: it.at.dx,
+          top: it.at.dy,
           child: FractionalTranslation(
             translation: const Offset(-0.5, -1),
             child: Transform.scale(
-              scale: near,
+              scale: it.near,
               alignment: Alignment.bottomCenter,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  if (s != null) _Bubble(speech: s, wall: wall, textScale: textScale, highContrast: highContrast),
-                  _NameTag(name: name, icon: l == null ? null : activityIcon(l.activity.kind), selected: stage.selected == name),
+                  if (s != null)
+                    Transform.translate(
+                      offset: Offset(dx / it.near, -dy / it.near),
+                      child: _Bubble(speech: s, wall: wall, textScale: textScale, highContrast: highContrast),
+                    ),
+                  _NameTag(name: it.name, icon: it.icon, selected: stage.selected == it.name),
                 ],
               ),
             ),
           ),
         ),
-      ));
+      );
     }
-    entries.sort((a, b) => b.$1.compareTo(a.$1));
-    children.addAll(entries.map((e) => e.$2));
     return IgnorePointer(
-      child: Stack(clipBehavior: Clip.none, children: children),
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          if (leaders.isNotEmpty) Positioned.fill(child: CustomPaint(painter: _Leaders(leaders))),
+          ...children,
+        ],
+      ),
     );
   }
 }
+
+class _Item {
+  _Item(this.name, this.at, this.depth, this.near, this.speech, this.icon);
+  final String name;
+  final Offset at;
+  final double depth, near;
+  final Speech? speech;
+  final IconData? icon;
+}
+
+/// Measured bubble and tag sizes, and the eased bubble offsets.
+class _Spacing {
+  final BubbleSmoother smoother = BubbleSmoother();
+  final Map<(int, String?, double, bool), Size> _bubbles = {};
+  final Map<(String, bool), Size> _tags = {};
+  double? _lastWall;
+
+  double tick(double wall) {
+    final dt = _lastWall == null ? 1.0 : (wall - _lastWall!).clamp(0.0, 1.0);
+    _lastWall = wall;
+    return dt;
+  }
+
+  Size bubbleSize(Speech s, double scale, bool highContrast) {
+    if (_bubbles.length > 64) _bubbles.clear();
+    return _bubbles.putIfAbsent((s.id, s.text, scale, highContrast), () {
+      final thought = s.kind == SpeechKind.thought;
+      final text = s.text;
+      final border = highContrast ? 6 : 4;
+      final painter = TextPainter(
+        text: TextSpan(
+          text: text ?? '...',
+          style: text == null ? _dotsStyle(scale, highContrast) : _textStyle(thought: thought, scale: scale, highContrast: highContrast),
+        ),
+        textAlign: TextAlign.center,
+        textDirection: TextDirection.ltr,
+      )..layout(maxWidth: _bubbleMaxWidth * scale - 24 - border);
+      final size = Size(painter.width + 24 + border, painter.height + 16 + border + (thought ? 19 : 8));
+      painter.dispose();
+      return size;
+    });
+  }
+
+  Size tagSize(String name, bool icon) => _tags.putIfAbsent((name, icon), () {
+    final painter = TextPainter(
+      text: TextSpan(text: name, style: _tagStyle),
+      textDirection: TextDirection.ltr,
+    )..layout();
+    final size = Size(painter.width + 14 + 3 + (icon ? 15 : 0), painter.height + 4 + 3 + 4);
+    painter.dispose();
+    return size;
+  });
+}
+
+/// Thin lines from a lifted bubble down to its speaker's name tag.
+class _Leaders extends CustomPainter {
+  _Leaders(this.lines);
+  final List<(Offset, Offset, Color)> lines;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    for (final (from, to, color) in lines) {
+      canvas.drawLine(
+        from,
+        to,
+        Paint()
+          ..color = color.withValues(alpha: 0.85)
+          ..strokeWidth = 2
+          ..strokeCap = StrokeCap.round,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(_Leaders old) => true;
+}
+
+const double _bubbleMaxWidth = 250;
+const TextStyle _tagStyle = TextStyle(color: Colors.white, fontSize: 11.5, fontWeight: FontWeight.w800);
+TextStyle _dotsStyle(double scale, bool highContrast) =>
+    TextStyle(fontSize: 18 * scale, height: 0.9, fontWeight: FontWeight.w900, color: highContrast ? Colors.black : ink, letterSpacing: 2);
+
+TextStyle _textStyle({required bool thought, required double scale, required bool highContrast}) => TextStyle(
+  fontSize: 13 * scale,
+  height: 1.25,
+  color: highContrast
+      ? Colors.black
+      : thought
+      ? const Color(0xFF4A4560)
+      : ink,
+  fontStyle: thought ? FontStyle.italic : FontStyle.normal,
+  fontWeight: highContrast ? FontWeight.w800 : FontWeight.w600,
+);
 
 class _NameTag extends StatelessWidget {
   const _NameTag({required this.name, required this.icon, required this.selected});
@@ -94,10 +226,7 @@ class _NameTag extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
-            name,
-            style: const TextStyle(color: Colors.white, fontSize: 11.5, fontWeight: FontWeight.w800),
-          ),
+          Text(name, style: _tagStyle),
           if (icon != null) ...[const SizedBox(width: 3), Icon(icon, size: 12, color: Colors.white)],
         ],
       ),
@@ -118,30 +247,11 @@ class _Bubble extends StatelessWidget {
     final text = speech.text;
     final dots = '.' * (1 + (wall * 3).floor() % 3);
     final body = text == null
-        ? Text(
-            dots.padRight(3),
-            style: TextStyle(
-              fontSize: 18 * textScale,
-              height: 0.9,
-              fontWeight: FontWeight.w900,
-              color: highContrast ? Colors.black : ink,
-              letterSpacing: 2,
-            ),
-          )
+        ? Text(dots.padRight(3), style: _dotsStyle(textScale, highContrast))
         : Text(
             text,
             textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 13 * textScale,
-              height: 1.25,
-              color: highContrast
-                  ? Colors.black
-                  : thought
-                  ? const Color(0xFF4A4560)
-                  : ink,
-              fontStyle: thought ? FontStyle.italic : FontStyle.normal,
-              fontWeight: highContrast ? FontWeight.w800 : FontWeight.w600,
-            ),
+            style: _textStyle(thought: thought, scale: textScale, highContrast: highContrast),
           );
     final accent = highContrast ? Colors.black : accentOf(speech.who);
     final fill = highContrast
@@ -155,7 +265,7 @@ class _Bubble extends StatelessWidget {
         ? const Color(0xFFB9B0E0)
         : accent;
     return ConstrainedBox(
-      constraints: BoxConstraints(maxWidth: 250 * textScale),
+      constraints: BoxConstraints(maxWidth: _bubbleMaxWidth * textScale),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [

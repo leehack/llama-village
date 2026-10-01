@@ -1,12 +1,26 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_soloud/flutter_soloud.dart';
 
+import '../ambient/animal_sounds.dart';
 import 'soundscape.dart';
 
 /// [SoundOut] on flutter_soloud: every clip is decoded into memory at
 /// start, so loops are sample-exact and effects start with low latency.
 class SoloudOut implements SoundOut {
-  static const List<String> effects = ['flap', 'chirp', 'step1', 'step2', 'hum', 'pop', 'click', 'sparkle', 'birds1', 'birds2', 'crickets'];
+  static const List<String> effects = [
+    'flap',
+    'chirp',
+    'step1',
+    'step2',
+    'hum',
+    'pop',
+    'click',
+    'sparkle',
+    'birds1',
+    'birds2',
+    'crickets',
+    ...AnimalSounds.sounds,
+  ];
 
   final Map<String, AudioSource> _sources = {};
   final Map<String, SoundHandle> _loops = {};

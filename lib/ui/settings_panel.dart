@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../render/quality.dart';
 import '../settings.dart';
 import 'palette.dart';
 
@@ -56,6 +57,14 @@ class SettingsPanel extends StatelessWidget {
                   _segments<int>({for (final f in VillageSettings.fpsChoices) f: '$f fps'}, settings.fps, (v) => settings.fps = v),
                   const SizedBox(height: 4),
                   const Text('120 fps needs a ProMotion display.', style: _note),
+                  const SizedBox(height: 10),
+                  const Text('Graphics quality', style: _label),
+                  const SizedBox(height: 6),
+                  _segments<GraphicsQuality>(
+                    {for (final q in GraphicsQuality.values) q: q.label},
+                    settings.quality,
+                    (v) => settings.quality = v,
+                  ),
                   const _Section('Audio'),
                   _volume('Music', settings.musicVolume, (v) => settings.musicVolume = v),
                   _volume('Sound effects', settings.sfxVolume, (v) => settings.sfxVolume = v),

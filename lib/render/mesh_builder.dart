@@ -134,6 +134,15 @@ class MeshBuilder {
     _tri(ia, ib, ic, up);
   }
 
+  /// A grass blade from [a]-[b] at the root to [tip], shaded like the
+  /// ground (normal up) and fading from [root] to [tipColor]. Draw it with
+  /// a double-sided material.
+  void blade(vm.Vector3 a, vm.Vector3 b, vm.Vector3 tip, vm.Vector3 root, vm.Vector3 tipColor) {
+    final up = vm.Vector3(0, 1, 0);
+    final ia = _vertex(a, up, root), ib = _vertex(b, up, root), it = _vertex(tip, up, tipColor);
+    _tri(ia, ib, it, (b - a).cross(tip - a));
+  }
+
   /// A cone or frustum standing on [base] along +Y, faceted.
   void cone(vm.Vector3 base, double radiusBottom, double radiusTop, double height, vm.Vector3 color, {int segments = 8, double yaw = 0}) {
     final top = base + vm.Vector3(0, height, 0);

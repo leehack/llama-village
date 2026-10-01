@@ -468,6 +468,80 @@ def crickets(rng):
     return fade_out(out)
 
 
+# ------------------------------------------------------------ animals
+
+
+def voice(f0, formants, env, harmonics=24, breath=0.0, rng=None):
+    """Additive voiced sound: harmonics of the f0 contour weighted by moving
+    formants. Each formant is (centre Hz contour, bandwidth Hz, gain)."""
+    ph = 2 * np.pi * np.cumsum(f0) / SR
+    s = np.zeros(len(f0))
+    for h in range(1, harmonics + 1):
+        fh = f0 * h
+        w = np.zeros(len(f0))
+        for centre, bw, gain in formants:
+            w += gain * np.exp(-((fh - centre) / bw) ** 2)
+        s += np.sin(h * ph) * w * (fh < SR / 2 - 500)
+    if breath and rng is not None:
+        n = fft_filter(rng.standard_normal(len(f0)), lo=1500, hi=7000)
+        s += n / (np.std(n) + 1e-9) * breath * np.std(s)
+    return s * env
+
+
+def glide(points, dur):
+    """A smooth contour through (time, value) points over dur seconds."""
+    x = t(dur)
+    ts, vs = zip(*points)
+    return np.interp(x, ts, vs)
+
+
+def meow(rng):
+    dur = 0.62
+    x = t(dur)
+    f0 = glide([(0, 520), (0.14, 760), (0.34, 700), (dur, 430)], dur) * (1 + 0.012 * np.sin(2 * np.pi * 6 * x))
+    f1 = glide([(0, 350), (0.18, 900), (0.4, 750), (dur, 480)], dur)
+    f2 = glide([(0, 2300), (0.18, 1500), (0.4, 1200), (dur, 900)], dur)
+    env = np.clip(x / 0.04, 0, 1) * np.clip((dur - x) / 0.16, 0, 1) ** 1.3
+    s = voice(f0, [(f1, 220, 1.0), (f2, 300, 0.55), (f2 * 1.9, 500, 0.15)], env, breath=0.06, rng=rng)
+    return fade_out(s)
+
+
+def cluck(rng):
+    out = np.zeros(int(0.62 * SR))
+    for i, (at, pitch) in enumerate(((0.0, 1.0), (0.13, 1.08), (0.27, 0.96), (0.4, 1.18))):
+        dur = 0.075 if i < 3 else 0.16
+        x = t(dur)
+        f0 = 330 * pitch * (1 + 0.25 * np.exp(-x * 40)) * (1 + (0.35 * x / dur if i == 3 else 0))
+        env = np.clip(x / 0.006, 0, 1) * np.exp(-x * (38 if i < 3 else 14))
+        s = voice(f0, [(780, 260, 1.0), (1600, 380, 0.5), (2900, 500, 0.15)], env, harmonics=20, breath=0.12, rng=rng)
+        add(out, at * SR, s * (0.8 if i < 3 else 1.0), wrap=False)
+    return fade_out(out)
+
+
+def quack(rng):
+    out = np.zeros(int(0.62 * SR))
+    for at, pitch in ((0.0, 1.0), (0.26, 0.93)):
+        dur = 0.2
+        x = t(dur)
+        f0 = 230 * pitch * glide([(0, 1.05), (0.06, 1.0), (dur, 0.86)], dur)
+        env = np.clip(x / 0.012, 0, 1) * np.clip((dur - x) / 0.07, 0, 1)
+        nasal = glide([(0, 1200), (0.08, 1500), (dur, 1250)], dur)
+        s = voice(f0, [(700, 200, 0.9), (nasal, 260, 1.0), (2600, 500, 0.35)], env, harmonics=30, breath=0.1, rng=rng)
+        add(out, at * SR, s, wrap=False)
+    return fade_out(out)
+
+
+def woof(rng):
+    dur = 0.3
+    x = t(dur)
+    f0 = glide([(0, 300), (0.04, 340), (dur, 170)], dur)
+    env = np.clip(x / 0.008, 0, 1) * np.exp(-x * 11)
+    s = voice(f0, [(560, 220, 1.0), (1100, 300, 0.6), (2400, 600, 0.2)], env, harmonics=26, breath=0.3, rng=rng)
+    burst = fft_filter(rng.standard_normal(len(x)), lo=300, hi=2500) * np.exp(-x * 60)
+    s += burst / (np.max(np.abs(burst)) + 1e-9) * 0.25 * np.max(np.abs(s))
+    return fade_out(s)
+
+
 # ------------------------------------------------------------ output
 
 
@@ -529,6 +603,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('--out', default=os.path.join(ROOT, 'assets', 'audio'))
     parser.add_argument('--preview', help='also write a 20 s listening mix (.m4a) here')
+    parser.add_argument('--only', help='comma-separated names to write, leaving the other files alone')
     args = parser.parse_args()
     if shutil.which('ffmpeg') is None:
         sys.exit('ffmpeg (with libopus) is required')
@@ -553,7 +628,15 @@ def main():
         'birds1': peak_normalize(birds(rng, 4), -6),
         'birds2': peak_normalize(birds(rng, 3), -6),
         'crickets': peak_normalize(crickets(rng), -8),
+        'meow': peak_normalize(meow(np.random.default_rng(61)), -5),
+        'cluck': peak_normalize(cluck(np.random.default_rng(62)), -6),
+        'quack': peak_normalize(quack(np.random.default_rng(63)), -6),
+        'woof': peak_normalize(woof(np.random.default_rng(64)), -5),
     }
+    if args.only:
+        only = set(args.only.split(','))
+        music = {k: v for k, v in music.items() if k in only}
+        sfx = {k: v for k, v in sfx.items() if k in only}
     for name, (x, rate) in music.items():
         encode(os.path.join(args.out, f'{name}.ogg'), x, rate)
         print(f'{name}.ogg  {x.shape[1] / SR:.2f} s ({x.shape[1]} samples)')

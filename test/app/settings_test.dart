@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:llama_village/render/quality.dart';
 import 'package:llama_village/settings.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -84,5 +85,31 @@ void main() {
     expect(s.textSpeed, TextSpeed.normal);
     expect(s.textSize, TextSize.normal);
     expect(s.defaultSpeed, 1);
+  });
+
+  test('graphics quality defaults to High and persists', () async {
+    SharedPreferences.setMockInitialValues({});
+    final s = await VillageSettings.load();
+    expect(s.quality, GraphicsQuality.high);
+    var notified = 0;
+    s.addListener(() => notified++);
+    s.quality = GraphicsQuality.low;
+    expect(notified, 1);
+    expect((await SharedPreferences.getInstance()).getString('graphicsQuality'), 'low');
+    expect((await VillageSettings.load()).quality, GraphicsQuality.low);
+  });
+
+  test('an unknown stored graphics quality falls back to High', () async {
+    SharedPreferences.setMockInitialValues({'graphicsQuality': 'ultra'});
+    expect((await VillageSettings.load()).quality, GraphicsQuality.high);
+  });
+
+  test('lower qualities switch off the costly passes and thin the details', () {
+    expect(GraphicsQuality.low.ambientOcclusion, isFalse);
+    expect(GraphicsQuality.low.bloom, isFalse);
+    expect(GraphicsQuality.medium.godRays, isFalse);
+    expect(GraphicsQuality.high.godRays, isTrue);
+    expect(GraphicsQuality.low.foliage, lessThan(GraphicsQuality.medium.foliage));
+    expect(GraphicsQuality.medium.particles, lessThan(GraphicsQuality.high.particles));
   });
 }

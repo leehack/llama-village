@@ -4,10 +4,18 @@ import 'dart:ui' as ui;
 import 'package:flutter_scene/scene.dart';
 import 'package:vector_math/vector_math.dart' as vm;
 
+import '../ambient/creatures.dart';
+import '../ambient/layout.dart';
 import '../sim/geo.dart';
+import '../sim/places.dart';
 import '../sim/village.dart';
 import 'actors.dart';
+import 'animals.dart';
+import 'dressing.dart';
 import 'look.dart';
+import 'particles.dart';
+import 'quality.dart';
+import 'water.dart';
 import 'world.dart';
 
 /// An orbit camera around a ground target that can follow an actor.
@@ -91,6 +99,16 @@ class VillageStage {
   final Map<String, LlamaActor> llamas = {};
   final DashActor dash = DashActor();
   final CameraRig rig = CameraRig();
+  late final VillageDressing dressing = VillageDressing(scene, world);
+  late final PondWater water;
+  late final Fireflies fireflies = Fireflies(scene);
+  late final FallingLeaves leaves = FallingLeaves(scene, world.crowns);
+
+  /// The village's cats, chickens, ducks, dog and butterflies.
+  late final AmbientLife life;
+  late final AnimalActors animals;
+  GraphicsQuality _quality = GraphicsQuality.high;
+  bool _loaded = false;
   late final Node _ring;
   final List<Node> _rain = [];
   double _rainY = 0;
@@ -105,6 +123,13 @@ class VillageStage {
     await Scene.initializeStaticResources();
     sky.apply();
     world.build();
+    final (px, pz) = placeCoordinates['pond']!;
+    water = PondWater(scene, vm.Vector2(px, pz), 7.7)..build(pondSurface - 0.02);
+    dressing.build();
+    fireflies.build();
+    leaves.build();
+    life = AmbientLife(seed: 17, extraBlockers: [for (final (p, r) in world.treeTrunks) Blocker(p, r + 0.25)]);
+    animals = AnimalActors(scene, life)..build();
     for (final n in names) {
       final a = await LlamaActor.load(n);
       llamas[n] = a;
@@ -125,6 +150,21 @@ class VillageStage {
       _rain.add(n);
       scene.add(n);
     }
+    _loaded = true;
+    quality = _quality;
+  }
+
+  GraphicsQuality get quality => _quality;
+
+  /// Switches the costly passes, foliage density and particle counts.
+  set quality(GraphicsQuality q) {
+    _quality = q;
+    if (!_loaded) return;
+    sky.quality = q;
+    dressing.quality = q;
+    animals.quality = q;
+    fireflies.share = q.particles;
+    leaves.share = q.particles;
   }
 
   /// Rain falls in two stacked curtains that wrap around, so a storm costs
@@ -152,6 +192,7 @@ class VillageStage {
     }
     dash.update(v, dt, _wall);
     _updateRain(v, dt);
+    _ambient(v, hour, dt);
     final talking = v.dash.visit != null && rig.follow != null;
     rig.lift += ((talking ? rig.distance * 0.16 : 0) - rig.lift) * math.min(1.0, dt * 3);
     final sel = selected == null ? null : llamas[selected];
@@ -163,6 +204,30 @@ class VillageStage {
     world.wildflowers.visible = v.crush.flowersToday || v.kb.maybe('bramble_flowers') != null && v.now.minute < 12 * 60;
     world.festivalDecor.visible = v.festival.state != 'unannounced';
     rig.update(dt);
+  }
+
+  void _ambient(Village v, double hour, double dt) {
+    world.wetness = sky.wetness;
+    water.update(dt, wind: sky.storm);
+    dressing.update(_wall, dt, storm: sky.storm, wetness: sky.wetness);
+    fireflies.update(_wall, night: v.storm ? 0 : ((sky.darkness - 0.55) / 0.35).clamp(0.0, 1.0));
+    leaves.update(_wall, dt, day: 1 - sky.darkness, storm: sky.storm);
+    final d = v.dash;
+    life.update(
+      AmbientView(
+        hour: hour,
+        storm: v.storm,
+        llamas: [
+          for (final l in v.cast)
+            if (llamas[l.name]!.visible) ((llamas[l.name]!.position.x, llamas[l.name]!.position.z), v.llamaPose(l).$3),
+        ],
+        dash: d.pos,
+        dashHeight: dash.position.y - groundHeight(d.pos.$1, d.pos.$2),
+        dashMoving: d.moving,
+      ),
+      dt,
+    );
+    animals.update(_wall);
   }
 
   void _nightLights(Village v, double hour) {

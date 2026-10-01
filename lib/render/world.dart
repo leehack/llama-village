@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter_scene/scene.dart';
 import 'package:vector_math/vector_math.dart' as vm;
 
+import '../ambient/layout.dart';
 import '../sim/geo.dart';
 import '../sim/places.dart';
 import 'look.dart';
@@ -26,10 +27,13 @@ vm.Vector3 _v(double x, double y, double z) => vm.Vector3(x, y, z);
 /// A light that comes on after dark: an emissive material plus an
 /// optional point light.
 class NightLight {
-  NightLight(this.material, this.on, {this.light, this.owner});
+  NightLight(this.material, this.on, {this.light, this.owner, this.power = 26});
   final PhysicallyBasedMaterial material;
   final vm.Vector3 on;
   final PointLight? light;
+
+  /// Point-light intensity when fully on.
+  final double power;
 
   /// The llama whose hut this is, if any.
   final String? owner;
@@ -39,7 +43,7 @@ class NightLight {
     level = v;
     material.emissiveFactor = vm.Vector4(on.x, on.y, on.z, 1);
     material.emissiveStrength = 0.15 + v * 5.5;
-    light?.intensity = v * 26;
+    light?.intensity = v * power;
   }
 }
 
@@ -54,16 +58,22 @@ class VillageWorld {
   late final Node scarfInReeds;
   late final Node wildflowers;
   late final Node festivalDecor;
-  late final PhysicallyBasedMaterial water;
+
+  /// Tree trunks (position, radius), for the scatter and the animals.
+  final List<(P2, double)> treeTrunks = [];
+
+  /// Round tree crowns (centre, radius), where leaves fall from.
+  final List<(vm.Vector3, double)> crowns = [];
+
+  /// The ground and paths, which a storm wets.
+  late final PhysicallyBasedMaterial ground = pbr(rough: 0.9);
 
   late final PhysicallyBasedMaterial _matte = pbr(rough: 0.9);
   late final PhysicallyBasedMaterial _soft = pbr(rough: 0.7);
   late final PhysicallyBasedMaterial _gloss = pbr(rough: 0.35);
 
   void build() {
-    _ground();
-    _paths();
-    _water();
+    _groundAndPaths();
     for (final place in placeCoordinates.keys) {
       if (isHut(place)) _hut(place);
     }
@@ -89,6 +99,10 @@ class VillageWorld {
 
   // ------------------------------------------------------------ ground
 
+  /// Distance from (x, z) to the nearest path.
+  double pathDistance(double x, double z) => _pathDistance(x, z, _segments);
+  late final List<(P2, P2)> _segments = pathSegments();
+
   static double _pathDistance(double x, double z, List<(P2, P2)> segs) {
     var best = double.infinity;
     for (final ((ax, az), (bx, bz)) in segs) {
@@ -101,9 +115,35 @@ class VillageWorld {
     return math.sqrt(best);
   }
 
-  void _ground() {
-    final b = MeshBuilder();
-    final grassA = rgb(0x84BD4C), grassB = rgb(0x6FAA42), hill = rgb(0xA6CE66);
+  /// Wets the ground and paths: glossier and darker as [wetness] rises.
+  set wetness(double wetness) {
+    final k = 1 - 0.3 * wetness;
+    ground
+      ..roughnessFactor = 0.9 - 0.62 * wetness
+      ..baseColorFactor = vm.Vector4(k, k, k, 1);
+  }
+
+  /// The meadow, the dirt paths and the diorama's soil skirt. The ground
+  /// is split into tiles so each tile only gathers the lamps near it.
+  void _groundAndPaths() {
+    const tiles = 4;
+    const lo = -62.0, hi = 56.0;
+    final chunks = [for (var i = 0; i < tiles * tiles; i++) MeshBuilder()];
+    MeshBuilder chunkAt(vm.Vector3 c) {
+      int cell(double v) => (((v - lo) / (hi - lo)) * tiles).floor().clamp(0, tiles - 1);
+      return chunks[cell(c.x) * tiles + cell(c.z)];
+    }
+
+    _ground(chunkAt);
+    _paths(chunkAt);
+    for (final b in chunks) {
+      if (!b.isEmpty) _add(b.build(), ground, shadows: false);
+    }
+  }
+
+  void _ground(MeshBuilder Function(vm.Vector3 centroid) chunkAt) {
+    final grassA = rgb(0x84BD4C), grassB = rgb(0x6FAA42), lush = rgb(0x5E9E3C), dry = rgb(0xA9BE5A), hill = rgb(0xA6CE66);
+    final trodden = rgb(0x9DB05E);
     final sand = rgb(0xE0CB93), mud = rgb(0x6E8F5A);
     final (px, pz) = placeCoordinates['pond']!;
     const cell = 1.25;
@@ -128,12 +168,18 @@ class VillageWorld {
       final pond = math.sqrt((c.x - px) * (c.x - px) + (c.z - pz) * (c.z - pz));
       if (pond < 7.6) return mud;
       if (pond < 8.9) return sand;
-      // Soft meadow patches, with a faint per-facet shimmer.
+      // Meadow patches at two scales, lusher by the water, sun-dried in
+      // places, trodden pale beside the paths and lighter up the hill.
       final patch = 0.5 + 0.5 * math.sin(c.x * 0.11 + math.sin(c.z * 0.17) * 1.7) * math.cos(c.z * 0.09 - c.x * 0.04);
-      final grass = grassB + (grassA - grassB) * patch;
+      final fine = 0.5 + 0.5 * math.sin(c.x * 0.37 + c.z * 0.23) * math.sin(c.z * 0.41 - c.x * 0.19);
+      var grass = grassB + (grassA - grassB) * patch;
+      grass += (dry - grass) * (math.max(0.0, fine - 0.62) * 1.6);
+      grass += (lush - grass) * ((1 - (pond - 8.9) / 9).clamp(0.0, 1.0) * 0.7);
+      final path = _pathDistance(c.x, c.z, _segments);
+      grass += (trodden - grass) * ((1 - (path - 1.1) / 1.6).clamp(0.0, 1.0) * 0.55);
       final up = ((c.y - 1.2) / 3.5).clamp(0.0, 1.0);
       final base = grass + (hill - grass) * up;
-      return base * (0.97 + 0.06 * ((salt % 7) / 6));
+      return base * (0.95 + 0.1 * ((salt % 7) / 6));
     }
 
     for (var i = 0; i < n; i++) {
@@ -143,11 +189,12 @@ class VillageWorld {
           final area = (t.$2 - t.$1).cross(t.$3 - t.$1).length;
           if (area < 1e-3) continue;
           final centroid = (t.$1 + t.$2 + t.$3) / 3;
-          b.triangle(t.$1, t.$2, t.$3, colorAt(centroid, hash(i * 2 + k, j)));
+          chunkAt(centroid).triangle(t.$1, t.$2, t.$3, colorAt(centroid, hash(i * 2 + k, j)));
         }
       }
     }
     // The diorama's soil skirt.
+    final b = MeshBuilder();
     const segments = 160;
     final soil = rgb(0x7A5233), soilDark = rgb(0x5A3B24), rim = rgb(0x6FA542);
     for (var s = 0; s < segments; s++) {
@@ -172,25 +219,20 @@ class VillageWorld {
   /// Dirt paths as ribbons draped over the ground, with round joints and
   /// small plazas in front of every place. One colour, so overlaps never
   /// flicker.
-  void _paths() {
-    final b = MeshBuilder();
+  void _paths(MeshBuilder Function(vm.Vector3 centroid) chunkAt) {
     final dirt = rgb(0xC9A36B);
     const lift = 0.07, half = 1.15;
     vm.Vector3 at(double x, double z) => _v(x, groundHeight(x, z) + lift, z);
+    void tri(vm.Vector3 a, vm.Vector3 b, vm.Vector3 c) => chunkAt((a + b + c) / 3).triangle(a, b, c, dirt);
     void disc(P2 c, double r) {
       const seg = 14;
       for (var i = 0; i < seg; i++) {
         final a0 = 2 * math.pi * i / seg, a1 = 2 * math.pi * (i + 1) / seg;
-        b.triangle(
-          at(c.$1, c.$2),
-          at(c.$1 + math.cos(a0) * r, c.$2 + math.sin(a0) * r),
-          at(c.$1 + math.cos(a1) * r, c.$2 + math.sin(a1) * r),
-          dirt,
-        );
+        tri(at(c.$1, c.$2), at(c.$1 + math.cos(a0) * r, c.$2 + math.sin(a0) * r), at(c.$1 + math.cos(a1) * r, c.$2 + math.sin(a1) * r));
       }
     }
 
-    for (final ((ax, az), (bx, bz)) in pathSegments()) {
+    for (final ((ax, az), (bx, bz)) in _segments) {
       final len = dist((ax, az), (bx, bz));
       final steps = math.max(1, (len / 0.9).ceil());
       final nx = -(bz - az) / len * half, nz = (bx - ax) / len * half;
@@ -199,9 +241,8 @@ class VillageWorld {
         final x0 = ax + (bx - ax) * t0, z0 = az + (bz - az) * t0;
         final x1 = ax + (bx - ax) * t1, z1 = az + (bz - az) * t1;
         final l0 = at(x0 + nx, z0 + nz), r0 = at(x0 - nx, z0 - nz), l1 = at(x1 + nx, z1 + nz), r1 = at(x1 - nx, z1 - nz);
-        b
-          ..triangle(l0, r0, r1, dirt)
-          ..triangle(l0, r1, l1, dirt);
+        tri(l0, r0, r1);
+        tri(l0, r1, l1);
       }
       disc((ax, az), half);
       disc((bx, bz), half);
@@ -210,14 +251,6 @@ class VillageWorld {
       if (p == 'pond' || p == 'hilltop') continue;
       disc(standPoint(p), p == 'bakery' ? 5.0 : 2.4);
     }
-    _add(b.build(), _matte, shadows: false);
-  }
-
-  void _water() {
-    final (x, z) = placeCoordinates['pond']!;
-    water = pbr(rough: 0.08)..baseColorFactor = vm.Vector4(0.16, 0.42, 0.62, 1);
-    final b = MeshBuilder()..cylinder(_v(0, 0, 0), 7.7, 0.06, 1, rgb(0x5DB0DC), segments: 36);
-    _add(b.build(), water, at: vm.Matrix4.translation(_v(x, -0.32, z)), shadows: false);
   }
 
   // ------------------------------------------------------------ huts
@@ -428,7 +461,7 @@ class VillageWorld {
     festivalDecor = _add(flags.build(), _soft, at: at, shadows: false)..visible = false;
     for (final x in [-3.0, 3.0]) {
       final p = at.transformed3(_v(x, 3.4, -0.8));
-      lamps.add(_lantern(p, festival: true));
+      lamps.add(lantern(p, range: 9));
     }
   }
 
@@ -460,13 +493,6 @@ class VillageWorld {
         rings: 4,
       );
     }
-    // A little jetty towards the square.
-    final f = placeFacing('pond');
-    final yaw = math.atan2(f.$1, f.$2);
-    for (var i = 0; i < 6; i++) {
-      final d = 4.6 + i * 0.5;
-      b.box(_v(f.$1 * d, -0.05, f.$2 * d), _v(1.3, 0.08, 0.42), rgb(0xA67646), yaw: yaw);
-    }
     _add(b.build(), _soft, at: vm.Matrix4.translation(_v(px, 0, pz)));
     final scarf = MeshBuilder()
       ..box(_v(0, 0, 0), _v(0.9, 0.12, 0.28), rgb(0xC8372D), yaw: 0.4)
@@ -474,13 +500,14 @@ class VillageWorld {
     scarfInReeds = _add(scarf.build(), _soft, at: vm.Matrix4.translation(_v(px + math.cos(3.1) * 6.6, -0.22, pz - math.sin(3.1) * 6.6)));
   }
 
-  NightLight _lantern(vm.Vector3 at, {bool festival = false}) {
+  /// A glowing lantern with a warm point light of [range] metres.
+  NightLight lantern(vm.Vector3 at, {double range = 12, double power = 26, double size = 1}) {
     final m = pbr(rough: 0.3)..baseColorFactor = vm.Vector4(1, 0.85, 0.55, 1);
-    final light = PointLight(color: vm.Vector3(1.0, 0.75, 0.45), intensity: 0, range: festival ? 9 : 12);
-    final glow = MeshBuilder()..sphere(_v(0, 0, 0), _v(0.2, 0.26, 0.2), rgb(0xFFE6A8), segments: 8, rings: 6);
+    final light = PointLight(color: vm.Vector3(1.0, 0.75, 0.45), intensity: 0, range: range);
+    final glow = MeshBuilder()..sphere(_v(0, 0, 0), _v(0.2, 0.26, 0.2) * size, rgb(0xFFE6A8), segments: 8, rings: 6);
     _add(glow.build(), m, at: vm.Matrix4.translation(at), shadows: false);
     scene.add(Node(localTransform: vm.Matrix4.translation(at))..addComponent(PointLightComponent(light)));
-    return NightLight(m, vm.Vector3(1.0, 0.72, 0.38), light: light)..set(0);
+    return NightLight(m, vm.Vector3(1.0, 0.72, 0.38), light: light, power: power)..set(0);
   }
 
   void _lamps() {
@@ -491,7 +518,7 @@ class VillageWorld {
         ..cylinder(_v(x, g + 1.4, z), 0.08, 2.8, 1, rgb(0x3B3B40))
         ..box(_v(x, g + 2.85, z), _v(0.42, 0.08, 0.42), rgb(0x3B3B40))
         ..cone(_v(x, g + 3.3, z), 0.34, 0.0, 0.3, rgb(0x3B3B40), segments: 4);
-      lamps.add(_lantern(_v(x, g + 3.08, z)));
+      lamps.add(lantern(_v(x, g + 3.08, z)));
     }
     _add(b.build(), _gloss, at: vm.Matrix4.identity());
   }
@@ -515,6 +542,13 @@ class VillageWorld {
           },
         ),
       for (final p in placeCoordinates.keys) (standPoint(p), 4.5),
+      for (final b in AmbientLayout.blockers) (b.at, b.radius + 1.8),
+      for (final (a, c) in AmbientLayout.laundry) ...[(a, 2.0), (c, 2.0), (((a.$1 + c.$1) / 2, (a.$2 + c.$2) / 2), 2.2)],
+      for (final run in AmbientLayout.fences)
+        for (final p in run) (p, 2.4),
+      (AmbientLayout.vegPatch, 3.6),
+      for (final p in AmbientLayout.pathLanterns) (p, 1.5),
+      for (final p in AmbientLayout.sunnySpots) (p, 2.5),
     ];
     final trunk = rgb(0x6E4526), pine = [rgb(0x2F6E3A), rgb(0x2A6334), rgb(0x387A40)];
     final round = [rgb(0x5DA64A), rgb(0x6DB352), rgb(0x4E9A44), rgb(0xD9A23C)];
@@ -529,6 +563,7 @@ class VillageWorld {
       if (z > 12 && x.abs() < 10) continue;
       final y = groundHeight(x, z);
       final s = 0.8 + r.nextDouble() * 0.6;
+      treeTrunks.add(((x, z), 0.3 * s));
       if (r.nextDouble() < 0.5) {
         b.cylinder(_v(x, y + 0.6 * s, z), 0.22 * s, 1.2 * s, 1, trunk, segments: 6);
         final c = pine[r.nextInt(3)];
@@ -538,6 +573,7 @@ class VillageWorld {
       } else {
         b.cylinder(_v(x, y + 0.9 * s, z), 0.24 * s, 1.8 * s, 1, trunk, segments: 6);
         final c = round[r.nextDouble() < 0.12 ? 3 : r.nextInt(3)];
+        crowns.add((_v(x, y + 2.5 * s, z), 1.45 * s));
         b
           ..sphere(_v(x, y + 2.5 * s, z), _v(1.45 * s, 1.3 * s, 1.45 * s), c, segments: 8, rings: 6)
           ..sphere(_v(x + 0.5 * s, y + 3.2 * s, z - 0.3 * s), _v(0.9 * s, 0.8 * s, 0.9 * s), c * 1.08, segments: 7, rings: 5);

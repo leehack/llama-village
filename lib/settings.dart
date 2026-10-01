@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'render/quality.dart';
+
 /// How long speech stays up: [pace] multiplies each bubble's display time.
 enum TextSpeed {
   slow(1.5),
@@ -44,6 +46,7 @@ class VillageSettings extends ChangeNotifier {
   TextSize _textSize = TextSize.normal;
   bool _reducedMotion = false;
   bool _highContrast = false;
+  GraphicsQuality _quality = GraphicsQuality.high;
 
   static Future<VillageSettings> load() async {
     final prefs = await SharedPreferences.getInstance();
@@ -59,6 +62,7 @@ class VillageSettings extends ChangeNotifier {
     s._textSize = TextSize.values.where((e) => e.name == prefs.getString('textSize')).firstOrNull ?? TextSize.normal;
     s._reducedMotion = prefs.getBool('reducedMotion') ?? false;
     s._highContrast = prefs.getBool('highContrast') ?? false;
+    s._quality = GraphicsQuality.parse(prefs.getString('graphicsQuality'));
     return s;
   }
 
@@ -136,6 +140,14 @@ class VillageSettings extends ChangeNotifier {
     if (value == _highContrast) return;
     _highContrast = value;
     _prefs?.setBool('highContrast', value);
+    notifyListeners();
+  }
+
+  GraphicsQuality get quality => _quality;
+  set quality(GraphicsQuality value) {
+    if (value == _quality) return;
+    _quality = value;
+    _prefs?.setString('graphicsQuality', value.name);
     notifyListeners();
   }
 }
