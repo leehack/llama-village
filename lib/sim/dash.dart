@@ -103,6 +103,13 @@ class Dash {
     goal = slotPoint(place, 5);
   }
 
+  /// Flies to a free spot on the ground.
+  void flyTo(P2 p) {
+    leave();
+    goalPlace = placeNear(p);
+    goal = p;
+  }
+
   void steerBy(double x, double z) {
     steer = (x, z);
     if (x != 0 || z != 0) {

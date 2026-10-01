@@ -38,7 +38,10 @@ class CannedChat implements ChatModel {
     if (jsonSchema != null) return _json(jsonSchema, r);
     if (user.contains('Write your plan for today')) {
       const places = ['bakery', 'pond', 'berry bushes', 'hilltop', 'home'];
-      return [for (final h in [6, 8, 10, 12, 14, 16, 18, 20]) '${h.toString().padLeft(2, '0')} ${h >= 20 ? 'home' : places[r.nextInt(places.length)]} | potter about'].join('\n');
+      return [
+        for (final h in [6, 8, 10, 12, 14, 16, 18, 20])
+          '${h.toString().padLeft(2, '0')} ${h >= 20 ? 'home' : places[r.nextInt(places.length)]} | potter about',
+      ].join('\n');
     }
     if (user.contains('Write four things Dash could say')) {
       final intents = RegExp(r'^(compliment|gossip|tell|gift|help|tease): <', multiLine: true).allMatches(user).map((m) => m.group(1)!);
