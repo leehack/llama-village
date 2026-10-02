@@ -1,7 +1,11 @@
 # Llama Village
 
+![Llama Village: the village from above, Bramble and June talking, Dash's options and the festival spotlight](docs/media/header.gif)
+
 A small 3D village of AI llamas that live their own lives while you watch
 and meddle as Dash, a little blue bird, over one Festival Week.
+
+**Trailer:** coming soon on the [Releases](https://github.com/leehack/llama-village/releases) page.
 
 Five llamas (Pip, Mo, June, Bramble and Clover) each have a persona, needs,
 friendships, goals and secrets. They plan their day, walk the paths
@@ -12,6 +16,19 @@ actually knows. Facts move between them by being seen, told, overheard or
 announced, so rumours spread, secrets slip out, and story threads (a lost
 red scarf, the Berry Festival singing contest, a secret crush, a bread
 rumour and a storm warning) play out differently every run.
+
+## Screenshots
+
+From one recorded week played toward the Harmony Festival ending; the
+dialogue, thoughts, Dash's options, songs and storybook pages are the
+on-device models' own output.
+
+| | |
+| --- | --- |
+| ![The village from above at golden hour](docs/media/01_village_golden_hour.jpg) The village at golden hour | ![June and Bramble talking in speech bubbles by the berry bushes](docs/media/02_conversation.jpg) June and Bramble talk, a line at a time |
+| ![Dash visiting Pip at the pond with four options to choose from](docs/media/03_dash_choices.jpg) Dash's four options, written for Pip | ![The inspector panel open on June](docs/media/04_inspector.jpg) The inspector: June's mood, plans and what she knows |
+| ![The pond at night with fireflies and glowing lamps](docs/media/05_night_fireflies.jpg) Night at the pond, with fireflies | ![Bramble and Clover galloping home in the rain](docs/media/06_storm.jpg) Bramble's storm arrives on day 3 |
+| ![Mo in the spotlight on the festival stage under the Golden Bell](docs/media/07_festival_spotlight.jpg) Mo wins the Golden Bell | ![The storybook open on its first page](docs/media/08_storybook.jpg) The week, retold as a storybook |
 
 ## Where the AI runs
 

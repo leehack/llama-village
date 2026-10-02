@@ -207,9 +207,12 @@ class CinematicCapture {
     _current = null;
   }
 
+  /// Draws a frame now rather than on the next vsync, which a sleeping
+  /// display or a locked screen never sends.
   Future<void> _frame() async {
-    SchedulerBinding.instance.scheduleFrame();
-    await SchedulerBinding.instance.endOfFrame;
+    final drawn = SchedulerBinding.instance.endOfFrame;
+    SchedulerBinding.instance.scheduleWarmUpFrame();
+    await drawn;
   }
 
   Future<ui.Image?> _grab() async {
