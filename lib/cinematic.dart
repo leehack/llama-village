@@ -214,6 +214,7 @@ class CinematicCapture {
         }),
       );
       _traceFrame(s);
+      await _settle();
       final image = await _grab();
       if (image == null) continue;
       _writes.add(_save(image, '${dir.path}/${_shotFrame.toString().padLeft(5, '0')}.png'));
@@ -309,10 +310,18 @@ class CinematicCapture {
   }
 
   /// Draws a frame now rather than on the next vsync, which a sleeping
-  /// display or a locked screen never sends, and waits for it to be
-  /// rasterized: with the window off screen (VILLAGE_BACKGROUND), grabbing
-  /// the next image before then drew some overlays black or without fills.
+  /// display or a locked screen never sends.
   Future<void> _frame() async {
+    final drawn = SchedulerBinding.instance.endOfFrame;
+    SchedulerBinding.instance.scheduleWarmUpFrame();
+    await drawn;
+  }
+
+  /// Waits for the frame just drawn to be rasterized before it is grabbed.
+  /// With the window off screen (VILLAGE_BACKGROUND) no raster timing ever
+  /// comes, and grabbing at once drew some overlays black or without fills
+  /// (24 of 340 frames of a visit shot); half a second lets it settle.
+  Future<void> _settle() async {
     final binding = SchedulerBinding.instance;
     final rastered = Completer<void>();
     void onTimings(List<ui.FrameTiming> _) {
@@ -320,9 +329,6 @@ class CinematicCapture {
     }
 
     binding.addTimingsCallback(onTimings);
-    final drawn = binding.endOfFrame;
-    binding.scheduleWarmUpFrame();
-    await drawn;
     await rastered.future.timeout(const Duration(milliseconds: 500), onTimeout: () {});
     binding.removeTimingsCallback(onTimings);
   }
