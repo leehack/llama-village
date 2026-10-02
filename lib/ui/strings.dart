@@ -376,7 +376,8 @@ extension SimWords on L10n {
   String saveWhen(SaveInfo s) => s.damaged ? damaged : dayAndTime(s.day!, s.time!);
 
   String savePlaytime(SaveInfo s) {
-    final m = s.playtime.inMinutes;
+    // A game under a minute old reads "1 min", not "0 min".
+    final m = s.playtime > Duration.zero && s.playtime.inMinutes == 0 ? 1 : s.playtime.inMinutes;
     return m < 60 ? playtimeMinutes(m) : playtimeHours(m ~/ 60, m % 60);
   }
 
