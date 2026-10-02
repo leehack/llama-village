@@ -167,6 +167,92 @@ def shaker(rng, vel=1.0):
     return n * np.exp(-x * 70) * np.minimum(1, x / 0.004) * vel / (np.max(np.abs(n)) + 1e-9)
 
 
+def fiddle(freq, dur, vel=1.0):
+    """A bowed lead: bright harmonics through two body resonances, with
+    vibrato that comes in after the bow's attack."""
+    total = dur + 0.18
+    x = t(total)
+    vib = 1 + 0.005 * np.sin(2 * np.pi * 5.6 * x) * np.clip((x - 0.1) / 0.25, 0, 1)
+    ph = 2 * np.pi * np.cumsum(freq * vib) / SR
+    s = np.zeros(len(x))
+    for h in range(1, 14):
+        fh = freq * h
+        if fh > 9000:
+            break
+        body = 1 + 0.8 * np.exp(-((fh - 480) / 250) ** 2) + 0.6 * np.exp(-((fh - 2600) / 700) ** 2)
+        s += (1 / h) * (1.0 if h % 2 else 0.7) * body * np.sin(h * ph)
+    env = np.clip(x / 0.035, 0, 1) * np.clip((total - x) / 0.16, 0, 1) * (1 - 0.18 * np.clip((x - 0.05) / 0.3, 0, 1))
+    return s * env * vel * 0.3
+
+
+def accordion(freqs, dur, vel=1.0):
+    """A squeezebox chord: three slightly detuned reeds per note."""
+    total = dur + 0.05
+    x = t(total)
+    s = np.zeros(len(x))
+    for f in freqs:
+        for det in (-0.0035, 0.0, 0.0035):
+            ph = 2 * np.pi * f * (1 + det) * x
+            for h in range(1, 9):
+                s += ((1 / h) if h % 2 else (0.35 / h)) * np.sin(h * ph)
+    env = np.clip(x / 0.012, 0, 1) * np.clip((total - x) / 0.05, 0, 1)
+    return s * env * vel / (3 * len(freqs))
+
+
+def clap(rng, vel=1.0):
+    """A hand clap: three quick noise bursts, the last ringing a little."""
+    x = t(0.2)
+    n = fft_filter(rng.standard_normal(len(x)), lo=900, hi=4200)
+    n /= np.max(np.abs(n)) + 1e-9
+    env = np.zeros(len(x))
+    for i, d in enumerate((0.0, 0.008, 0.017)):
+        env += (x >= d) * np.exp(-np.clip(x - d, 0, None) * (170 if i < 2 else 30))
+    return n * env * vel
+
+
+def tambourine(rng, vel=1.0):
+    x = t(0.16)
+    n = fft_filter(rng.standard_normal(len(x)), lo=6000, hi=12500)
+    n /= np.max(np.abs(n)) + 1e-9
+    jingle = np.sin(2 * np.pi * 5200 * x) * 0.3 + np.sin(2 * np.pi * 7350 * x) * 0.2
+    return (n + jingle) * np.exp(-x * 32) * np.minimum(1, x / 0.002) * vel
+
+
+def music_box(freq, dur=2.4, vel=1.0):
+    """A plucked comb tine: a pure tone with a quick bright plink."""
+    x = t(dur)
+    s = (np.sin(2 * np.pi * freq * x) * np.exp(-x * 1.9)
+         + 0.16 * np.sin(2 * np.pi * freq * 2 * x) * np.exp(-x * 5)
+         + 0.1 * np.sin(2 * np.pi * freq * 6.27 * x) * np.exp(-x * 22)
+         + 0.04 * np.sin(2 * np.pi * freq * 17.55 * x) * np.exp(-x * 60))
+    return s * np.minimum(1, x / 0.0015) * vel
+
+
+def pluck(freq, dur=2.0, vel=1.0):
+    """A soft harp-like pluck; higher partials die first."""
+    x = t(dur)
+    s = np.zeros(len(x))
+    for h in range(1, 9):
+        s += np.sin(2 * np.pi * freq * h * x) * np.exp(-x * (1.2 + 0.9 * h)) / h ** 1.6
+    return s * np.minimum(1, x / 0.004) * vel
+
+
+def strings(freqs, dur, rng, attack=1.1, release=1.6):
+    """A warm string section, stereo: an ensemble of detuned bowed voices."""
+    total = dur + release
+    x = t(total)
+    env = np.clip(x / attack, 0, 1) ** 2 * np.clip((total - x) / release, 0, 1) ** 1.5
+    out = np.zeros((2, len(x)))
+    for f in freqs:
+        for ch, dets in enumerate(((-0.004, 0.0015), (-0.0015, 0.004))):
+            for det in dets:
+                vib = 1 + 0.0028 * np.sin(2 * np.pi * (4.6 + 60 * det) * x + rng.uniform(0, 6.3))
+                ph = 2 * np.pi * np.cumsum(f * (1 + det) * vib) / SR + rng.uniform(0, 6.3)
+                for h in range(1, 11):
+                    out[ch] += np.sin(h * ph) / h * np.exp(-((f * h) / 2600) ** 2)
+    return out * env / (2 * len(freqs))
+
+
 def stereo(sig, pan=0.0):
     left = np.cos((pan + 1) * np.pi / 4)
     right = np.sin((pan + 1) * np.pi / 4)
@@ -240,7 +326,8 @@ def melody_bar(rng, pcs, prev, density):
     return events, cur
 
 
-def day_loop(rng):
+def day_loop(rng, score=None):
+    """The cozy day loop; appends each bar's (chord, melody events) to score."""
     bars = 32
     n = loop_len(72)
     bar = n / bars
@@ -276,6 +363,8 @@ def day_loop(rng):
             motifs.setdefault(key, events)
         if b == bars - 1:
             events = [(0, note('G5'), 2), (2, note('E5'), 2), (4, note('D5'), 4)]
+        if score is not None:
+            score.append((ch, events))
         for slot, m, ln in events:
             vel = 0.55 + 0.25 * (slot in (0, 4)) + 0.1 * rng.random()
             add2(mel_buf, at + slot * eighth, stereo(marimba(midi(m), dur=min(1.6, 0.35 + ln * eighth / SR * 1.2), vel=vel), pan=-0.15))
@@ -328,6 +417,80 @@ def night_loop(rng):
     mix = pad_buf * 0.6 + mel_buf * 0.55 + low_buf * 0.45 + wet * 0.35
     mix = np.vstack([fft_filter(mix[0], hi=5000), fft_filter(mix[1], hi=5000)])
     return normalize(mix, -19)
+
+
+def festival_loop(score):
+    """The day loop's tune for the Berry Festival: quicker, with a fiddle
+    lead, an accordion oom-pah, claps on two and four and a tambourine."""
+    rng = np.random.default_rng(45)
+    bars = len(score)
+    n = loop_len(60)
+    bar = n / bars
+    eighth = bar / 8
+    lead = np.zeros((2, n))
+    band = np.zeros((2, n))
+    low = np.zeros((2, n))
+    perc = np.zeros((2, n))
+    for b, (ch, events) in enumerate(score):
+        root, pcs = chord_notes(ch)
+        at = b * bar
+        fifth = root + 7 if root + 7 < note('C3') else root - 5
+        add2(low, at, stereo(soft_bass(midi(root), 2 * eighth / SR * 0.9, 0.75)))
+        add2(low, at + 4 * eighth, stereo(soft_bass(midi(fifth), 2 * eighth / SR * 0.9, 0.6)))
+        chord = [midi(m) for m in voicing(pcs, low=note('G3'))]
+        for slot in (2, 6):
+            add2(band, at + slot * eighth, stereo(accordion(chord, eighth / SR * 1.3, 0.85), pan=0.3))
+        if b % 2 == 1:
+            add2(band, at + 7 * eighth, stereo(accordion(chord, eighth / SR * 0.6, 0.5), pan=0.3))
+        for slot, m, ln in events:
+            vel = 0.75 + 0.2 * (slot in (0, 4)) + 0.08 * rng.random()
+            add2(lead, at + slot * eighth, stereo(fiddle(midi(m), min(1.0, ln * eighth / SR * 0.92), vel), pan=-0.2))
+        if b % 4 == 3:
+            m = voicing(pcs, low=note('C6'))[rng.integers(3)]
+            add2(lead, at + 6 * eighth, stereo(bell(midi(m), 1.6, 0.22), pan=0.45))
+        for slot in (0, 4):
+            add2(perc, at + slot * eighth, stereo(thump(0.6 if slot == 0 else 0.45)))
+        for slot in (2, 6):
+            add2(perc, at + slot * eighth + rng.normal(0, 30), stereo(clap(rng, 0.42), pan=rng.uniform(-0.15, 0.15)))
+        for slot in range(8):
+            add2(perc, at + slot * eighth + rng.normal(0, 25), stereo(tambourine(rng, 0.16 if slot % 2 else 0.09), pan=0.4))
+    ir = reverb_ir(1.8, np.random.default_rng(7), decay=2.6)
+    wet_src = lead * 0.8 + band * 0.5 + perc * 0.25
+    wet = np.vstack([conv_circular(wet_src[0], ir), conv_circular(wet_src[1], np.roll(ir, 41))])
+    mix = lead * 0.75 + band * 0.55 + low * 0.6 + perc * 0.55 + wet * 0.2
+    mix = np.vstack([fft_filter(mix[0], hi=10000), fft_filter(mix[1], hi=10000)])
+    return normalize(mix, -14)
+
+
+def ending_loop(score):
+    """A slow, warm closing theme: the day tune's A and B phrases on a
+    music box over strings, a cello line and a soft harp."""
+    rng = np.random.default_rng(46)
+    picks = score[0:8] + score[16:24]
+    n = loop_len(60)
+    bar = n / len(picks)
+    eighth = bar / 8
+    box = np.zeros((2, n))
+    pad_buf = np.zeros((2, n))
+    low = np.zeros((2, n))
+    harp = np.zeros((2, n))
+    for b, (ch, events) in enumerate(picks):
+        root, pcs = chord_notes(ch)
+        at = b * bar
+        add2(pad_buf, at, strings([midi(m) for m in voicing(pcs, low=note('F3'))], bar / SR + 0.3, rng))
+        add2(low, at, strings([midi(root - 12 if root >= note('C3') else root)], bar / SR + 0.2, rng, attack=0.6))
+        for slot, m, ln in events:
+            vel = 0.55 + 0.25 * (slot in (0, 4)) + 0.1 * rng.random()
+            add2(box, at + slot * eighth, stereo(music_box(midi(m), 2.6, vel), pan=rng.uniform(-0.25, 0.25)))
+        arp = voicing(pcs, low=note('C4'))
+        for k, slot in enumerate((1, 3, 5, 7)):
+            add2(harp, at + slot * eighth, stereo(pluck(midi(arp[k % len(arp)]), 2.2, 0.35), pan=0.35))
+    ir = reverb_ir(3.4, np.random.default_rng(8), decay=1.3, hi=5000)
+    wet_src = box + pad_buf * 0.4 + harp * 0.6
+    wet = np.vstack([conv_circular(wet_src[0], ir), conv_circular(wet_src[1], np.roll(ir, 61))])
+    mix = pad_buf * 0.6 + box * 0.55 + low * 0.45 + harp * 0.35 + wet * 0.38
+    mix = np.vstack([fft_filter(mix[0], hi=7000), fft_filter(mix[1], hi=7000)])
+    return normalize(mix, -17)
 
 
 def rain_loop(rng):
@@ -610,10 +773,13 @@ def main():
     os.makedirs(args.out, exist_ok=True)
 
     rng = np.random.default_rng(2026)
-    day = day_loop(np.random.default_rng(42))
+    score = []
+    day = day_loop(np.random.default_rng(42), score)
     music = {
         'music_day': (day, '96k'),
         'music_night': (night_loop(np.random.default_rng(43)), '80k'),
+        'music_festival': (festival_loop(score), '96k'),
+        'music_ending': (ending_loop(score), '80k'),
         'rain': (rain_loop(np.random.default_rng(44)), '64k'),
     }
     sfx = {
