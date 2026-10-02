@@ -1,11 +1,11 @@
 # Llama Village
 
-![Llama Village: the village from above, Bramble and June talking, Dash's options and the festival spotlight](docs/media/header.gif)
+![Llama Village: June and Bramble trade lines in speech bubbles by the bakery while Dash flies in and the chickens wander](docs/media/header.gif)
 
 A small 3D village of AI llamas that live their own lives while you watch
 and meddle as Dash, a little blue bird, over one Festival Week.
 
-**Trailer:** coming soon on the [Releases](https://github.com/leehack/llama-village/releases) page.
+**Trailer:** watch it on the [v0.1.0-preview release](https://github.com/leehack/llama-village/releases/tag/v0.1.0-preview).
 
 Five llamas (Pip, Mo, June, Bramble and Clover) each have a persona, needs,
 friendships, goals and secrets. They plan their day, walk the paths
