@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
+import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:flutter/rendering.dart';
@@ -214,8 +215,7 @@ class CinematicCapture {
         }),
       );
       _traceFrame(s);
-      await _settle();
-      final image = await _grab();
+      final image = await _steadyGrab();
       if (image == null) continue;
       _writes.add(_save(image, '${dir.path}/${_shotFrame.toString().padLeft(5, '0')}.png'));
       if (_writes.length > 6) await _writes.removeAt(0);
@@ -317,20 +317,38 @@ class CinematicCapture {
     await drawn;
   }
 
-  /// Waits for the frame just drawn to be rasterized before it is grabbed.
-  /// With the window off screen (VILLAGE_BACKGROUND) no raster timing ever
-  /// comes, and grabbing at once drew some overlays black or without fills
-  /// (24 of 340 frames of a visit shot); half a second lets it settle.
-  Future<void> _settle() async {
-    final binding = SchedulerBinding.instance;
-    final rastered = Completer<void>();
-    void onTimings(List<ui.FrameTiming> _) {
-      if (!rastered.isCompleted) rastered.complete();
+  /// Grabs the frame until two grabs agree. With the window hidden
+  /// (VILLAGE_BACKGROUND) an occasional grab drew some overlays black or
+  /// without their fills (up to 24 of 340 frames of a visit shot); that
+  /// does not repeat, so two grabs that agree are the real frame. A
+  /// progress spinner keeps turning between grabs, so they need only agree
+  /// on all but 0.2% of the pixels.
+  Future<ui.Image?> _steadyGrab() async {
+    ui.Image? last;
+    Uint64List? lastPixels;
+    for (var i = 0; i < 4; i++) {
+      final image = await _grab();
+      if (image == null) break;
+      final pixels = (await image.toByteData())!.buffer.asUint64List();
+      if (lastPixels != null && _nearlySame(pixels, lastPixels)) {
+        last!.dispose();
+        return image;
+      }
+      if (lastPixels != null) home.test.log('CINE unsteady grab at ${_current?.name} $_shotFrame');
+      last?.dispose();
+      last = image;
+      lastPixels = pixels;
     }
+    return last;
+  }
 
-    binding.addTimingsCallback(onTimings);
-    await rastered.future.timeout(const Duration(milliseconds: 500), onTimeout: () {});
-    binding.removeTimingsCallback(onTimings);
+  static bool _nearlySame(Uint64List a, Uint64List b) {
+    if (a.length != b.length) return false;
+    var allowed = a.length ~/ 500;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i] != b[i] && --allowed < 0) return false;
+    }
+    return true;
   }
 
   Future<ui.Image?> _grab() async {

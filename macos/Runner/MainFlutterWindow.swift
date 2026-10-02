@@ -30,14 +30,25 @@ class MainFlutterWindow: NSWindow, NSWindowDelegate {
       }
     }
     // VILLAGE_BACKGROUND=1: an unattended run that stays out of the way: no
-    // Dock icon or menu bar, and the window parked off every screen. The
-    // offline cinematic render still works, as it draws its frames into
-    // images rather than reading the window.
+    // Dock icon or menu bar, and a transparent window that ignores the
+    // mouse, parked off every screen (AppKit sometimes moves it back while
+    // showing it, so it is parked again whenever it moves). The offline
+    // cinematic render still works, as it draws its frames into images
+    // rather than reading the window.
     if background {
       NSApp.setActivationPolicy(.accessory)
-      let screens = NSScreen.screens.reduce(NSRect.null) { $0.union($1.frame) }
       offscreen = true
-      self.setFrameOrigin(NSPoint(x: screens.maxX + 64, y: screens.minY))
+      self.isRestorable = false
+      self.alphaValue = 0
+      self.ignoresMouseEvents = true
+      self.hasShadow = false
+      park()
+      NotificationCenter.default.addObserver(
+        forName: NSWindow.didMoveNotification, object: self, queue: .main
+      ) { [weak self] _ in self?.park() }
+      for delay in [0.2, 1.0, 3.0] {
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in self?.park() }
+      }
     }
     // Self-test of the two quit paths: the window's close button and Cmd-Q
     // (the Quit menu item sends terminate:).
@@ -56,6 +67,12 @@ class MainFlutterWindow: NSWindow, NSWindowDelegate {
   }
 
   private var offscreen = false
+
+  private func park() {
+    let screens = NSScreen.screens.reduce(NSRect.null) { $0.union($1.frame) }
+    if screens.isNull || frame.minX >= screens.maxX { return }
+    setFrameOrigin(NSPoint(x: screens.maxX + 64, y: screens.minY))
+  }
 
   override func constrainFrameRect(_ frameRect: NSRect, to screen: NSScreen?) -> NSRect {
     offscreen ? frameRect : super.constrainFrameRect(frameRect, to: screen)
