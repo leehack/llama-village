@@ -163,6 +163,7 @@ class Cutscene {
     List<Hold> holds = const [],
     this.shakes = const [],
     this.notes = const [],
+    this.music = const {},
     this.pausesSim = true,
     this.onFrame,
   }) : camera = [...camera]..sort((a, b) => a.at.compareTo(b.at)),
@@ -181,6 +182,10 @@ class Cutscene {
   final List<Hold> holds;
   final List<Shake> shakes;
   final List<NoteCue> notes;
+
+  /// The share of the music (0..1) each named theme takes over while the
+  /// scene plays, so the score crossfades on the scene's own clock.
+  final Map<String, List<Ramp>> music;
   final bool pausesSim;
 
   /// Called with the scene time after every update, for continuous effects
@@ -355,6 +360,9 @@ class CutscenePlayer {
     for (final n in scene.notes)
       if (!finished && time >= n.at && time < n.at + n.duration + NoteCue.life) n,
   ];
+
+  /// Each of the scene's music themes' share of the music now.
+  Map<String, double> get music => {for (final MapEntry(:key, :value) in scene.music.entries) key: _rampValue(value, time).clamp(0.0, 1.0)};
 
   /// Texts on screen now, with their opacity (0.35 s in and out).
   List<(TextCue, double)> get texts {

@@ -110,7 +110,12 @@ class VillageHomeState extends State<VillageHome> {
   VillageSettings get settings => widget.settings;
   bool showSettings = false;
   final SoloudOut _audio = SoloudOut();
-  late final Soundscape sound = Soundscape(_audio, onPlay: (name, volume) => test.log('AUDIO $name vol=${volume.toStringAsFixed(2)}'));
+  late final Soundscape sound = Soundscape(
+    _audio,
+    onPlay: (name, volume) => test.log('AUDIO $name vol=${volume.toStringAsFixed(2)}'),
+    onLead: (name, level) =>
+        test.log('AUDIO loop $name level=${level.toStringAsFixed(2)} at ${village?.now} cutscene=${director?.player?.scene.name}'),
+  );
   late final _StageView _view = _StageView(this);
   late final AnimalSounds animalSounds = AnimalSounds(
     _audio,
@@ -812,6 +817,7 @@ class VillageHomeState extends State<VillageHome> {
     if (phase != Phase.playing) _drone();
     final simDone = watch.elapsedMicroseconds;
     stage.update(v, step);
+    sound.scored = game == null ? null : director?.music;
     if (game != null && phase == Phase.playing) {
       sound.update(game, _view, step);
     } else {

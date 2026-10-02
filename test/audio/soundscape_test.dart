@@ -35,13 +35,73 @@ class FakeView implements SoundView {
 
 void main() {
   test('day, night and storm mixes', () {
-    expect(Soundscape.mix(12, storm: false), {'music_day': 1.0, 'music_night': 0.0, 'rain': 0.0});
+    expect(Soundscape.mix(12, storm: false), {
+      'music_day': 1.0,
+      'music_night': 0.0,
+      'music_festival': 0.0,
+      'music_ending': 0.0,
+      'rain': 0.0,
+    });
     expect(Soundscape.mix(1, storm: false)['music_night'], greaterThan(0.8));
     expect(Soundscape.mix(1, storm: false)['music_day'], 0);
     final storm = Soundscape.mix(12, storm: true);
     expect(storm['rain'], 1);
     expect(storm['music_day'], lessThan(0.5));
     expect(Soundscape.dayness(6.1), inExclusiveRange(0, 1), reason: 'dawn crossfades');
+  });
+
+  test('the festival theme takes over the day loop, and the ending theme over both', () {
+    final festival = Soundscape.mix(16.2, storm: false, themes: {'music_festival': 1});
+    expect(festival['music_festival'], 1);
+    expect(festival['music_day']! + festival['music_night']!, 0);
+    final half = Soundscape.mix(16.2, storm: false, themes: {'music_festival': 0.5});
+    expect(half['music_festival'], 0.5);
+    expect(half['music_day'], closeTo(0.5, 1e-9));
+    final ending = Soundscape.mix(16.2, storm: false, themes: {'music_festival': 1, 'music_ending': 0.25});
+    expect(ending['music_ending'], 0.25);
+    expect(ending['music_festival'], 0.75);
+    expect(ending['music_day'], 0);
+    expect(Soundscape.mix(16.2, storm: false, themes: {'music_festival': 1, 'music_ending': 1})['music_festival'], 0);
+    final storm = Soundscape.mix(18.5, storm: true, themes: {'music_ending': 1});
+    expect(storm['music_ending'], closeTo(0.45, 1e-9), reason: 'the storm ducks the ending theme too');
+    expect(storm['rain'], 1);
+    for (final themes in <Map<String, double>>[
+      {},
+      {'music_festival': 0.3},
+      {'music_festival': 1, 'music_ending': 0.6},
+    ]) {
+      final m = Soundscape.mix(16.2, storm: false, themes: themes);
+      final music = m.entries.where((e) => e.key != 'rain').fold<double>(0, (a, e) => a + e.value);
+      expect(music, closeTo(1, 1e-9), reason: 'a crossfade keeps the overall level: $themes');
+    }
+  });
+
+  test('a scored scene sets the loops on its own clock; without it they ease back', () {
+    final out = FakeOut();
+    final leads = <String>[];
+    final s = Soundscape(out, onLead: (name, _) => leads.add(name))..musicVolume = 1;
+    final v = testVillage()..now = GameTime(5, 16 * 60);
+    for (var i = 0; i < 300; i++) {
+      s.update(v, FakeView(), 1 / 30);
+    }
+    expect(out.loops['music_day'], closeTo(1, 0.01));
+    s.scored = {'music_festival': 0.4};
+    s.update(v, FakeView(), 1 / 30);
+    expect(out.loops['music_festival'], closeTo(0.4, 1e-9), reason: 'no lag behind the scene');
+    expect(out.loops['music_day'], closeTo(0.6, 1e-9));
+    s.scored = {'music_festival': 1, 'music_ending': 1};
+    s.update(v, FakeView(), 1 / 30);
+    expect(out.loops['music_ending'], 1);
+    expect(out.loops['music_festival'], 0);
+    s.scored = null;
+    s.update(v, FakeView(), 1 / 30);
+    expect(out.loops['music_ending'], allOf(greaterThan(0.9), lessThan(1)), reason: 'eases back to the day loop');
+    for (var i = 0; i < 300; i++) {
+      s.update(v, FakeView(), 1 / 30);
+    }
+    expect(out.loops['music_ending'], lessThan(0.01));
+    expect(out.loops['music_day'], closeTo(1, 0.01));
+    expect(leads, ['music_day', 'music_ending', 'music_day'], reason: 'each change of the loudest loop, once');
   });
 
   test('loops ease toward the mix scaled by the music volume', () {

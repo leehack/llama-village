@@ -239,7 +239,7 @@ class FestivalStaging {
 /// singers' turns at centre stage, the judging, and the winner stepping
 /// into the spotlight for the Golden Bell. [judge] runs the sim on to the
 /// judging; the winner is read after it. The sky drifts toward the golden
-/// hour.
+/// hour, and the festival theme takes over the music with the title.
 Cutscene festivalScene(SceneContext c, FestivalStaging staging, {required void Function() judge}) {
   final v = c.v;
   final show = staging.show;
@@ -356,6 +356,7 @@ Cutscene festivalScene(SceneContext c, FestivalStaging staging, {required void F
     notes: notes,
     shakes: shakes,
     cues: cues,
+    music: festivalMusic,
     onFrame: (t) {
       c.stage.hourOverride = fromHour + (festivalSkyHour - fromHour) * (t / end);
       staging.apply(t);
@@ -367,7 +368,8 @@ Cutscene festivalScene(SceneContext c, FestivalStaging staging, {required void F
 const double festivalSkyHour = 17.5;
 
 /// The closing scene for [verdict], over the hilltop, the village or the
-/// pond. The festival's last tableau holds on the hilltop ([festival]).
+/// pond. The festival's last tableau holds on the hilltop ([festival]),
+/// and the ending theme takes over the music as the sky goes to dusk.
 Cutscene endingScene(SceneContext c, EndingVerdict verdict, Influence i, {FestivalStaging? festival}) {
   final v = c.v;
   final l = c.l;
@@ -398,6 +400,7 @@ Cutscene endingScene(SceneContext c, EndingVerdict verdict, Influence i, {Festiv
           for (var k = 0; k < lines.length; k++) TextCue(1.6 + k * 3.2, 3.0, text: lines[k]),
           TextCue(end - 3.6, 3.6, kind: TextKind.title, text: title, subtitle: l.endingWord),
         ],
+        music: endingMusic,
         onFrame: (t) {
           c.stage.hourOverride = festivalSkyHour + (20.9 - festivalSkyHour) * applyEase(Ease.inOut, t / 6);
           festival?.apply(festival.show.end);
@@ -427,6 +430,7 @@ Cutscene endingScene(SceneContext c, EndingVerdict verdict, Influence i, {Festiv
           TextCue(end - 3.6, 3.6, kind: TextKind.title, text: title, subtitle: l.endingWord),
         ],
         cues: [Cue(0.2, () => v.storm = true, label: 'thunder')],
+        music: endingMusic,
         onFrame: (t) {
           c.stage.hourOverride = 18.4 + 1.4 * (t / end);
           festival?.apply(festival.show.end, turnAway: true);
@@ -449,6 +453,7 @@ Cutscene endingScene(SceneContext c, EndingVerdict verdict, Influence i, {Festiv
           for (var k = 0; k < lines.length; k++) TextCue(2 + k * 3.6, 3.4, text: lines[k]),
           TextCue(end - 3.6, 3.6, kind: TextKind.title, text: title, subtitle: l.endingWord),
         ],
+        music: endingMusic,
         onFrame: (t) {
           c.stage.hourOverride = 18.2 + 1.2 * (t / end);
           festival?.apply(festival.show.end);
@@ -456,6 +461,17 @@ Cutscene endingScene(SceneContext c, EndingVerdict verdict, Influence i, {Festiv
       );
   }
 }
+
+/// The festival loop takes over from the day loop as the title comes up.
+const Map<String, List<Ramp>> festivalMusic = {
+  'music_festival': [Ramp(0.6, 2.6, 0, 1)],
+};
+
+/// The ending theme fades in over the first six seconds, as the harmony
+/// ending's sky goes from the golden hour to dusk.
+const Map<String, List<Ramp>> endingMusic = {
+  'music_ending': [Ramp(0, 6, 0, 1)],
+};
 
 /// [s] as a caption: a capital first letter and a full stop.
 String _sentence(String s) {

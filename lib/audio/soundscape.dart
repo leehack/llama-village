@@ -25,7 +25,7 @@ abstract interface class SoundView {
 
 /// The music loops and when each effect fires, read from the sim each frame.
 class Soundscape {
-  Soundscape(this.out, {math.Random? rng, this.onPlay}) : _rng = rng ?? math.Random();
+  Soundscape(this.out, {math.Random? rng, this.onPlay, this.onLead}) : _rng = rng ?? math.Random();
 
   final SoundOut out;
   final math.Random _rng;
@@ -33,13 +33,26 @@ class Soundscape {
   /// Called with each effect played and its volume, for the self-test log.
   final void Function(String name, double volume)? onPlay;
 
-  static const List<String> loops = ['music_day', 'music_night', 'rain'];
+  /// Called with a music loop and its level when it becomes the loudest,
+  /// for the self-test log.
+  final void Function(String name, double level)? onLead;
+  String? _lead;
+
+  static const List<String> loops = ['music_day', 'music_night', ...themes, 'rain'];
+
+  /// The cutscene themes, each over the ones before it: the festival's
+  /// loop, then the ending's.
+  static const List<String> themes = ['music_festival', 'music_ending'];
 
   /// Per-llama pitch for the murmur blip.
   static const Map<String, double> voices = {'Pip': 1.24, 'Mo': 0.84, 'June': 1.1, 'Bramble': 0.74, 'Clover': 0.97};
 
   double musicVolume = 0.5;
   double sfxVolume = 0.7;
+
+  /// Each theme's share of the music (0..1) while a cutscene scores it;
+  /// the loops then follow the scene's own clock instead of easing.
+  Map<String, double>? scored;
 
   final Map<String, double> _loopLevel = {for (final l in loops) l: 0};
   final Map<int, Speech> _bubbles = {};
@@ -66,11 +79,23 @@ class Soundscape {
     return d * d * (3 - 2 * d);
   }
 
-  /// Target loop levels (before the music volume) for the time and weather.
-  static Map<String, double> mix(double hour, {required bool storm}) {
+  /// Target loop levels (before the music volume) for the time and
+  /// weather, with each of [themes] taking its share of the music.
+  static Map<String, double> mix(double hour, {required bool storm, Map<String, double> themes = const {}}) {
     final day = dayness(hour);
-    final duck = storm ? 0.45 : 1.0;
-    return {'music_day': day * duck, 'music_night': (1 - day) * 0.85 * duck, 'rain': storm ? 1.0 : 0.0};
+    var rest = storm ? 0.45 : 1.0;
+    final theme = <String, double>{};
+    for (final name in Soundscape.themes.reversed) {
+      final share = (themes[name] ?? 0).clamp(0.0, 1.0);
+      theme[name] = rest * share;
+      rest *= 1 - share;
+    }
+    return {
+      'music_day': day * rest,
+      'music_night': (1 - day) * 0.85 * rest,
+      for (final name in Soundscape.themes) name: theme[name]!,
+      'rain': storm ? 1.0 : 0.0,
+    };
   }
 
   void attach(Village v) {
@@ -110,13 +135,20 @@ class Soundscape {
 
   void _music(Village v, double dt) {
     final hour = (v.now.minute + v.minuteFrac) / 60;
-    final target = mix(hour, storm: v.storm);
+    final scored = this.scored;
+    final target = mix(hour, storm: v.storm, themes: scored ?? const {});
     // About three seconds to cross between loops.
     final k = 1 - math.exp(-dt / 1.2);
     for (final name in loops) {
-      final level = _loopLevel[name]! + (target[name]! - _loopLevel[name]!) * k;
+      final music = name != 'rain';
+      final level = scored != null && music ? target[name]! : _loopLevel[name]! + (target[name]! - _loopLevel[name]!) * k;
       _loopLevel[name] = level;
-      out.setLoopVolume(name, level * (name == 'rain' ? sfxVolume * 0.8 : musicVolume));
+      out.setLoopVolume(name, level * (music ? musicVolume : sfxVolume * 0.8));
+    }
+    final lead = loops.where((n) => n != 'rain').reduce((a, b) => _loopLevel[b]! > _loopLevel[a]! ? b : a);
+    if (lead != _lead && _loopLevel[lead]! > 0.5) {
+      _lead = lead;
+      onLead?.call(lead, _loopLevel[lead]!);
     }
   }
 

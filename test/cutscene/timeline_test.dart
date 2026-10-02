@@ -216,4 +216,24 @@ void main() {
     expect(p.notes, isEmpty);
     expect(heads, 0, reason: 'the overlay reads the anchor, not the timeline');
   });
+
+  test("a scene's music themes follow their ramps on its clock and hold once done", () {
+    final p = CutscenePlayer(
+      Cutscene(
+        name: 't',
+        duration: 10,
+        music: const {
+          'music_festival': [Ramp(1, 2, 0, 1)],
+        },
+      ),
+    );
+    expect(p.music, {'music_festival': 0});
+    p.update(2);
+    expect(p.music['music_festival'], closeTo(0.5, 1e-9));
+    p.update(2);
+    expect(p.music['music_festival'], 1);
+    p.skip();
+    expect(p.music['music_festival'], 1);
+    expect(CutscenePlayer(Cutscene(name: 'night', duration: 1)).music, isEmpty, reason: 'a scene without themes leaves the music alone');
+  });
 }

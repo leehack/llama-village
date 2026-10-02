@@ -59,6 +59,14 @@ class Director {
   FestivalStaging? get festival => _festival;
   FestivalStaging? _festival;
 
+  final Map<String, double> _music = {};
+
+  /// The cutscene themes' share of the music (by loop name), from the
+  /// first scene that scores the music on: the festival, the ending, and
+  /// the epilogue and results after it. Null while the day and night
+  /// loops have the music to themselves.
+  Map<String, double>? get music => _music.isEmpty ? null : _music;
+
   /// A scene is playing or the night is still being fast-forwarded.
   bool get busy => player != null || _dawn != null;
 
@@ -93,6 +101,7 @@ class Director {
     final p = player;
     if (p != null) {
       p.update(dt);
+      _music.addAll(p.music);
       final pose = p.camera;
       if (pose != null) {
         stage.rig.override = PerspectiveCamera(position: pose.eye, target: pose.target, fovRadiansY: pose.fov, fovNear: 0.5, fovFar: 400);
