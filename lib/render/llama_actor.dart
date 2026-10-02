@@ -13,6 +13,15 @@ import 'world.dart';
 
 double _angleTo(double from, double to) => (to - from + math.pi) % (2 * math.pi) - math.pi;
 
+/// How each llama sings: the mouth's rate (rad/s) and the sway's.
+const Map<String, (double, double)> _singStyle = {
+  'Pip': (13, 2.6),
+  'Mo': (7, 1.2),
+  'June': (11, 2.1),
+  'Bramble': (6, 1.0),
+  'Clover': (9, 1.7),
+};
+
 /// Where a character's head is, by name ('Dash' included), or null if it
 /// is not in the scene.
 typedef HeadOf = vm.Vector3? Function(String name);
@@ -56,6 +65,14 @@ class LlamaActor {
 
   /// A scripted face for captures, instead of the one its mood gives.
   FaceTargets? forcedFace;
+
+  /// Metres a staged llama stands above the ground (on the festival stage).
+  double lift = 0;
+
+  /// A staged performance, each 0..1: singing (the mouth, a sway and the
+  /// head up), cheering (a bob and a happy face) and fainting (tipped over
+  /// onto its side, eyes shut).
+  double singing = 0, cheering = 0, fainted = 0;
   bool _scarfShown = true;
 
   double _speed = 0, _turnRate = 0, _runHeat = 0;
@@ -86,6 +103,24 @@ class LlamaActor {
     final gallop = clip('Gallop', 0);
     final root = Node(name: name)..add(model);
     return LlamaActor._(name, spec, root, model, idle, walk, gallop);
+  }
+
+  /// Back to following the sim.
+  void unstage() {
+    staged = null;
+    forcedFace = null;
+    lift = 0;
+    singing = 0;
+    cheering = 0;
+    fainted = 0;
+  }
+
+  /// Puts a staged llama on its spot at once, instead of walking there.
+  void snap() {
+    final spot = staged;
+    if (spot == null) return;
+    position.setValues(spot.x, groundHeight(spot.x, spot.z) + lift, spot.z);
+    yaw = spot.yaw;
   }
 
   /// Shows or hides Pip's scarf (it goes missing on day 1).
@@ -124,7 +159,7 @@ class LlamaActor {
     final (pos, heading, walking) = spot == null
         ? v.llamaPose(l)
         : ((spot.x, spot.z), (-math.sin(spot.yaw), -math.cos(spot.yaw)), (vm.Vector3(spot.x, 0, spot.z) - position).length > 0.002);
-    final ground = groundHeight(pos.$1, pos.$2);
+    final ground = groundHeight(pos.$1, pos.$2) + (spot == null ? 0 : lift);
     final target = vm.Vector3(pos.$1, ground, pos.$2);
     final before = position.clone();
     if (position.length2 == 0 || (target - position).length > 12) {
@@ -196,9 +231,20 @@ class LlamaActor {
     if (l.mood >= 3 && !walking && kind != 'nap') bob += 0.03 * math.sin(phase * 3).abs();
     // Lean into turns while moving.
     if (walking) roll += (_turnRate * 0.04).clamp(-0.12, 0.12) * math.min(1.0, _speed / 3);
-    root.localTransform = vm.Matrix4.translation(position + vm.Vector3(0, bob, 0))
+    final (_, sway) = _singStyle[name] ?? (9.0, 1.6);
+    roll += singing * 0.07 * math.sin(wall * sway + name.length);
+    bob += singing * 0.035 * math.sin(wall * sway * 2).abs() + cheering * 0.1 * math.sin(wall * 7.5 + name.length).abs();
+    final body = vm.Matrix4.translation(position + vm.Vector3(0, bob - 0.12 * fainted, 0))
       ..rotateY(yaw + wobble)
-      ..rotateX(-pitch)
+      ..rotateX(-pitch);
+    if (fainted > 0) {
+      // Tips over onto its left side, pivoting on the left hooves.
+      body
+        ..translateByVector3(vm.Vector3(-0.3, 0, 0))
+        ..rotateZ(1.25 * fainted)
+        ..translateByVector3(vm.Vector3(0.3, 0, 0));
+    }
+    root.localTransform = body
       ..rotateZ(roll)
       ..scaleByDouble(1, sy, 1, 1);
 
@@ -259,6 +305,13 @@ class LlamaActor {
       if (wall < _glanceUntil) wantYaw = _glanceYaw;
     }
     _lookYaw = approach(_lookYaw, wantYaw, spec.lookRate, dt);
+    if (singing > 0) {
+      // Chin up to the crowd, swaying with the tune.
+      final (_, sway) = _singStyle[name] ?? (9.0, 1.6);
+      wantPitch += singing * 0.2;
+      wantYaw += singing * 0.25 * math.sin(wall * sway * 0.5 + 1);
+    }
+    wantPitch -= fainted * 0.3;
     _lookPitch = approach(_lookPitch, wantPitch, spec.lookRate, dt);
     _neck?.turn(yawPitch(_lookYaw * 0.45, _lookPitch * 0.35));
     _head?.turn(yawPitch(_lookYaw * 0.55, _lookPitch * 0.65));
@@ -268,18 +321,21 @@ class LlamaActor {
     _surprise = math.max(0, _surprise - dt / 1.6);
     _delight = math.max(0, _delight - dt / 3.5);
     _annoyance = math.max(0, _annoyance - dt / 3.5);
+    final (mouth, _) = _singStyle[name] ?? (9.0, 1.6);
     final t =
         forcedFace ??
-        faceTargets(
-          mood: l.mood,
-          activity: kind,
-          energy: l.energy,
-          speaking: speaking,
-          talkPhase: wall * 17 + name.length,
-          surprise: math.min(1, _surprise * 1.6),
-          delight: math.min(1, _delight * 1.5),
-          annoyance: math.min(1, _annoyance * 1.5),
-        );
+        (fainted > 0.3
+            ? const FaceTargets(sulky: 0.3, shut: 1)
+            : faceTargets(
+                mood: l.mood,
+                activity: kind,
+                energy: l.energy,
+                speaking: speaking || singing > 0,
+                talkPhase: singing > 0 ? wall * mouth + name.length : wall * 17 + name.length,
+                surprise: math.min(1, _surprise * 1.6),
+                delight: math.min(1, math.max(_delight * 1.5, math.max(cheering, singing * 0.7))),
+                annoyance: math.min(1, _annoyance * 1.5),
+              ));
     final mix = mixFace(t, forcedFace == null ? _blink.update(dt) : 0);
     for (var i = 0; i < llamaMorphs.length; i++) {
       // The mouth flaps fast; the rest of the face eases.

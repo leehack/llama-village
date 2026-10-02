@@ -188,4 +188,32 @@ void main() {
     p.update(1);
     expect(p.letterbox, 0);
   });
+
+  test('notes rise one at a time while the cue lasts, and the last ones finish rising after it', () {
+    var heads = 0;
+    final cue = NoteCue(
+      1,
+      2,
+      anchor: () {
+        heads++;
+        return vm.Vector3.zero();
+      },
+      speaker: 'Pip',
+    );
+    final p = CutscenePlayer(Cutscene(name: 't', duration: 8, notes: [cue]));
+    expect(p.notes, isEmpty);
+    expect(cue.notesAt(0.9), isEmpty);
+    expect(cue.notesAt(1), [(0, 0.0)]);
+    final mid = cue.notesAt(2.5);
+    expect(mid.map((n) => n.$1), [0, 1, 2, 3]);
+    expect(mid.every((n) => n.$2 >= 0 && n.$2 < NoteCue.life), isTrue);
+    final lastBorn = 1 + 4 * NoteCue.every;
+    expect(cue.notesAt(lastBorn + NoteCue.life - 0.1).map((n) => n.$1), [4], reason: 'none new after the cue; the last one still rising');
+    expect(cue.notesAt(lastBorn + NoteCue.life + 0.01), isEmpty);
+    p.update(1.5);
+    expect(p.notes, [cue]);
+    p.update(2 + NoteCue.life);
+    expect(p.notes, isEmpty);
+    expect(heads, 0, reason: 'the overlay reads the anchor, not the timeline');
+  });
 }

@@ -15,6 +15,7 @@ import '../sim/places.dart';
 import '../sim/village.dart';
 import '../sim/week.dart';
 import '../ui/strings.dart';
+import 'festival_show.dart';
 import 'timeline.dart';
 
 /// Positions and poses the scene scripts need from the village and stage.
@@ -182,91 +183,192 @@ Cutscene announcementScene(SceneContext c) {
   );
 }
 
-/// Day 5, 16:00: the stage, each contestant's turn, and the winner.
-/// [judge] runs the sim on to the judging; the winner is read after it.
-Cutscene festivalScene(SceneContext c, {required void Function() judge}) {
+/// The festival show on the llamas and the stage props: everyone posed
+/// for a moment of [show], the winner once the judging names one.
+class FestivalStaging {
+  FestivalStaging(this.c)
+    : show = FestivalShow(
+        singers: [for (final (name, what) in c.v.festival.performances) (name, what.contains('faints'))],
+        present: [
+          for (final l in c.v.cast)
+            if (l.place == 'hilltop' && c.stage.llamas.containsKey(l.name)) l.name,
+        ],
+        paces: {for (final l in c.v.cast) l.name: l.walkPace},
+      );
+
+  final SceneContext c;
+  final FestivalShow show;
+  String? winner;
+  bool _placed = false;
+
+  /// Where the Golden Bell hangs: above and beside the winner's head.
+  vm.Vector3 _bellAt(String name) {
+    final a = c.stage.llamas[name]!;
+    return a.position + FestivalShow.right * 0.5 + vm.Vector3(0, a.headHeight + 0.62 + 0.05 * math.sin(c.stage.wall * 2.1), 0);
+  }
+
+  /// Poses everyone for [t]; the first call puts them in place at once.
+  /// With [turnAway] they all turn their backs on the stage, quietly.
+  void apply(double t, {bool turnAway = false}) {
+    final llamas = c.stage.llamas;
+    for (final name in show.cast) {
+      final a = llamas[name]!;
+      final p = show.pose(name, t, winner: winner);
+      final look = p.look == null ? null : llamas[p.look]?.headWorld;
+      final yaw = turnAway ? math.atan2(-FestivalShow.front.x, -FestivalShow.front.z) : p.yaw;
+      a
+        ..staged = (x: p.at.$1, z: p.at.$2, yaw: yaw, look: turnAway ? null : look)
+        ..lift = p.lift
+        ..singing = p.sing
+        ..cheering = turnAway ? 0 : p.cheer
+        ..fainted = p.faint;
+      if (!_placed) a.snap();
+    }
+    _placed = true;
+    final props = c.stage.festival;
+    props.spotlight(show.spotlight(t, winner), FestivalShow.centre, FestivalShow.front);
+    final w = winner;
+    final bell = show.bell(t, w);
+    // Pops in a little past full size and settles (an ease-out-back).
+    final scale = bell <= 0 ? 0.0 : 1 + 2.7 * math.pow(bell - 1, 3) + 1.7 * math.pow(bell - 1, 2);
+    props.bell(w == null ? 0 : scale, w == null ? FestivalShow.centre : _bellAt(w), FestivalShow.front, 0.2 * math.sin(c.stage.wall * 2.6));
+  }
+}
+
+/// Day 5, 16:00: the festival as a staged show (see [FestivalShow]): the
+/// singers' turns at centre stage, the judging, and the winner stepping
+/// into the spotlight for the Golden Bell. [judge] runs the sim on to the
+/// judging; the winner is read after it. The sky drifts toward the golden
+/// hour.
+Cutscene festivalScene(SceneContext c, FestivalStaging staging, {required void Function() judge}) {
   final v = c.v;
-  final hill = c.place('hilltop');
-  final front = c.facing('hilltop');
-  final performances = [...v.festival.performances];
-  const per = 4.6;
-  final judgeAt = 4.5 + performances.length * per;
-  final end = judgeAt + 6;
-  final winnerTitle = TextCue(judgeAt + 1.2, 4.2, kind: TextKind.title, text: '…');
+  final show = staging.show;
+  final end = show.end;
+  final centre = FestivalShow.centre, front = FestivalShow.front;
+  final fromHour = (v.now.minute + v.minuteFrac) / 60;
+  const stage = FestivalShow.shot;
+  final reverse = FestivalShow.crowdShot;
+  final winnerTitle = TextCue(show.judgeAt + 0.3, FestivalShow.verdictSeconds, kind: TextKind.title, text: '…');
   final keys = <CameraKey>[
     CameraKey(0, c.current),
-    CameraKey(2.5, c.shot(hill + front * 3, front + vm.Vector3(0.5, 0, 0), dist: 17, up: 6, aim: 2)),
-    CameraKey(4.2, c.shot(hill + front * 3, front + vm.Vector3(0.3, 0, 0), dist: 15, up: 5, aim: 2), ease: Ease.linear),
+    CameraKey(2.5, stage(0.5, 17, 6, aim: 1)),
+    CameraKey(FestivalShow.audienceIn - 0.1, stage(0.4, 15, 5.2, aim: 1.1), ease: Ease.linear),
   ];
   final texts = <TextCue>[TextCue(0.8, 3.2, kind: TextKind.title, text: c.l.berryFestival, subtitle: c.l.festivalSubtitle)];
+  final notes = <NoteCue>[];
   final shakes = <Shake>[];
-  for (var i = 0; i < performances.length; i++) {
-    final (name, what) = performances[i];
-    final at = 4.5 + i * per;
-    final p = c.llama(name);
-    keys
-      ..add(CameraKey(at + 0.6, c.shot(p, front + vm.Vector3(0.6, 0, 0), dist: 6.5, up: 1.6)))
-      ..add(CameraKey(at + per - 0.2, c.shot(p, front + vm.Vector3(0.3, 0, 0), dist: 5.5, up: 1.4), ease: Ease.linear));
-    final fainted = what.contains('faints');
+  final cues = <Cue>[];
+  // The first song ends on the crowd's faces as they cheer.
+  final crowd = show.turns.firstOrNull?.faints == false ? show.turns.first : null;
+  var cameraFree = 0.0;
+  for (final (i, turn) in show.turns.indexed) {
+    final name = turn.name;
+    final side = FestivalShow.sideOf(i);
+    final close = FestivalShow.closeUp(i), closer = FestivalShow.closeUp(i, closer: true);
+    // Watching the next singer step up, unless the crowd shot still has the camera.
+    if (turn.walkOn + 0.5 > cameraFree) keys.add(CameraKey(turn.walkOn + 0.5, stage(0.45 * side, 10, 3.2)));
+    if (turn.arrive - 0.1 > cameraFree) keys.add(CameraKey(turn.arrive - 0.1, stage(0.42 * side, 9.2, 3), ease: Ease.linear));
+    keys.add(CameraKey(math.max(turn.arrive + 0.6, cameraFree + 0.6), close));
+    if (turn == crowd) {
+      final cut = turn.singFrom + 2.6, back = turn.singTo + 0.9;
+      cameraFree = back + 0.1;
+      keys
+        ..add(CameraKey(cut, close.lerp(closer, (cut - turn.arrive - 0.6) / (turn.singTo - turn.arrive - 0.6)), ease: Ease.linear))
+        ..add(CameraKey(cut + 0.02, reverse, ease: Ease.linear))
+        ..add(CameraKey(back, CameraPose(reverse.eye + front * 0.5, reverse.target, fov: reverse.fov), ease: Ease.linear))
+        ..add(CameraKey(back + 0.02, stage(0.4 * side, 10.5, 3.4), ease: Ease.linear));
+    } else {
+      keys.add(
+        CameraKey(turn.singTo, turn.faints ? stage(0.35 * side, 6.4, 2.6, aim: 1.1) : closer, ease: turn.faints ? Ease.inOut : Ease.linear),
+      );
+    }
     final shown = name == 'Pip'
         ? c.l.pipSings
-        : fainted
+        : turn.faints
         ? c.l.moFaints
         : name == 'Mo'
         ? c.l.moSings
         : c.l.llamaSings(name);
-    texts.add(TextCue(at + 0.6, per - 0.8, speaker: name, text: shown));
-    if (fainted) shakes.add(Shake(at + 1.6, 1.2, 0.25));
-    if (!fainted) {
-      texts.add(
-        TextCue(
-          at + 1.2,
-          per - 1.6,
-          kind: TextKind.song,
-          speaker: name,
-          anchor: p + vm.Vector3(0, 3.1, 0),
-          future: c.line('song', songPrompt(name, v.lang), fallback: c.l.songFallback, maxTokens: 24),
-          fallback: c.l.laLaLa,
-        ),
+    texts.add(TextCue(turn.singFrom - 0.3, FestivalShow.singSeconds + 0.1, speaker: name, text: shown));
+    final head = c.stage.llamas[name]?.headHeight ?? 2;
+    notes.add(
+      NoteCue(
+        turn.singFrom + 0.1,
+        turn.faints ? FestivalShow.faintFall * 0.45 : FestivalShow.singSeconds - 0.4,
+        anchor: () => (c.stage.llamas[name]?.headWorld ?? centre) + vm.Vector3(0, 0.3, 0),
+        speaker: name,
+      ),
+    );
+    if (turn.faints) {
+      shakes.add(Shake(turn.faintAt - 0.05, 1.0, 0.22));
+      cues.add(
+        Cue(turn.faintAt, () {
+          for (final n in show.cast) {
+            if (n != name) c.stage.llamas[n]?.react('surprise');
+          }
+        }, label: 'gasp'),
       );
+      continue;
     }
+    // Beside the singer's head, on the far side from the camera, and off
+    // screen while the camera looks at the crowd.
+    final from = turn.singFrom + 0.3, to = turn == crowd ? turn.singFrom + 2.5 : turn.singTo - 0.3;
+    texts.add(
+      TextCue(
+        from,
+        to - from,
+        kind: TextKind.song,
+        speaker: name,
+        anchor: centre - FestivalShow.right * (1.25 * side) + vm.Vector3(0, head + 0.35, 0),
+        future: c.line('song', songPrompt(name, v.lang), fallback: c.l.songFallback, maxTokens: 24),
+        fallback: c.l.laLaLa,
+      ),
+    );
   }
+  final last = show.turns.lastOrNull;
   keys.add(
-    CameraKey.lazy(judgeAt + 1, () {
-      final w = v.festival.winner;
-      return w == null
-          ? c.shot(hill + front * 3, front, dist: 12, up: 4, aim: 2)
-          : c.shot(c.llama(w), front + vm.Vector3(-0.4, 0, 0), dist: 6, up: 1.5, aim: 1.6);
-    }),
+    CameraKey((last?.singTo ?? FestivalShow.audienceIn) + (last != null && last == crowd ? 1.5 : 0.9), stage(-0.3, 11, 3.6, aim: 1.2)),
   );
   keys.add(
-    CameraKey.lazy(end, () {
-      final w = v.festival.winner;
-      return w == null
-          ? c.shot(hill + front * 3, front, dist: 14, up: 6, aim: 2)
-          : c.shot(c.llama(w), front + vm.Vector3(-0.2, 0, 0), dist: 7.5, up: 2.4, aim: 1.6);
-    }, ease: Ease.linear),
+    CameraKey.lazy(show.winnerAt - 0.4, () => staging.winner == null ? stage(-0.25, 12, 4, aim: 1.2) : stage(-0.32, 6.6, 3.3, aim: 1.6)),
+  );
+  keys.add(
+    CameraKey.lazy(
+      end,
+      () => staging.winner == null ? stage(-0.2, 13, 4.5, aim: 1.2) : stage(-0.26, 5.8, 3.0, aim: 1.75),
+      ease: Ease.linear,
+    ),
   );
   texts.add(winnerTitle);
+  cues.add(
+    Cue(show.judgeAt, () {
+      judge();
+      final w = staging.winner = v.festival.winner;
+      winnerTitle.text = w == null ? c.l.nobodyWins : c.l.winsBell(w);
+    }, label: 'judge'),
+  );
   return Cutscene(
     name: 'festival',
     duration: end,
     camera: keys,
     letterbox: _bars(end + 1),
     texts: texts,
+    notes: notes,
     shakes: shakes,
-    cues: [
-      Cue(judgeAt, () {
-        judge();
-        final w = v.festival.winner;
-        winnerTitle.text = w == null ? c.l.nobodyWins : c.l.winsBell(w);
-      }, label: 'judge'),
-    ],
+    cues: cues,
+    onFrame: (t) {
+      c.stage.hourOverride = fromHour + (festivalSkyHour - fromHour) * (t / end);
+      staging.apply(t);
+    },
   );
 }
 
-/// The closing scene for [verdict], over the hilltop, the village or the pond.
-Cutscene endingScene(SceneContext c, EndingVerdict verdict, Influence i) {
+/// Where the festival's sky has got to as it ends, and the ending's starts.
+const double festivalSkyHour = 17.5;
+
+/// The closing scene for [verdict], over the hilltop, the village or the
+/// pond. The festival's last tableau holds on the hilltop ([festival]).
+Cutscene endingScene(SceneContext c, EndingVerdict verdict, Influence i, {FestivalStaging? festival}) {
   final v = c.v;
   final l = c.l;
   final title = l.endingName(verdict.ending);
@@ -296,7 +398,10 @@ Cutscene endingScene(SceneContext c, EndingVerdict verdict, Influence i) {
           for (var k = 0; k < lines.length; k++) TextCue(1.6 + k * 3.2, 3.0, text: lines[k]),
           TextCue(end - 3.6, 3.6, kind: TextKind.title, text: title, subtitle: l.endingWord),
         ],
-        onFrame: (t) => c.stage.hourOverride = 17.5 + (20.9 - 17.5) * applyEase(Ease.inOut, t / 6),
+        onFrame: (t) {
+          c.stage.hourOverride = festivalSkyHour + (20.9 - festivalSkyHour) * applyEase(Ease.inOut, t / 6);
+          festival?.apply(festival.show.end);
+        },
       );
     case Ending.dramaLlama:
       final names = llamaNames;
@@ -322,7 +427,10 @@ Cutscene endingScene(SceneContext c, EndingVerdict verdict, Influence i) {
           TextCue(end - 3.6, 3.6, kind: TextKind.title, text: title, subtitle: l.endingWord),
         ],
         cues: [Cue(0.2, () => v.storm = true, label: 'thunder')],
-        onFrame: (t) => c.stage.hourOverride = 18.4 + 1.4 * (t / end),
+        onFrame: (t) {
+          c.stage.hourOverride = 18.4 + 1.4 * (t / end);
+          festival?.apply(festival.show.end, turnAway: true);
+        },
       );
     case Ending.quietValley:
       final lines = [l.quietCame, l.quietWork, l.quietSecrets];
@@ -341,7 +449,10 @@ Cutscene endingScene(SceneContext c, EndingVerdict verdict, Influence i) {
           for (var k = 0; k < lines.length; k++) TextCue(2 + k * 3.6, 3.4, text: lines[k]),
           TextCue(end - 3.6, 3.6, kind: TextKind.title, text: title, subtitle: l.endingWord),
         ],
-        onFrame: (t) => c.stage.hourOverride = 18.2 + 1.2 * (t / end),
+        onFrame: (t) {
+          c.stage.hourOverride = 18.2 + 1.2 * (t / end);
+          festival?.apply(festival.show.end);
+        },
       );
   }
 }

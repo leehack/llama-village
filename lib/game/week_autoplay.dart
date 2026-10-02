@@ -2,6 +2,7 @@ import 'dart:async';
 
 import '../app.dart';
 import '../autoplay.dart';
+import '../cutscene/festival_show.dart';
 import '../cutscene/timeline.dart';
 import '../sim/dash.dart';
 import '../sim/village.dart';
@@ -317,6 +318,25 @@ class WeekAutoplay {
     home.closePause();
   }
 
+  /// The show's beats: a singer stepping up, singing with notes (close
+  /// and from the other side), the crowd's faces, a faint, and the winner
+  /// in the spotlight with the bell.
+  void _festival(double t, FestivalShow show) {
+    bool within(double from, double to) => t >= from && t < to;
+    final turns = show.turns;
+    final first = turns.firstOrNull;
+    if (first != null && within(first.walkOn + 0.55 * (first.arrive - first.walkOn), first.arrive)) _shot('20_festival_walk_on');
+    for (final (i, turn) in turns.indexed) {
+      if (turn.faints) {
+        if (within(turn.faintAt + 0.3, turn.faintAt + 0.9)) _shot('24_festival_faint');
+        continue;
+      }
+      if (i == 0 && within(turn.singTo, turn.singTo + 0.6)) _shot('23_festival_audience');
+      if (within(turn.singFrom + 1.1, turn.singFrom + 1.6)) _shot('22_festival_sing_${turn.name.toLowerCase()}');
+    }
+    if (within(show.winnerAt + 1.6, show.winnerAt + 2.4)) _shot('25_festival_spotlight');
+  }
+
   void _cutscene(CutscenePlayer p) {
     final name = p.scene.name;
     if (_scene != name) {
@@ -336,8 +356,8 @@ class WeekAutoplay {
       case 'night':
         if (p.time > 1.5) p.skip();
       case 'festival':
-        if (p.time > 6 && showing(TextKind.subtitle) && showing(TextKind.song, alpha: 0.9)) _shot('20_festival');
-        if (p.time > 14 && showing(TextKind.subtitle)) _shot('20_festival');
+        final show = home.director!.festival?.show;
+        if (show != null) _festival(p.time, show);
         if (showing(TextKind.title) && home.village!.festival.state == 'judged') _shot('21_festival_winner');
       case 'ending':
         final e = home.director!.verdict!.ending.name;

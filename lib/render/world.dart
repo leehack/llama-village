@@ -450,13 +450,22 @@ class VillageWorld {
       ..box(_v(-3.5, 0.22, 1.6), _v(0.12, 0.44, 0.45), dark);
     final at = _placeAt('hilltop', lift: -0.15);
     _add(b.build(), _soft, at: at);
-    // Bunting, shown from the festival announcement on.
+    // Bunting, shown from the festival announcement on: along the back and
+    // down both sides, so it frames whoever is on stage instead of hanging
+    // across their face in front.
     final flags = MeshBuilder();
     final colors = [rgb(0xE84A5F), rgb(0xF6C343), rgb(0x3D8BE6), rgb(0x3CC3A5), rgb(0xF08A3C)];
     for (var i = 0; i < 12; i++) {
       final x = -2.9 + i * 0.53;
-      final sag = 0.25 * math.sin(math.pi * i / 11);
-      flags.cone(_v(x, 2.75 - sag, -0.8), 0.22, 0, -0.42, colors[i % colors.length], segments: 3);
+      final sag = 0.18 * math.sin(math.pi * i / 11);
+      flags.cone(_v(x, 3.02 - sag, -4.22), 0.22, 0, -0.42, colors[i % colors.length], segments: 3);
+    }
+    for (final x in [-3.05, 3.05]) {
+      for (var i = 0; i < 7; i++) {
+        final z = -1.0 - i * 0.55;
+        final sag = 0.22 * math.sin(math.pi * i / 6);
+        flags.cone(_v(x, 3.08 - sag, z), 0.2, 0, -0.38, colors[(i + 2) % colors.length], segments: 3, yaw: math.pi / 2);
+      }
     }
     festivalDecor = _add(flags.build(), _soft, at: at, shadows: false)..visible = false;
     for (final x in [-3.0, 3.0]) {

@@ -13,6 +13,7 @@ import '../sim/village.dart';
 import 'actors.dart';
 import 'animals.dart';
 import 'dressing.dart';
+import 'festival_props.dart';
 import 'look.dart';
 import 'particles.dart';
 import 'quality.dart';
@@ -105,6 +106,9 @@ class VillageStage {
   late final Fireflies fireflies = Fireflies(scene);
   late final FallingLeaves leaves = FallingLeaves(scene, world.crowns);
 
+  /// The festival's spotlight and Golden Bell, hidden until the show.
+  late final FestivalProps festival = FestivalProps(scene);
+
   /// The village's cats, chickens, ducks, dog and butterflies.
   late final AmbientLife life;
   late final AnimalActors animals;
@@ -116,6 +120,9 @@ class VillageStage {
   double _rainY = 0;
   String? selected;
   double _wall = 0;
+
+  /// Seconds the stage has been running, for idle motion.
+  double get wall => _wall;
 
   /// Cutscene overrides: the hour the sky shows, and huts whose lights are out.
   double? hourOverride;
@@ -133,6 +140,7 @@ class VillageStage {
     dressing.build();
     fireflies.build();
     leaves.build();
+    festival.build();
     life = AmbientLife(seed: 17, extraBlockers: [for (final (p, r) in world.treeTrunks) Blocker(p, r + 0.25)]);
     animals = AnimalActors(scene, life)..build();
     for (final n in names) {
@@ -160,6 +168,14 @@ class VillageStage {
   }
 
   GraphicsQuality get quality => _quality;
+
+  /// Hands every llama back to the sim and puts the festival props away.
+  void unstage() {
+    for (final a in llamas.values) {
+      a.unstage();
+    }
+    if (_loaded) festival.hide();
+  }
 
   /// Switches the costly passes, foliage density and particle counts.
   set quality(GraphicsQuality q) {

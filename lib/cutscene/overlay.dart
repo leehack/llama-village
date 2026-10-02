@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:vector_math/vector_math.dart' as vm;
 
 import '../l10n/app_localizations.dart';
 import '../render/stage.dart';
@@ -130,6 +131,7 @@ class CutsceneOverlay extends StatelessWidget {
             child: const ColoredBox(color: Colors.black),
           ),
           if (leaders.isNotEmpty) Positioned.fill(child: CustomPaint(painter: LeaderLines(leaders))),
+          ..._notes(bar),
           ...children,
           Positioned(
             right: 20,
@@ -142,6 +144,51 @@ class CutsceneOverlay extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  /// The music notes rising from singers' heads, sized by distance, kept
+  /// between the letterbox bars and left out of shots right over a head.
+  List<Widget> _notes(double bar) {
+    final out = <Widget>[];
+    for (final cue in player.notes) {
+      final base = cue.anchor();
+      final near = (((base - stage.rig.eye).length - 3.5) / 1.5).clamp(0.0, 1.0);
+      final at = stage.toScreen(base, size);
+      final above = stage.toScreen(base + vm.Vector3(0, 1, 0), size);
+      if (at == null || above == null || near == 0) continue;
+      final metre = (above - at).distance;
+      final color = highContrast || cue.speaker == null ? gold : Color.lerp(gold, accentOf(cue.speaker!), 0.35)!;
+      for (final (k, age) in cue.notesAt(player.time)) {
+        final p = stage.toScreen(base + vm.Vector3(0, 0.1 + age * 0.45, 0), size);
+        if (p == null) continue;
+        final side = (k.isEven ? 1 : -1) * (0.16 + 0.1 * (k * 7 % 3));
+        final x = p.dx + metre * (side + 0.09 * math.sin(age * 4.2 + k));
+        final inside = math.min(p.dy - bar, size.height - bar - p.dy);
+        final alpha = near * math.min(1.0, age / 0.25) * ((NoteCue.life - age) / 0.7).clamp(0.0, 1.0) * ((inside - 8) / 30).clamp(0.0, 1.0);
+        if (alpha <= 0) continue;
+        final font = (metre * 0.3).clamp(13.0, 48.0);
+        out.add(
+          Positioned(
+            left: x,
+            top: p.dy,
+            child: FractionalTranslation(
+              translation: const Offset(-0.5, -0.5),
+              child: Opacity(
+                opacity: alpha,
+                child: Transform.rotate(
+                  angle: 0.28 * math.sin(age * 3 + k),
+                  child: Text(
+                    _noteGlyphs[k % _noteGlyphs.length],
+                    style: TextStyle(fontSize: font, height: 1, fontWeight: FontWeight.w900, color: color, shadows: _noteGlow),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      }
+    }
+    return out;
   }
 
   /// Lays out the dream and song bubbles like speech bubbles, so the
@@ -175,6 +222,10 @@ class CutsceneOverlay extends StatelessWidget {
     return {for (final MapEntry(:key, :value) in laid.entries) byId[key]!: value};
   }
 }
+
+const List<String> _noteGlyphs = ['♪', '♫', '♩', '♬'];
+
+const List<Shadow> _noteGlow = [Shadow(blurRadius: 6, color: Color(0xCC3A2200)), Shadow(blurRadius: 14, color: Color(0x88FFD27A))];
 
 String _dreamText(TextCue cue, String text) => cue.kind == TextKind.song && cue.text != null ? '♪ $text ♪' : text;
 

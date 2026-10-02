@@ -55,6 +55,10 @@ class Director {
 
   late final SceneContext _c = SceneContext(v, stage, strings);
 
+  /// The festival show, kept for the ending scene's last tableau.
+  FestivalStaging? get festival => _festival;
+  FestivalStaging? _festival;
+
   /// A scene is playing or the night is still being fast-forwarded.
   bool get busy => player != null || _dawn != null;
 
@@ -71,7 +75,9 @@ class Director {
     if (e['to'] == 'announced') _queue.add(() => announcementScene(_c));
     if (e['to'] == 'performed') {
       _endingStarted = true;
-      _queue.add(() => festivalScene(_c, judge: () => v.skipTo(GameTime(festivalDay, festivalMinute + 25))));
+      _queue.add(
+        () => festivalScene(_c, _festival = FestivalStaging(_c), judge: () => v.skipTo(GameTime(festivalDay, festivalMinute + 25))),
+      );
       _queue.add(_ending);
     }
   }
@@ -133,7 +139,7 @@ class Director {
     verdict = verdictNow;
     log?.call('ENDING ${verdictNow.ending.name} ${i.toJson()} reasons=${verdictNow.reasons}');
     onEnding?.call(verdictNow, i);
-    return endingScene(_c, verdictNow, i);
+    return endingScene(_c, verdictNow, i, festival: _festival);
   }
 
   void _play(Cutscene scene) {
@@ -168,7 +174,8 @@ class Director {
   void _clearOverrides() {
     stage
       ..hourOverride = null
-      ..lightsOut.clear();
+      ..lightsOut.clear()
+      ..unstage();
     stage.rig.override = null;
   }
 }

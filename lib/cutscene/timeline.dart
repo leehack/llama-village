@@ -119,6 +119,29 @@ class Hold {
   final String label;
 }
 
+/// Music notes rising from [anchor] (a singer's head) from [at] for
+/// [duration] seconds: a new one every [every] seconds, each rising and
+/// fading out over [life].
+class NoteCue {
+  NoteCue(this.at, this.duration, {required this.anchor, this.speaker});
+  final double at;
+  final double duration;
+  final vm.Vector3 Function() anchor;
+  final String? speaker;
+
+  static const double every = 0.42, life = 1.9;
+
+  /// The notes in the air at [time], as (index, seconds since it appeared).
+  List<(int, double)> notesAt(double time) {
+    final out = <(int, double)>[];
+    final first = math.max(0, ((time - at - life) / every).floor() + 1);
+    for (var k = first; at + k * every <= math.min(time, at + duration); k++) {
+      out.add((k, time - at - k * every));
+    }
+    return out;
+  }
+}
+
 class Shake {
   const Shake(this.at, this.duration, this.amplitude);
   final double at;
@@ -139,6 +162,7 @@ class Cutscene {
     List<Cue> cues = const [],
     List<Hold> holds = const [],
     this.shakes = const [],
+    this.notes = const [],
     this.pausesSim = true,
     this.onFrame,
   }) : camera = [...camera]..sort((a, b) => a.at.compareTo(b.at)),
@@ -156,6 +180,7 @@ class Cutscene {
   final List<Cue> cues;
   final List<Hold> holds;
   final List<Shake> shakes;
+  final List<NoteCue> notes;
   final bool pausesSim;
 
   /// Called with the scene time after every update, for continuous effects
@@ -324,6 +349,12 @@ class CutscenePlayer {
 
   double get letterbox => _rampValue(scene.letterbox, time).clamp(0.0, 1.0);
   double get fade => _rampValue(scene.fade, time).clamp(0.0, 1.0);
+
+  /// Note cues with notes in the air now.
+  List<NoteCue> get notes => [
+    for (final n in scene.notes)
+      if (!finished && time >= n.at && time < n.at + n.duration + NoteCue.life) n,
+  ];
 
   /// Texts on screen now, with their opacity (0.35 s in and out).
   List<(TextCue, double)> get texts {
