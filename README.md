@@ -96,9 +96,15 @@ The game never waits on a model:
 - Conversations are generated one line at a time: each line appears as a
   bubble as soon as it is written, while the next one is being written
   ("…" marks a llama still thinking).
-- Prompts go to the GPU in small micro-batches (128 tokens), so frames
-  slip in between: about 45 fps while the model is generating against 59
-  idle, under the default 60 fps cap.
+- The model and the renderer share the GPU, and a frame that has to wait
+  behind the model's work comes late. Prompts go to the GPU in small
+  micro-batches (32 tokens, about 14 ms of GPU each), each frame is asked
+  for shortly before it is due instead of on every vsync (so a 60 fps cap
+  on a 120 Hz display has no empty frame in between to queue behind the
+  model), and frames keep a steady 60 fps cadence after a late one. On
+  High, with Dash's options and replies written back to back, the median
+  is 60 fps and the 95th-percentile frame time 16.7 ms, against 55-58 fps
+  before; 2-4% of frames still come a vsync late while a prompt is read.
 
 ## Features
 
@@ -595,9 +601,11 @@ the animals (sunrise, midday, the storm, the golden and blue hours,
 night with fireflies, chickens, ducks, cats on a roof and a crowd of
 bubbles); the storm comes on day 3, so add `VILLAGE_JUMP_DAY=3` to catch
 it. `VILLAGE_TOUR=perf` (best with `VILLAGE_MS_PER_MINUTE=100`) logs the
-frame rate per graphics quality for the sunrise, a morning, the golden
-hour and the storm, with the model generating and idle. See
-`lib/render_tour.dart`.
+frame rate and the 95th-percentile frame time per graphics quality (or
+the ones in `VILLAGE_PERF_QUALITY=high,low`) for the sunrise, a morning,
+the golden hour and the storm, with the model generating and idle, then
+each model call's latency and how many frames came late while each kind
+of job ran (`PERF_STALLS`). See `lib/render_tour.dart`.
 
 ## Layout
 
