@@ -58,7 +58,7 @@ final Map<String, LlamaSpec> llamaSpecs = {
   // Mo plods: short heavy steps, a rolling waddle.
   'Mo': LlamaSpec(
     id: 'mo',
-    headHeight: 1.98,
+    headHeight: 1.83,
     head: vm.Vector3(0, 1.40, -0.56),
     walkSeconds: 32 / 30,
     strideMetres: 0.47,

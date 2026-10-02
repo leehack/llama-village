@@ -740,8 +740,26 @@ def _toque(P, g, surf, geo):
     white, band = c.hexc("#FBF8F2"), c.hexc("#EFE9DD")
     up = (UP + _v(-0.12, 0, 0)).normalized()
     up, sv, fw = basis_from(up, up=FWD)
-    base = top - up * 0.03
     r = hh.y * 0.62
+    # The crown's wool puff stands about 12 cm above the head under the
+    # band's rim, so a band seated on the outermost hit floats. Seat it on
+    # a plane fitted to the head's height around the rim (mean and first
+    # harmonic), sunk 3 cm into the wool and centred a little forward, so
+    # the puff ends up inside the hat.
+    top = top + fw * 0.035
+    n = 16
+    heights = []
+    for k in range(n):
+        a = 2 * math.pi * k / n
+        d = fw * math.cos(a) + sv * math.sin(a)
+        hit, _ = surf(top + d * r - up * 0.3, up)
+        heights.append(((hit - top).dot(up), a))
+    mean = sum(hv for hv, _ in heights) / n
+    tilt_fw = 2 / n * sum(hv * math.cos(a) for hv, a in heights) / r
+    tilt_sv = 2 / n * sum(hv * math.sin(a) for hv, a in heights) / r
+    seat = top + up * mean
+    up, sv, fw = basis_from((up - fw * tilt_fw - sv * tilt_sv).normalized(), up=FWD)
+    base = seat - up * 0.025
     geo.cylinder(frame(base + up * 0.05, fw, sv, up, r, r, 0.055), band, "Cloth", seg=20, r_top=1.02)
     for k in range(6):
         a = 2 * math.pi * k / 6
