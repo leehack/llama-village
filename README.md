@@ -103,8 +103,9 @@ The game never waits on a model:
   on a 120 Hz display has no empty frame in between to queue behind the
   model), and frames keep a steady 60 fps cadence after a late one. On
   High, with Dash's options and replies written back to back, the median
-  is 60 fps and the 95th-percentile frame time 16.7 ms, against 55-58 fps
-  before; 2-4% of frames still come a vsync late while a prompt is read.
+  is 59-60 fps against 55-57 before. Some frames still come a vsync late
+  (3-5% overall, 10-13% while a prompt is read), so the 95th-percentile
+  frame time is 16.7 ms in most measurements and 25 ms in some.
 
 ## Features
 
