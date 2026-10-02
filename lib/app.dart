@@ -296,12 +296,16 @@ class VillageHomeState extends State<VillageHome> {
     }
     _applySettings();
     settings.addListener(_applySettings);
-    unawaited(
-      _audio.init().then((ok) {
-        _applySettings();
-        test.log('AUDIO ready=$ok loops ${_audio.loopLengths().map((k, s) => MapEntry(k, s.toStringAsFixed(4)))}');
-      }),
-    );
+    if (test.mute) {
+      test.log('AUDIO muted (VILLAGE_MUTE)');
+    } else {
+      unawaited(
+        _audio.init().then((ok) {
+          _applySettings();
+          test.log('AUDIO ready=$ok loops ${_audio.loopLengths().map((k, s) => MapEntry(k, s.toStringAsFixed(4)))}');
+        }),
+      );
+    }
     try {
       await stage.load(const ['Pip', 'Mo', 'June', 'Bramble', 'Clover']);
       final motion = test.motionLogPath;

@@ -309,11 +309,22 @@ class CinematicCapture {
   }
 
   /// Draws a frame now rather than on the next vsync, which a sleeping
-  /// display or a locked screen never sends.
+  /// display or a locked screen never sends, and waits for it to be
+  /// rasterized: with the window off screen (VILLAGE_BACKGROUND), grabbing
+  /// the next image before then drew some overlays black or without fills.
   Future<void> _frame() async {
-    final drawn = SchedulerBinding.instance.endOfFrame;
-    SchedulerBinding.instance.scheduleWarmUpFrame();
+    final binding = SchedulerBinding.instance;
+    final rastered = Completer<void>();
+    void onTimings(List<ui.FrameTiming> _) {
+      if (!rastered.isCompleted) rastered.complete();
+    }
+
+    binding.addTimingsCallback(onTimings);
+    final drawn = binding.endOfFrame;
+    binding.scheduleWarmUpFrame();
     await drawn;
+    await rastered.future.timeout(const Duration(milliseconds: 500), onTimeout: () {});
+    binding.removeTimingsCallback(onTimings);
   }
 
   Future<ui.Image?> _grab() async {

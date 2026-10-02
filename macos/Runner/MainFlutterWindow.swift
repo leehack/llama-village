@@ -14,8 +14,9 @@ class MainFlutterWindow: NSWindow, NSWindowDelegate {
     RegisterGeneratedPlugins(registry: flutterViewController)
 
     let env = ProcessInfo.processInfo.environment
+    let background = env["VILLAGE_BACKGROUND"] == "1"
     // macOS stops drawing a covered window, which would pause self-test runs.
-    if env["VILLAGE_CAPTURE"] == "1" {
+    if env["VILLAGE_CAPTURE"] == "1" && !background {
       self.level = .floating
     }
     // VILLAGE_WINDOW=1280x720: an exact content size, for the offline
@@ -27,6 +28,16 @@ class MainFlutterWindow: NSWindow, NSWindowDelegate {
         self.setContentSize(NSSize(width: size[0], height: size[1]))
         self.center()
       }
+    }
+    // VILLAGE_BACKGROUND=1: an unattended run that stays out of the way: no
+    // Dock icon or menu bar, and the window parked off every screen. The
+    // offline cinematic render still works, as it draws its frames into
+    // images rather than reading the window.
+    if background {
+      NSApp.setActivationPolicy(.accessory)
+      let screens = NSScreen.screens.reduce(NSRect.null) { $0.union($1.frame) }
+      offscreen = true
+      self.setFrameOrigin(NSPoint(x: screens.maxX + 64, y: screens.minY))
     }
     // Self-test of the two quit paths: the window's close button and Cmd-Q
     // (the Quit menu item sends terminate:).
@@ -42,6 +53,12 @@ class MainFlutterWindow: NSWindow, NSWindowDelegate {
     }
 
     super.awakeFromNib()
+  }
+
+  private var offscreen = false
+
+  override func constrainFrameRect(_ frameRect: NSRect, to screen: NSScreen?) -> NSRect {
+    offscreen ? frameRect : super.constrainFrameRect(frameRect, to: screen)
   }
 
   // Closing the window quits through the same path as Cmd-Q, so the Dart

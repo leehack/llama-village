@@ -69,6 +69,10 @@ class SelfTest {
   /// Seconds between `VILLAGE MEM` lines, or null for none.
   double? get memLogSeconds => double.tryParse(_env['VILLAGE_MEMLOG'] ?? '');
 
+  /// `VILLAGE_MUTE=1`: never opens the audio device. The soundscape still
+  /// runs, so a cinematic render logs its soundtrack all the same.
+  bool get mute => _env['VILLAGE_MUTE'] == '1';
+
   bool get exitWhenDone => _env['VILLAGE_EXIT'] == '1';
   int? get msPerMinute => int.tryParse(_env['VILLAGE_MS_PER_MINUTE'] ?? '');
   bool get canned => _env['VILLAGE_CANNED'] == '1';
