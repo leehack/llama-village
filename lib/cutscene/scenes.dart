@@ -208,7 +208,8 @@ class FestivalStaging {
   }
 
   /// Poses everyone for [t]; the first call puts them in place at once.
-  /// With [turnAway] they all turn their backs on the stage, quietly.
+  /// With [turnAway] they all turn their backs on the stage, quietly, and
+  /// the spotlight goes out.
   void apply(double t, {bool turnAway = false}) {
     final llamas = c.stage.llamas;
     for (final name in show.cast) {
@@ -226,7 +227,7 @@ class FestivalStaging {
     }
     _placed = true;
     final props = c.stage.festival;
-    props.spotlight(show.spotlight(t, winner), FestivalShow.centre, FestivalShow.front);
+    props.spotlight(turnAway ? 0 : show.spotlight(t, winner), FestivalShow.centre, FestivalShow.front);
     final w = winner;
     final bell = show.bell(t, w);
     // Pops in a little past full size and settles (an ease-out-back).

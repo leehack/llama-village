@@ -146,7 +146,7 @@ class Soundscape {
       out.setLoopVolume(name, level * (music ? musicVolume : sfxVolume * 0.8));
     }
     final lead = loops.where((n) => n != 'rain').reduce((a, b) => _loopLevel[b]! > _loopLevel[a]! ? b : a);
-    if (lead != _lead && _loopLevel[lead]! > 0.5) {
+    if (lead != _lead && _loopLevel[lead]! > 0.2) {
       _lead = lead;
       onLead?.call(lead, _loopLevel[lead]!);
     }
