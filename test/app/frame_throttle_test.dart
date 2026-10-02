@@ -62,4 +62,15 @@ void main() {
     t.fps = 60;
     expect(t.onVsync(const Duration(microseconds: 33333)), isNotNull);
   });
+
+  test('the next frame is asked for after the vsyncs to skip and before the one it is due on', () {
+    for (final hz in [60, 120]) {
+      for (final cap in [30, 60, 120]) {
+        if (cap > hz) continue;
+        final wait = FrameThrottle(cap).untilNextRequest.inMicroseconds / 1e6;
+        expect(wait, lessThan(1 / cap - 0.004), reason: '$cap fps on $hz Hz');
+        expect(wait, greaterThan(1 / cap - 1 / hz), reason: '$cap fps on $hz Hz');
+      }
+    }
+  });
 }

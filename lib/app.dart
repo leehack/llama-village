@@ -94,13 +94,13 @@ class VillageHome extends StatefulWidget {
   State<VillageHome> createState() => VillageHomeState();
 }
 
-class VillageHomeState extends State<VillageHome> with SingleTickerProviderStateMixin {
+class VillageHomeState extends State<VillageHome> {
   final VillageStage stage = VillageStage();
   final ValueNotifier<int> frame = ValueNotifier(0);
   final ValueNotifier<int> slow = ValueNotifier(0);
   final FocusNode focus = FocusNode();
   late final AppLifecycleListener _lifecycle;
-  late final Ticker _vsync;
+  Timer? _nextFrame;
   final FrameThrottle _throttle = FrameThrottle(VillageSettings.defaultFps);
   final GlobalKey _sceneKey = GlobalKey();
 
@@ -214,7 +214,7 @@ class VillageHomeState extends State<VillageHome> with SingleTickerProviderState
     super.initState();
     _lifecycle = AppLifecycleListener(onExitRequested: _onExitRequested);
     test.start();
-    _vsync = createTicker(_onVsync)..start();
+    _requestFrame();
     if (test.keepTicking) _keepTicking = Timer.periodic(const Duration(milliseconds: 50), (_) => _tickWithoutVsync());
     unawaited(_boot());
   }
@@ -232,7 +232,7 @@ class VillageHomeState extends State<VillageHome> with SingleTickerProviderState
   @override
   void dispose() {
     _lifecycle.dispose();
-    _vsync.dispose();
+    _nextFrame?.cancel();
     _keepTicking?.cancel();
     frame.dispose();
     slow.dispose();
@@ -743,9 +743,20 @@ class VillageHomeState extends State<VillageHome> with SingleTickerProviderState
     SchedulerBinding.instance.scheduleWarmUpFrame();
   }
 
-  void _onVsync(Duration elapsed) {
+  /// Frames are asked for one at a time, shortly before the next one is
+  /// due, rather than by a ticker on every vsync. With a 60 fps cap on a
+  /// 120 Hz display a ticker also makes an empty frame in between; while
+  /// the model generates, each frame's present waits behind its GPU work,
+  /// and that empty frame filled the raster pipeline, so a late frame
+  /// cost the next one as well.
+  void _requestFrame() {
+    if (mounted) SchedulerBinding.instance.scheduleFrameCallback(_onFrame);
+  }
+
+  void _onFrame(Duration timeStamp) {
     _sinceVsync.reset();
-    final dt = _throttle.onVsync(elapsed);
+    final dt = _throttle.onVsync(timeStamp);
+    _nextFrame = Timer(dt == null ? Duration.zero : _throttle.untilNextRequest, _requestFrame);
     if (dt == null) return;
     _tick(dt);
     _repaintScene();

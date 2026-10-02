@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 /// Caps the scene's frame rate by skipping vsync ticks.
 ///
 /// The display ticks at its own rate (up to 120 Hz on ProMotion); [onVsync]
@@ -14,6 +16,11 @@ class FrameThrottle {
   /// interval keeps a 60 fps cap on a 120 Hz display at every second tick
   /// instead of slipping to every third.
   static const double tolerance = 0.8;
+
+  /// How long after a rendered frame to ask for the next: early enough
+  /// for the vsync it is due on (it lands on the first vsync after the
+  /// request), late enough to skip the ones in between.
+  Duration get untilNextRequest => Duration(microseconds: math.max(0, (1e6 / fps - 6000).round()));
 
   /// Returns the seconds since the previous rendered frame when the tick at
   /// [now] should render, or null to skip it.
