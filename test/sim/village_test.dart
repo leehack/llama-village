@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:math' as math;
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:llama_village/sim/cast.dart';
 import 'package:llama_village/sim/clock.dart';
@@ -105,6 +108,43 @@ void main() {
     expect(june.friendship['Dash'], isNot(before ?? -99));
     v.dash.leave();
     expect(june.activity.kind, 'idle');
+  });
+
+  test('Dash keeps flying beside a walking llama instead of stopping and hopping to catch up', () async {
+    // Real time: a game minute is 500 ms, stepped at 60 Hz.
+    final v = Village(chat: CannedChat(), embed: HashEmbed(), seed: 11, autoAck: true);
+    await v.begin();
+    v.offline = true;
+    final june = v.byName('June')
+      ..place = "June's hut"
+      ..activity = Activity('walk', v.now.plus(60), dest: 'hilltop', start: v.now);
+    unawaited(v.dash.talk(june));
+    var frames = 0;
+    for (var i = 0; i < 600 && v.dash.visit?.stage != VisitStage.waiting; i++) {
+      v.advance(1000 / 60);
+      await settle();
+    }
+    expect(v.dash.visit!.stage, VisitStage.waiting);
+    // Hovering while June walks right past is fine; stopping for a few
+    // frames, then catching up in one jump, is the stutter.
+    var run = 0, shortest = 1 << 30, stops = 0;
+    var was = v.dash.moving;
+    for (; frames < 240 && june.activity.kind == 'walk'; frames++) {
+      v.advance(1000 / 60);
+      final moving = v.dash.moving;
+      if (moving == was) {
+        run++;
+      } else {
+        if (!was) shortest = math.min(shortest, run);
+        if (!moving) stops++;
+        run = 1;
+      }
+      was = moving;
+    }
+    expect(frames, 240);
+    expect(stops, lessThanOrEqualTo(2), reason: 'Dash stopped $stops times in 4 s');
+    expect(shortest, greaterThanOrEqualTo(20), reason: 'Dash stopped for only $shortest frames');
+    expect(v.dash.moving, isTrue);
   });
 
   test('Dash moves to a place and is present there', () async {

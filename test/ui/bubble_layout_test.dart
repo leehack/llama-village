@@ -69,6 +69,19 @@ void main() {
     expect(out['Pip']!.$1, greaterThan(0), reason: 'away from Mo, keeping it over its own speaker');
   });
 
+  test('a bubble that cannot fit above its speaker still stays inside the frame', () {
+    const screen = Box(8, 8, 984, 784);
+    // A singer in close-up, head at the top edge; another at the right edge.
+    final rs = [bubble('Mo', 500, 30, w: 300, h: 70), bubble('Pip', 990, 400, w: 300), bubble('June', -20, 780, w: 200)];
+    final boxes = placed(rs, layoutBubbles(rs, screen: screen));
+    for (final MapEntry(:key, value: b) in boxes.entries) {
+      expect(b.left, greaterThanOrEqualTo(screen.left - 1e-9), reason: key);
+      expect(b.top, greaterThanOrEqualTo(screen.top - 1e-9), reason: key);
+      expect(b.right, lessThanOrEqualTo(screen.right + 1e-9), reason: key);
+      expect(b.bottom, lessThanOrEqualTo(screen.bottom + 1e-9), reason: key);
+    }
+  });
+
   test('the layout does not depend on the input order', () {
     final rs = [bubble('Pip', 300, 300), bubble('Mo', 330, 280), bubble('June', 280, 260)];
     expect(layoutBubbles(rs.reversed.toList()), layoutBubbles(rs));

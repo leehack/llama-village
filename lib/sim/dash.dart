@@ -168,6 +168,9 @@ class Dash {
 
   /// Real-time flying speed in metres per second at 1x.
   static const double speed = 13;
+
+  /// Below this ground speed (m/s) Dash counts as hovering, not flying.
+  static const double minFlight = 0.6;
   static const double talkRange = 3.2;
 
   void say(String kind, String name) {
@@ -280,12 +283,15 @@ class Dash {
       moving = true;
     } else if (target != null) {
       final d = dist(pos, target);
-      if (d > 0.05) {
+      // Beside a walking llama the spot creeps a few centimetres a frame;
+      // a dead band there made Dash stop, then catch up in one jump, and
+      // land again every few frames.
+      if (d > (dv == null ? 0.05 : 1e-3)) {
         final step = math.min(d, pace * dt);
         final dir = ((target.$1 - pos.$1) / d, (target.$2 - pos.$2) / d);
         pos = (pos.$1 + dir.$1 * step, pos.$2 + dir.$2 * step);
         heading = dir;
-        moving = step > 0.01;
+        moving = step > minFlight * dt;
       } else if (dv == null) {
         goal = null;
         goalPlace = null;

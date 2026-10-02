@@ -167,7 +167,9 @@ The llamas walk the paths at their own pace (Pip quickest, Mo slowest,
 about 1.5 m/s at 1×), so crossing the village takes up to an hour and a
 half of game time and they set off early for the rehearsal and the
 festival. They gallop only when they hurry: in the storm, or when walking
-would make them late.
+would make them late. They round the corners of the paths and keep to
+the right, at one steady speed for the whole walk, and Dash flies
+alongside a llama it is waiting on instead of stopping and catching up.
 
 The festival is a show on the hilltop stage. The singers wait in a line
 at the back of the stage and in turn step forward to centre stage, face
@@ -591,6 +593,10 @@ screen's Quit button or the system exit request.
 tool/run_selftest.sh /tmp/week 400 VILLAGE_AUTOPLAY=week VILLAGE_CANNED=1 \
   VILLAGE_BOT=drama VILLAGE_TIME_SCALE=32 VILLAGE_MS_PER_MINUTE=500 VILLAGE_SAVE_DIR=/tmp/week_saves
 ```
+
+`VILLAGE_MOTION_LOG=<file.csv>` writes a CSV row per llama and Dash
+every frame: the sim's target and the drawn position, yaw, gait speed
+and clip weights, and the sim clock, for tracking down jitter.
 
 For a memory soak, `VILLAGE_MEMLOG=10` logs a `VILLAGE MEM` line every
 10 s: the resident set size, the villages still alive, and the size of

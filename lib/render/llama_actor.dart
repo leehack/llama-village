@@ -76,6 +76,15 @@ class LlamaActor {
   bool _scarfShown = true;
 
   double _speed = 0, _turnRate = 0, _runHeat = 0;
+
+  /// The fastest a llama turns, in rad/s.
+  static const double maxTurnRate = 7;
+
+  /// For VILLAGE_MOTION_LOG: the pose the sim asked for this frame, the
+  /// smoothed speed and the clip weights it gave.
+  final vm.Vector3 simTarget = vm.Vector3.zero();
+  double get speed => _speed;
+  GaitMix gait = const GaitMix(1, 0, 0, 1, 1);
   double _lookYaw = 0, _lookPitch = 0, _glanceYaw = 0, _glanceUntil = 0, _nextGlance = 2;
   final List<double> _faceW = List.filled(llamaMorphs.length, 0);
   double _lid = 0;
@@ -161,14 +170,22 @@ class LlamaActor {
         : ((spot.x, spot.z), (-math.sin(spot.yaw), -math.cos(spot.yaw)), (vm.Vector3(spot.x, 0, spot.z) - position).length > 0.002);
     final ground = groundHeight(pos.$1, pos.$2) + (spot == null ? 0 : lift);
     final target = vm.Vector3(pos.$1, ground, pos.$2);
+    simTarget.setFrom(target);
     final before = position.clone();
     if (position.length2 == 0 || (target - position).length > 12) {
       position.setFrom(target);
     } else {
-      position.setFrom(position + (target - position) * math.min(1.0, dt * 12));
+      position.setFrom(position + (target - position) * (1 - math.exp(-12 * dt)));
     }
-    final rawSpeed = dt > 0 ? (position - before).length / dt : 0.0;
-    _speed = approach(_speed, rawSpeed, 10, dt);
+    // Fast-forward (and the night boost) plays the gait faster instead of
+    // turning a walk into a gallop.
+    final pace = spot == null && v.minutesPerSecond > 0 ? v.timeScale * (v.fastNight ? Village.nightBoost : 1) : 1.0;
+    // The sim's walk has one steady speed; a speed read off each frame's
+    // step pulses the gait whenever the drawn llama catches up with its
+    // pose. A staged llama has no walk, so its own steps set the pace.
+    final moved = dt > 0 ? (position - before).length / dt : 0.0;
+    final wantSpeed = spot != null ? moved : (v.minutesPerSecond > 0 ? v.walkSpeed(l) * pace : 0.0);
+    _speed = approach(_speed, wantSpeed, 10, dt);
     final kind = spot == null ? l.activity.kind : 'idle';
 
     var face = heading;
@@ -181,14 +198,13 @@ class LlamaActor {
       }
     }
     final wantYaw = math.atan2(-face.$1, -face.$2);
-    final turn = _angleTo(yaw, wantYaw) * math.min(1.0, dt * (walking ? 10 : 4));
+    // Eased, and capped so turning round at the start of a walk is a
+    // quick pivot rather than a snap.
+    final turn = (_angleTo(yaw, wantYaw) * (1 - math.exp(-dt * (walking ? 10 : 4)))).clamp(-maxTurnRate * dt, maxTurnRate * dt);
     yaw += turn;
     _turnRate = approach(_turnRate, dt > 0 ? turn / dt : 0, 6, dt);
 
-    // Fast-forward (and the night boost) plays the gait faster instead of
-    // turning a walk into a gallop.
-    final pace = spot == null && v.minutesPerSecond > 0 ? v.timeScale * (v.fastNight ? Village.nightBoost : 1) : 1.0;
-    final mix = gaitMix(spec, walking ? _speed / pace : 0);
+    final mix = gait = gaitMix(spec, walking ? _speed / pace : 0);
     _idle?.weight = mix.idle;
     _walk
       ?..weight = mix.walk

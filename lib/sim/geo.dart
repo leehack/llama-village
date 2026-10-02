@@ -138,23 +138,86 @@ double walkMetres(String from, String to, int slot) => from == to ? 0 : polyline
 /// timed from the path so the llama on screen moves at that pace.
 int travelMinutes(double metres, double pace) => metres <= 0 ? 0 : math.max(1, (metres / (pace * secondsPerMinuteAt1x)).ceil());
 
-/// The point a fraction [t] (0-1) of the way along [pts], and the heading
-/// there as a unit vector.
-(P2, P2) along(List<P2> pts, double t) {
-  if (pts.length == 1) return (pts.first, (0, 1));
-  final total = polylineLength(pts);
-  var left = t.clamp(0.0, 1.0) * total;
-  for (var i = 1; i < pts.length; i++) {
-    final d = dist(pts[i - 1], pts[i]);
-    if (left <= d || i == pts.length - 1) {
-      final k = d < 1e-9 ? 0.0 : (left / d).clamp(0.0, 1.0);
-      final dir = _norm(_sub(pts[i], pts[i - 1]));
-      return (_add(pts[i - 1], _scale(_sub(pts[i], pts[i - 1]), k)), dir);
+/// A walk drawn through [corners] with each corner rounded off, walked
+/// by length. A polyline's heading, and the keep-right offset that hangs
+/// off it, would snap at every corner; along this one both turn smoothly.
+class SmoothPath {
+  factory SmoothPath(List<P2> corners, {double? plannedLength, double radius = 1.8, int samples = 8}) {
+    final pts = <P2>[];
+    for (final p in corners) {
+      if (pts.isEmpty || dist(pts.last, p) > 1e-6) pts.add(p);
     }
-    left -= d;
+    final planned = plannedLength ?? polylineLength(pts);
+    if (pts.length < 2) return SmoothPath._([pts.isEmpty ? (0, 0) : pts.first], const [(0, 1)], const [0], planned);
+    final out = <P2>[pts.first], tangents = <P2>[_norm(_sub(pts[1], pts[0]))];
+    for (var i = 1; i < pts.length - 1; i++) {
+      final v = pts[i], dIn = _norm(_sub(v, pts[i - 1])), dOut = _norm(_sub(pts[i + 1], v));
+      final r = math.min(radius, math.min(dist(pts[i - 1], v), dist(v, pts[i + 1])) / 2);
+      final a = _add(v, _scale(dIn, -r)), b = _add(v, _scale(dOut, r));
+      // A quadratic Bezier from a to b about the corner: its tangent runs
+      // from dIn to dOut, so the heading is continuous through the turn.
+      for (var k = 0; k <= samples; k++) {
+        final u = k / samples;
+        out.add(_add(_add(_scale(a, (1 - u) * (1 - u)), _scale(v, 2 * u * (1 - u))), _scale(b, u * u)));
+        tangents.add(_norm(_add(_scale(dIn, 1 - u), _scale(dOut, u))));
+      }
+    }
+    out.add(pts.last);
+    tangents.add(_norm(_sub(pts.last, pts[pts.length - 2])));
+    final at = <double>[0];
+    for (var i = 1; i < out.length; i++) {
+      at.add(at.last + dist(out[i - 1], out[i]));
+    }
+    return SmoothPath._(out, tangents, at, planned);
   }
-  return (pts.last, (0, 1));
+
+  SmoothPath._(this._points, this._tangents, this._at, this.plannedLength);
+  final List<P2> _points, _tangents;
+  final List<double> _at;
+
+  double get length => _at.last;
+
+  /// The length walks along it are timed by: the corners' polyline unless
+  /// given; rounded corners make [length] shorter.
+  final double plannedLength;
+
+  /// The point a fraction [t] (0-1) of the way along by length, and the
+  /// unit heading there.
+  (P2, P2) at(double t) {
+    if (_points.length == 1) return (_points.first, _tangents.first);
+    final s = t.clamp(0.0, 1.0) * length;
+    var lo = 0, hi = _at.length - 1;
+    while (hi - lo > 1) {
+      final mid = (lo + hi) >> 1;
+      if (_at[mid] <= s) {
+        lo = mid;
+      } else {
+        hi = mid;
+      }
+    }
+    final span = _at[hi] - _at[lo];
+    final k = span < 1e-9 ? 0.0 : ((s - _at[lo]) / span).clamp(0.0, 1.0);
+    final p = _add(_points[lo], _scale(_sub(_points[hi], _points[lo]), k));
+    return (p, _norm(_add(_scale(_tangents[lo], 1 - k), _scale(_tangents[hi], k))));
+  }
 }
+
+double _dot(P2 a, P2 b) => a.$1 * b.$1 + a.$2 * b.$2;
+
+final Map<(String, String, int), SmoothPath> _smoothWalks = {};
+
+/// [walkPath] with its corners rounded, as a llama walks it on screen,
+/// timed by the full [walkMetres]. A slot just past its stand point would
+/// have the walk double back on the spot, so that leg goes straight on.
+SmoothPath smoothWalk(String from, String to, int slot) => _smoothWalks.putIfAbsent((from, to, slot), () {
+  final pts = walkPath(from, to, slot);
+  final planned = polylineLength(pts);
+  bool doublesBack(P2 a, P2 b, P2 c) => dist(a, b) > 1e-6 && dist(b, c) > 1e-6 && _dot(_norm(_sub(b, a)), _norm(_sub(c, b))) < -0.34;
+  if (pts.length > 2 && doublesBack(pts[0], pts[1], pts[2])) pts.removeAt(1);
+  final n = pts.length;
+  if (n > 2 && doublesBack(pts[n - 1], pts[n - 2], pts[n - 3])) pts.removeAt(n - 2);
+  return SmoothPath(pts, plannedLength: planned);
+});
 
 /// Height of the ground: a hill under the hilltop and a dip for the pond.
 double groundHeight(double x, double z) {

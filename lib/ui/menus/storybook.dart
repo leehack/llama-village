@@ -303,9 +303,7 @@ class StorybookViewState extends State<StorybookView> with TickerProviderStateMi
           const _Flourish(),
           const SizedBox(height: 10),
           Expanded(
-            child: p.text != null
-                ? SingleChildScrollView(child: DropCapText(p.text!, style: _serif(context, 18.5)))
-                : _Writing(draft: p.draft, pulse: _pulse, waiting: l.storyQuill),
+            child: p.text != null ? _PageText(p.text!) : _Writing(draft: p.draft, pulse: _pulse, waiting: l.storyQuill),
           ),
           if (p.kind == PageKind.ending && p.text != null)
             KoText(
@@ -350,6 +348,43 @@ class StorybookViewState extends State<StorybookView> with TickerProviderStateMi
         ],
       ),
     );
+  }
+}
+
+/// A page's text at the largest size up to 18.5 that fits on the page, so
+/// a long page, or a large text size, never cuts off its last lines.
+class _PageText extends StatelessWidget {
+  const _PageText(this.text);
+  final String text;
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, box) {
+      var size = 18.5;
+      while (size > 11 && _height(context, size, box.maxWidth) > box.maxHeight) {
+        size -= 0.5;
+      }
+      return SingleChildScrollView(child: DropCapText(text, style: _serif(context, size)));
+    },
+  );
+
+  /// The paragraph's height at [size], with two lines to spare for the
+  /// shorter lines beside the drop cap.
+  double _height(BuildContext context, double size, double width) {
+    final style = DefaultTextStyle.of(context).style.merge(_serif(context, size));
+    final scaler = MediaQuery.textScalerOf(context);
+    final lineHeight = scaler.scale(size) * (style.height ?? 1.2);
+    final painter = TextPainter(
+      text: TextSpan(
+        text: keepWords(text.trim(), korean: koreanUi(context)),
+        style: style,
+      ),
+      textDirection: TextDirection.ltr,
+      textScaler: scaler,
+    )..layout(maxWidth: width);
+    final height = painter.height + 2 * lineHeight;
+    painter.dispose();
+    return height;
   }
 }
 

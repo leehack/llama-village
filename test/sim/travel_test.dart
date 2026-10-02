@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:llama_village/render/llama_rig.dart';
 import 'package:llama_village/sim/cast.dart';
@@ -125,5 +127,57 @@ void main() {
     }
     stepTo(v, const GameTime(festivalDay, festivalMinute));
     expect(v.festival.performances.map((p) => p.$1), containsAll(v.festival.contestants));
+  });
+
+  test('a walking llama moves without jumps, at one steady speed, across minutes and walk ends', () async {
+    final v = testVillage(seed: 4);
+    await v.begin();
+    v.offline = true;
+    const frames = 12;
+    // Per llama: last frame's pose, and the walk it was on with its metres per game minute.
+    final last = <String, (P2, P2, bool, Activity, double)>{};
+    final speeds = <(String, GameTime), double>{};
+    var walkFrames = 0, starts = 0, ends = 0, minuteEdges = 0;
+    while (v.now.compareTo(const GameTime(1, 20 * 60)) < 0) {
+      for (var f = 0; f < frames; f++) {
+        final minute = v.now;
+        v.advance(v.msPerMinute / frames);
+        if (v.now != minute) minuteEdges++;
+        for (final l in v.cast) {
+          final (p, dir, walking) = v.llamaPose(l);
+          final a = l.activity;
+          final before = last[l.name];
+          final pace = walking ? smoothWalk(l.place, a.dest!, l.slot).plannedLength / math.max(1, a.until.minutesSince(a.start)) : 0.0;
+          last[l.name] = (p, dir, walking, a, walking ? pace : (before?.$5 ?? 0));
+          if (before == null) continue;
+          final (q, qDir, wasWalking, was, wasPace) = before;
+          final why =
+              '${l.name} at ${v.now.label} ${v.minuteFrac} ${was.kind}(${was.dest},${was.start.label},${was.hurry})->${a.kind}(${a.dest},${a.start.label},${a.hurry}) at ${l.place}';
+          if (walking) {
+            walkFrames++;
+            final speed = speeds.putIfAbsent((l.name, a.start), () => v.walkSpeed(l));
+            expect(v.walkSpeed(l), speed, reason: '$why: one steady speed for a whole walk');
+          }
+          if (walking && !wasWalking) starts++;
+          if (wasWalking && !walking) ends++;
+          if (!walking && !wasWalking) {
+            expect(dist(p, q), 0, reason: '$why: a standing llama moved');
+            continue;
+          }
+          // One frame of walking at most, with room for the keep-right sway.
+          final step = math.max(pace, wasPace) / frames;
+          expect(dist(p, q), lessThan(step * 1.8 + 1e-6), reason: '$why: jumped ${dist(p, q)} m');
+          if (walking && identical(was, a)) {
+            final turn = math.atan2(dir.$1 * qDir.$2 - dir.$2 * qDir.$1, dir.$1 * qDir.$1 + dir.$2 * qDir.$2).abs();
+            expect(turn, lessThan(step * 6 + 0.05), reason: '$why: heading snapped $turn rad');
+          }
+        }
+      }
+      await settle();
+    }
+    expect(walkFrames, greaterThan(1000));
+    expect(starts, greaterThan(10));
+    expect(ends, greaterThan(10));
+    expect(minuteEdges, greaterThan(800));
   });
 }

@@ -21,6 +21,11 @@ class DashActor {
   final Node root;
   vm.Vector3 position = vm.Vector3.zero();
   double yaw = 0;
+
+  /// For VILLAGE_MOTION_LOG: where the sim put Dash this frame.
+  final vm.Vector3 simTarget = vm.Vector3.zero();
+  double get flyWeight => _flyW;
+  double get hop => _hop;
   double _height = 2.6;
 
   AnimationClip? _fly, _hover, _happy, _sad;
@@ -75,6 +80,7 @@ class DashActor {
     final ground = groundHeight(d.pos.$1, d.pos.$2);
     _height = approach(_height, talking ? 1.9 : (d.moving ? 3.2 : 2.6), 3, dt);
     final target = vm.Vector3(d.pos.$1, ground + _height + 0.12 * math.sin(wall * 3.2), d.pos.$2);
+    simTarget.setFrom(target);
     position = position.length2 == 0 ? target : position + (target - position) * math.min(1.0, dt * 14);
     var face = d.heading;
     if (talking) {

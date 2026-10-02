@@ -28,7 +28,8 @@ class BubbleRequest {
 /// Places speech bubbles so none overlap each other or the name tags in
 /// [keepClear]: the lowest bubble on screen (usually the nearest speaker)
 /// keeps its spot and the others stack above or slide aside, whichever
-/// moves them less, while staying inside [screen] when they can.
+/// moves them less, while staying clear inside [screen] when they can and
+/// inside it always.
 /// Returns each bubble's (dx, dy) offset from its preferred spot, by id
 /// (dy is upwards).
 Map<String, (double, double)> layoutBubbles(List<BubbleRequest> bubbles, {List<Box> keepClear = const [], Box? screen, double gap = 6}) {
@@ -69,10 +70,21 @@ Map<String, (double, double)> layoutBubbles(List<BubbleRequest> bubbles, {List<B
         best = (dx, dy);
       }
     }
+    if (screen != null) best = _inside(b, screen, best);
     placed.add(b.shift(best.$1, -best.$2));
     out[r.id] = best;
   }
   return out;
+}
+
+/// [offset] moved so [b], placed at it, lies within [screen]:
+/// when no spot clears everything, a bubble overlapping another is still
+/// readable and one past the frame's edge is not.
+(double, double) _inside(Box b, Box screen, (double, double) offset) {
+  final (dx, dy) = offset;
+  final left = (b.left + dx).clamp(screen.left, math.max(screen.left, screen.right - b.width));
+  final top = (b.top - dy).clamp(screen.top, math.max(screen.top, screen.bottom - b.height));
+  return (left - b.left, b.top - top);
 }
 
 /// Eases each bubble towards its laid-out offset, so bubbles glide rather

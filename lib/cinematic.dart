@@ -250,8 +250,8 @@ class _Shot {
 /// names (their centre), "Dash", or a world point; with `"follow": false`
 /// it stays where it was when the shot began, and `lag` sets how quickly
 /// a followed subject is caught up with. `azFrom` makes the azimuth
-/// relative to that actor's heading, `side` shifts the subject off centre
-/// and `rise` lifts the eye.
+/// relative to that actor's heading (eased at `azLag` per second, 1.2 by
+/// default), `side` shifts the subject off centre and `rise` lifts the eye.
 class _CameraPath {
   _CameraPath(this.spec, this.stage) {
     _fixed = _subject();
@@ -270,6 +270,9 @@ class _CameraPath {
   /// the first two subjects as they stood when the shot began.
   double _pairAz = 0;
   vm.Vector3? _smooth;
+  double? _heading;
+
+  static double _turn(double from, double to) => (to - from + math.pi) % (2 * math.pi) - math.pi;
 
   bool get _follow => spec['follow'] as bool? ?? true;
 
@@ -314,7 +317,16 @@ class _CameraPath {
     final s = _smooth = last == null ? raw : last + (raw - last) * math.min(1.0, dt * ((spec['lag'] as num?)?.toDouble() ?? 4));
     var az = _v('az', t, 0) * math.pi / 180 + _pairAz;
     final from = spec['azFrom'] as String?;
-    if (from != null) az += from == 'Dash' ? stage.dash.yaw : stage.llamas[from]!.yaw;
+    if (from != null) {
+      // An actor turns a corner in a few frames; an orbit that turned with
+      // it would whip the whole frame round, so the camera eases after it.
+      final heading = from == 'Dash' ? stage.dash.yaw : stage.llamas[from]!.yaw;
+      final eased = _heading;
+      _heading = eased == null
+          ? heading
+          : eased + _turn(eased, heading) * (1 - math.exp(-dt * ((spec['azLag'] as num?)?.toDouble() ?? 1.2)));
+      az += _heading!;
+    }
     final el = _v('el', t, 10) * math.pi / 180, dist = _v('dist', t, 8);
     final eye = s + vm.Vector3(math.sin(az) * math.cos(el), math.sin(el), math.cos(az) * math.cos(el)) * dist;
     var target = s + vm.Vector3(0, _v('look', t, 1.2), 0);

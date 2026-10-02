@@ -73,4 +73,39 @@ void main() {
     expect(pageStar(StoryPage(PageKind.ending, text: 'And so it ended.')), isNull);
     expect(pageStar(StoryPage(PageKind.cover)), isNull);
   });
+
+  testWidgets('a long page at a large text size fits on the page without scrolling', (tester) async {
+    tester.view
+      ..physicalSize = const Size(1600, 1000)
+      ..devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final long = List.filled(6, 'Clover rang her bell and announced the Berry Festival on the hilltop by evening.').join(' ');
+    final book = Storybook(
+      id: 'w',
+      title: storyTitle,
+      ending: Ending.dramaLlama,
+      finishedAt: DateTime.utc(2026),
+      pages: [
+        StoryPage(PageKind.cover),
+        StoryPage(PageKind.day, day: 1, text: long),
+      ],
+    );
+    final key = GlobalKey<StorybookViewState>();
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: L10n.localizationsDelegates,
+        supportedLocales: L10n.supportedLocales,
+        home: MediaQuery(
+          data: const MediaQueryData(size: Size(1600, 1000), textScaler: TextScaler.linear(1.3)),
+          child: StorybookView(key: key, book: book, reducedMotion: true, onClose: () {}),
+        ),
+      ),
+    );
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+    await tester.pumpAndSettle();
+    final scroll = tester.state<ScrollableState>(
+      find.descendant(of: find.byType(SingleChildScrollView), matching: find.byType(Scrollable)).last,
+    );
+    expect(scroll.position.maxScrollExtent, 0, reason: 'the last line is cut off');
+  });
 }

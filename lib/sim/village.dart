@@ -1004,20 +1004,46 @@ class Village {
   // ------------------------------------------------------------ views
 
   /// Where [l] stands or walks right now, its heading, and whether it is
-  /// on the move. Walks follow the path graph smoothly between minutes.
+  /// on the move. Walks follow the path graph smoothly between minutes,
+  /// round its corners, and start and end on the slots it stands at.
   (P2, P2, bool) llamaPose(Llama l) {
     final a = l.activity;
     if (a.kind == 'walk' && a.dest != null) {
-      final total = math.max(1, a.until.minutesSince(a.start));
-      final t = ((now.minutesSince(a.start) + minuteFrac) / total).clamp(0.0, 1.0);
-      final path = walkPath(l.place, a.dest!, l.slot);
-      final (p, dir) = along(path, t);
-      // Keep right, so llamas passing each other do not merge.
-      final right = (-dir.$2, dir.$1);
+      final path = smoothWalk(l.place, a.dest!, l.slot);
+      final t = _walked(path, a);
+      if (t >= 1) return (slotPoint(a.dest!, l.slot), placeFacing(a.dest!), false);
+      final (p, dir) = path.at(t);
+      // Keep right, so llamas passing each other do not merge. "Right" is
+      // taken across a chord 4 m long rather than the heading, so the
+      // offset swings round a tight corner instead of whipping across it.
+      final span = 2 / math.max(path.length, 1e-6);
+      final (behind, _) = path.at(t - span);
+      final (ahead, _) = path.at(t + span);
+      final cx = ahead.$1 - behind.$1, cz = ahead.$2 - behind.$2, chord = math.sqrt(cx * cx + cz * cz);
+      final right = chord < 1e-6 ? (-dir.$2, dir.$1) : (-cz / chord, cx / chord);
       final side = 0.6 * math.sin(math.pi * t);
       return ((p.$1 + right.$1 * side, p.$2 + right.$2 * side), dir, true);
     }
     return (slotPoint(l.place, l.slot), placeFacing(l.place), false);
+  }
+
+  /// How far along [path] walk [a] is, 0-1. The walk is timed by the path's
+  /// planned length, so a llama on the shorter rounded path walks at its
+  /// own pace and waits at its slot for the few seconds it saves.
+  double _walked(SmoothPath path, Activity a) {
+    final total = math.max(1, a.until.minutesSince(a.start));
+    final time = (now.minutesSince(a.start) + minuteFrac) / total;
+    return path.length < 1e-6 ? 1 : (time * path.plannedLength / path.length).clamp(0.0, 1.0);
+  }
+
+  /// How fast [l] walks on screen at 1x, in m/s: steady for a whole walk,
+  /// 0 when standing or waiting at the end of one.
+  double walkSpeed(Llama l) {
+    final a = l.activity;
+    if (a.kind != 'walk' || a.dest == null) return 0;
+    final path = smoothWalk(l.place, a.dest!, l.slot);
+    if (_walked(path, a) >= 1) return 0;
+    return path.plannedLength / (math.max(1, a.until.minutesSince(a.start)) * msPerMinute / 1000);
   }
 
   LlamaInspector inspect(String name) {

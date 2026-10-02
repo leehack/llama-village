@@ -131,6 +131,11 @@ class VillageStage {
   bool? scarfOverride;
   final Set<String> lightsOut = {};
 
+  /// VILLAGE_MOTION_LOG: one CSV row per actor per update, for tracking
+  /// down jitter.
+  StringSink? motionLog;
+  int _motionFrame = 0;
+
   Future<void> load(List<String> names) async {
     await Scene.initializeStaticResources();
     sky.apply();
@@ -202,6 +207,31 @@ class VillageStage {
     leaves.share = particles;
   }
 
+  static const String motionHeader =
+      'frame,dt,ui_ms,minute,frac,mps,actor,kind,walking,tx,tz,x,y,z,yaw,speed,idle,walk,gallop,walk_rate,extra';
+
+  void _logMotion(Village v, double dt) {
+    final log = motionLog!;
+    if (_motionFrame == 0) log.writeln(motionHeader);
+    final f = _motionFrame++;
+    final clock =
+        '$f,${dt.toStringAsFixed(5)},${v.uiMs.toStringAsFixed(1)},${v.now.absolute},${v.minuteFrac.toStringAsFixed(5)},${v.minutesPerSecond}';
+    String n(double x) => x.toStringAsFixed(5);
+    for (final l in v.cast) {
+      final a = llamas[l.name]!;
+      final g = a.gait;
+      log.writeln(
+        '$clock,${l.name},${l.activity.kind},${v.llamaPose(l).$3 ? 1 : 0},${n(a.simTarget.x)},${n(a.simTarget.z)},'
+        '${n(a.position.x)},${n(a.position.y)},${n(a.position.z)},${n(a.yaw)},${n(a.speed)},${n(g.idle)},${n(g.walk)},${n(g.gallop)},${n(g.walkRate)},',
+      );
+    }
+    final d = dash;
+    log.writeln(
+      '$clock,Dash,${v.dash.visit?.stage.name ?? '-'},${v.dash.moving ? 1 : 0},${n(d.simTarget.x)},${n(d.simTarget.z)},'
+      '${n(d.position.x)},${n(d.position.y)},${n(d.position.z)},${n(d.yaw)},0,0,0,0,0,${n(d.flyWeight)}/${n(d.hop)}',
+    );
+  }
+
   /// Rain falls in two stacked curtains that wrap around, so a storm costs
   /// two draw calls.
   void _updateRain(Village v, double dt) {
@@ -227,6 +257,7 @@ class VillageStage {
       if (l.name == 'Pip') a.scarfShown = scarfOverride ?? v.scarf.state == 'returned';
     }
     dash.update(v, dt, _wall);
+    if (motionLog != null) _logMotion(v, dt);
     _updateRain(v, dt);
     _ambient(v, hour, dt);
     final talking = v.dash.visit != null && rig.follow != null;

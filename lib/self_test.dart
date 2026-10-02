@@ -36,6 +36,8 @@ import 'settings.dart';
 ///   `cinematic.dart`). All three run the sim on a fixed 60 Hz step and
 ///   ignore the mouse and keyboard; `VILLAGE_BOT_THINK_MS=<ms>` sets how long
 ///   the bot looks at Dash's options before choosing.
+/// * `VILLAGE_MOTION_LOG=<file.csv>` writes every actor's sim target and
+///   drawn pose, speed, gait and yaw each frame, for chasing jitter.
 class SelfTest {
   SelfTest._(this._env)
     : capture = _env['VILLAGE_CAPTURE'] == '1',
@@ -79,6 +81,10 @@ class SelfTest {
   /// The shot list for an offline cinematic render of [playbackPath]
   /// (`VILLAGE_PLAYBACK` is required with it).
   String? get cinematicPath => _env['VILLAGE_CINEMATIC'];
+
+  /// `VILLAGE_MOTION_LOG=<file.csv>`: every actor's sim target and drawn
+  /// pose, each frame (see `VillageStage.motionLog`).
+  String? get motionLogPath => _env['VILLAGE_MOTION_LOG'];
   String? env(String key) => _env[key];
 
   /// Recorded and replayed games step the sim by exactly 1/60 s a frame,

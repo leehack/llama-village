@@ -207,6 +207,7 @@ class VillageHomeState extends State<VillageHome> {
   SessionDriver? session;
   CinematicCapture? cinematic;
   Timer? _replayPump;
+  IOSink? _motionLog;
   double _savedRecordingAt = 0;
 
   /// Fixed sim steps taken in the current game.
@@ -303,6 +304,8 @@ class VillageHomeState extends State<VillageHome> {
     );
     try {
       await stage.load(const ['Pip', 'Mo', 'June', 'Bramble', 'Clover']);
+      final motion = test.motionLogPath;
+      if (motion != null) stage.motionLog = _motionLog = File(motion).openWrite();
       _sceneReady = true;
     } catch (e, st) {
       debugPrint('SCENE FAILED: $e\n$st');
@@ -806,6 +809,8 @@ class VillageHomeState extends State<VillageHome> {
   Future<void> _doShutdown() async {
     final watch = Stopwatch()..start();
     _replayPump?.cancel();
+    stage.motionLog = null;
+    await _motionLog?.close();
     await saveRecording();
     if (replay != null) test.log('REPLAY at exit: ${replay!.summary}');
     try {
