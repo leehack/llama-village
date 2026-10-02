@@ -42,7 +42,9 @@ import 'sim/geo.dart';
 /// `{"cutscene": "night", "n": 1, "at": 3.5}` (the nth scene of that name,
 /// at that scene time) or `{"stage": "story", "at": 2}` (the post-week
 /// tour: epilogue, results, story, gallery). `"preview": 30` saves only
-/// every 30th frame, for planning.
+/// every 30th frame, for planning. `"trace": true` logs each frame's camera
+/// and on-screen llama heads, and a shot with `"live": true` plays at 1x on
+/// the display instead of being saved, both for checking motion.
 class CinematicCapture {
   CinematicCapture(this.home, this.path);
   final VillageHomeState home;
@@ -67,6 +69,8 @@ class CinematicCapture {
   String? _lastCutscene;
   IOSink? _frames;
   IOSink? _audio;
+  IOSink? _trace;
+  final Stopwatch _sinceFrame = Stopwatch();
   int _saved = 0;
   _Shot? _current;
   int _shotFrame = 0;
@@ -82,6 +86,7 @@ class CinematicCapture {
     Directory(_out).createSync(recursive: true);
     _frames = File('$_out/frames.jsonl').openWrite();
     _audio = File('$_out/audio.jsonl').openWrite();
+    if (spec['trace'] == true) _trace = File('$_out/trace.jsonl').openWrite();
     home.audioTap = (name, volume, speed, pan) {
       final s = _current;
       if (s == null) return;
@@ -125,6 +130,7 @@ class CinematicCapture {
       await Future.wait(_writes);
       await _frames?.close();
       await _audio?.close();
+      await _trace?.close();
       home.test.log('CINE done: $_saved frames saved');
     } catch (e, st) {
       home.test.log('CINE failed: $e\n$st');
@@ -169,6 +175,19 @@ class CinematicCapture {
     if (select != null) home.select(select);
     home.test.log('CINE shot ${s.name} at tick ${home.ticks} ${home.village?.now.label} for ${s.frames} frames');
     final cam = s.camera == null ? null : _CameraPath(s.camera!, home.stage);
+    if (s.json['live'] == true) {
+      await _playLive(s, cam);
+    } else {
+      await _playOffline(s, cam, dir);
+    }
+    if (select != null) home.select(null);
+    if (cam != null) home.stage.rig.override = null;
+    hud = const {};
+    home.cinematicChanged();
+    _current = null;
+  }
+
+  Future<void> _playOffline(_Shot s, _CameraPath? cam, Directory dir) async {
     for (_shotFrame = 0; _shotFrame < s.frames; _shotFrame++) {
       home.stepFixed();
       _noteCutscene();
@@ -194,17 +213,99 @@ class CinematicCapture {
           'stage': home.session?.stage,
         }),
       );
+      _traceFrame(s);
       final image = await _grab();
       if (image == null) continue;
       _writes.add(_save(image, '${dir.path}/${_shotFrame.toString().padLeft(5, '0')}.png'));
       if (_writes.length > 6) await _writes.removeAt(0);
       _saved++;
     }
-    if (select != null) home.select(null);
-    if (cam != null) home.stage.rig.override = null;
-    hud = const {};
-    home.cinematicChanged();
-    _current = null;
+  }
+
+  _LiveShot? _live;
+
+  /// `"live": true`: the shot plays on the display's own frame loop at 1x,
+  /// unsaved, for a screen recording to compare with the offline frames.
+  /// Its first frame holds for `"hold"` seconds (3 by default) so the
+  /// recorder can start first.
+  Future<void> _playLive(_Shot s, _CameraPath? cam) async {
+    if (cam != null) home.stage.rig.override = cam.at(0, 1 / 60);
+    await _frame();
+    home.test.log('CINE live ${s.name} holding');
+    await Future<void>.delayed(Duration(milliseconds: (((s.json['hold'] as num?) ?? 3) * 1000).round()));
+    final live = _live = _LiveShot(s, cam);
+    home.test.log('CINE live ${s.name} playing');
+    running = false;
+    home.resumeFrames();
+    await live.done.future;
+    _live = null;
+    final gaps = live.gaps..sort();
+    String at(double q) => gaps.isEmpty ? '-' : gaps[((gaps.length - 1) * q).round()].toStringAsFixed(1);
+    home.test.log(
+      'CINE live ${s.name} done: ${s.frames} frames in ${(live.clock.elapsedMilliseconds / 1000).toStringAsFixed(2)} s, '
+      'frame gap ms p50 ${at(0.5)} p95 ${at(0.95)} max ${at(1)}',
+    );
+  }
+
+  /// The frame loop's step while a live shot plays: moves its camera on.
+  void liveTick() {
+    final live = _live;
+    if (live == null) return;
+    final s = live.shot;
+    if (live.frame > 0) live.gaps.add(live.clock.elapsedMicroseconds / 1000 - live.last);
+    live.last = live.clock.elapsedMicroseconds / 1000;
+    if (live.frame == 0) live.clock.start();
+    _shotFrame = live.frame;
+    final cam = live.cam;
+    if (cam != null) home.stage.rig.override = cam.at(live.frame / math.max(1, s.frames - 1), 1 / 60);
+    if (++live.frame >= s.frames) {
+      running = true;
+      live.done.complete();
+    }
+  }
+
+  /// `"trace": true`: per drawn frame, the wall time since the last one,
+  /// the camera, and each llama's drawn head on screen with its clips'
+  /// playback times, for measuring jitter (`<out>/trace.jsonl`).
+  void _traceFrame(_Shot s) {
+    final trace = _trace;
+    if (trace == null) return;
+    final wall = _sinceFrame.elapsedMicroseconds / 1000;
+    _sinceFrame
+      ..reset()
+      ..start();
+    final size = home.test.boundaryKey.currentContext?.size;
+    if (size == null) return;
+    final stage = home.stage;
+    final cam = stage.rig.camera();
+    List<double> v3(vm.Vector3 p) => [p.x, p.y, p.z];
+    final llamas = <String, Object?>{};
+    for (final MapEntry(key: name, value: a) in stage.llamas.entries) {
+      final head = a.drawnHead;
+      if (!a.visible || head == null) continue;
+      final px = cam.worldToScreen(head, size);
+      if (px == null || px.dx < 0 || px.dy < 0 || px.dx > size.width || px.dy > size.height) continue;
+      final g = a.gait;
+      llamas[name] = {
+        'root': v3(a.position),
+        'sim': [a.simTarget.x, a.simTarget.z],
+        'yaw': a.yaw,
+        'head': v3(head),
+        'px': [px.dx * _scale, px.dy * _scale],
+        'clips': a.clipTimes,
+        'gait': [g.idle, g.walk, g.gallop, g.walkRate],
+        'bob': a.bob,
+      };
+    }
+    trace.writeln(
+      jsonEncode({
+        'shot': s.name,
+        'f': _shotFrame,
+        'wallMs': wall,
+        'cam': {'pos': v3(cam.position), 'target': v3(cam.target), 'fov': cam.fovRadiansY * 180 / math.pi},
+        'llamas': llamas,
+      }),
+    );
   }
 
   /// Draws a frame now rather than on the next vsync, which a sleeping
@@ -226,6 +327,17 @@ class CinematicCapture {
     image.dispose();
     await File(name).writeAsBytes(png!.buffer.asUint8List());
   }
+}
+
+class _LiveShot {
+  _LiveShot(this.shot, this.cam);
+  final _Shot shot;
+  final _CameraPath? cam;
+  final Completer<void> done = Completer<void>();
+  final Stopwatch clock = Stopwatch();
+  final List<double> gaps = [];
+  double last = 0;
+  int frame = 0;
 }
 
 class _Shot {

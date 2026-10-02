@@ -854,6 +854,9 @@ class VillageHomeState extends State<VillageHome> {
     SchedulerBinding.instance.scheduleWarmUpFrame();
   }
 
+  /// Hands the frame loop back after an offline render held it.
+  void resumeFrames() => _requestFrame();
+
   /// Frames are asked for one at a time, shortly before the next one is
   /// due, rather than by a ticker on every vsync. With a 60 fps cap on a
   /// 120 Hz display a ticker also makes an empty frame in between; while
@@ -872,6 +875,7 @@ class VillageHomeState extends State<VillageHome> {
     _nextFrame = Timer(dt == null ? Duration.zero : _throttle.untilNextRequest(timeStamp), _requestFrame);
     if (dt == null) return;
     _tick(test.fixedStep ? fixedDt : dt);
+    cinematic?.liveTick();
     _repaintScene();
     final r = replay;
     if (r != null && village != null) unawaited(r.pump());

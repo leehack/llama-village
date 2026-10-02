@@ -38,6 +38,19 @@ class ProceduralBone {
   }
 }
 
+/// Steps [clips] by [dt] seconds of game time. flutter_scene advances a
+/// playing clip by the wall time between renders, which an offline render
+/// (~300 ms per 1/60 s frame) turned into an uneven ~18x fast-forward that
+/// strobed, so the clips stay paused and move only here.
+void stepClips(List<AnimationClip?> clips, double dt) {
+  for (final clip in clips) {
+    clip
+      ?..playing = true
+      ..advance(dt)
+      ..playing = false;
+  }
+}
+
 /// Yaw about +Y, then pitch about +X, as one model-frame rotation.
 vm.Quaternion yawPitch(double yaw, double pitch, [double roll = 0]) =>
     vm.Quaternion.axisAngle(vm.Vector3(0, 1, 0), yaw) *

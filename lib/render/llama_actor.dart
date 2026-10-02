@@ -94,6 +94,14 @@ class LlamaActor {
   /// Top of the head above [position], for bubbles and picking.
   double get headHeight => spec.headHeight;
 
+  /// For a cinematic trace: where the head bone was last drawn, the clips'
+  /// playback times and this frame's body bob.
+  vm.Vector3? get drawnHead => _head?.node.globalTransform.getTranslation();
+  List<double> get clipTimes => [
+    for (final c in [_idle, _walk, _gallop]) c?.playbackTime ?? 0,
+  ];
+  double bob = 0;
+
   static Future<LlamaActor> load(String name) async {
     final spec = llamaSpecs[name]!;
     final model = await loadScene(spec.asset);
@@ -103,8 +111,7 @@ class LlamaActor {
       if (a == null) return null;
       return model.createAnimationClip(a)
         ..loop = true
-        ..weight = w
-        ..play();
+        ..weight = w;
     }
 
     final idle = clip('Idle', 1);
@@ -213,6 +220,7 @@ class LlamaActor {
       ?..weight = mix.gallop
       ..playbackTimeScale = mix.gallopRate * pace;
     _runHeat = approach(_runHeat, mix.gallop, mix.gallop > _runHeat ? 0.8 : 0.12, dt);
+    stepClips([_idle, _walk, _gallop], dt);
 
     final atHome = l.place == l.home;
     visible = spot != null || !(l.asleep && atHome && !walking);
@@ -250,6 +258,7 @@ class LlamaActor {
     final (_, sway) = _singStyle[name] ?? (9.0, 1.6);
     roll += singing * 0.07 * math.sin(wall * sway + name.length);
     bob += singing * 0.035 * math.sin(wall * sway * 2).abs() + cheering * 0.1 * math.sin(wall * 7.5 + name.length).abs();
+    this.bob = bob;
     final body = vm.Matrix4.translation(position + vm.Vector3(0, bob - 0.12 * fainted, 0))
       ..rotateY(yaw + wobble)
       ..rotateX(-pitch);

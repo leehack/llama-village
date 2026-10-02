@@ -49,8 +49,7 @@ class DashActor {
       if (a == null) return null;
       return model.createAnimationClip(a)
         ..loop = true
-        ..weight = w
-        ..play();
+        ..weight = w;
     }
 
     _fly = clip('Fly', 0);
@@ -111,6 +110,7 @@ class DashActor {
     _hover?.weight = (1 - _flyW) * (1 - react);
     _happy?.weight = _happyW;
     _sad?.weight = _sadW;
+    stepClips([_fly, _hover, _happy, _sad], dt);
 
     var lift = 0.0, sx = 1.0, sy = 1.0;
     if (_hop >= 0) {
