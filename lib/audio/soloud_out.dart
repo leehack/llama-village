@@ -69,12 +69,18 @@ class SoloudOut implements SoundOut {
       if (_sources[name] != null) name: SoLoud.instance.getLength(_sources[name]!).inMicroseconds / 1e6,
   };
 
+  /// Sees every effect and loop level asked for, before muting, so the
+  /// offline cinematic render can lay them into its soundtrack.
+  void Function(String name, double volume, double speed, double pan)? onPlay;
+  void Function(String name, double volume)? onLoop;
+
   set muted(bool value) {
     if (_ready) SoLoud.instance.setGlobalVolume(value ? 0 : 1);
   }
 
   @override
   void play(String name, {double volume = 1, double speed = 1, double pan = 0}) {
+    onPlay?.call(name, volume, speed, pan);
     final source = _sources[name];
     if (!_ready || source == null) return;
     final soloud = SoLoud.instance;
@@ -84,6 +90,7 @@ class SoloudOut implements SoundOut {
 
   @override
   void setLoopVolume(String name, double volume) {
+    onLoop?.call(name, volume);
     final handle = _loops[name];
     if (!_ready || handle == null) return;
     if (((_loopVolume[name] ?? -1) - volume).abs() < 0.002) return;

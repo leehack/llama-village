@@ -29,6 +29,13 @@ import 'settings.dart';
 ///   `VILLAGE_KEEP_TICKING=1` keeps the game going while the screen is locked.
 /// * `VILLAGE_LANG=en|ko|fr` sets the language for the run; like
 ///   `VILLAGE_FPS`, it makes the run's settings unsaved defaults.
+/// * `VILLAGE_RECORD=<file.json>` plays a new game on the live models and
+///   records it for replay (see `sim/session.dart`); `VILLAGE_PLAYBACK=<file>`
+///   plays a recorded game again with no model loaded, and
+///   `VILLAGE_CINEMATIC=<shots.json>` renders a replay offline (see
+///   `cinematic.dart`). All three run the sim on a fixed 60 Hz step and
+///   ignore the mouse and keyboard; `VILLAGE_BOT_THINK_MS=<ms>` sets how long
+///   the bot looks at Dash's options before choosing.
 class SelfTest {
   SelfTest._(this._env)
     : capture = _env['VILLAGE_CAPTURE'] == '1',
@@ -64,6 +71,20 @@ class SelfTest {
   int? get msPerMinute => int.tryParse(_env['VILLAGE_MS_PER_MINUTE'] ?? '');
   bool get canned => _env['VILLAGE_CANNED'] == '1';
   int? get seed => int.tryParse(_env['VILLAGE_SEED'] ?? '');
+
+  /// The session file to record the game into, or to play back.
+  String? get recordPath => _env['VILLAGE_RECORD'];
+  String? get playbackPath => _env['VILLAGE_PLAYBACK'];
+
+  /// The shot list for an offline cinematic render of [playbackPath]
+  /// (`VILLAGE_PLAYBACK` is required with it).
+  String? get cinematicPath => _env['VILLAGE_CINEMATIC'];
+  String? env(String key) => _env[key];
+
+  /// Recorded and replayed games step the sim by exactly 1/60 s a frame,
+  /// so a replay takes the same steps as its recording.
+  bool get fixedStep => recordPath != null || playbackPath != null;
+  double? get botThinkMs => double.tryParse(_env['VILLAGE_BOT_THINK_MS'] ?? '');
 
   /// Frame-rate cap for this run, overriding (and not saving) the setting.
   int? get fps => int.tryParse(_env['VILLAGE_FPS'] ?? '');
@@ -186,7 +207,7 @@ class SelfTest {
   }
 
   void log(String message) {
-    if (capture || autoplay || weekScript || quitAt != null || memLogSeconds != null) debugPrint('VILLAGE $message');
+    if (capture || autoplay || weekScript || quitAt != null || memLogSeconds != null || fixedStep) debugPrint('VILLAGE $message');
   }
 
   /// Saves the app as `<name>.png` once.

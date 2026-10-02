@@ -413,12 +413,24 @@ class OptionsPanel extends StatelessWidget {
 // ------------------------------------------------------------ inspector
 
 class Inspector extends StatelessWidget {
-  const Inspector({super.key, required this.data, required this.village, required this.onClose, required this.onTalk, required this.cast});
+  const Inspector({
+    super.key,
+    required this.data,
+    required this.village,
+    required this.onClose,
+    required this.onTalk,
+    required this.cast,
+    this.scroll,
+  });
   final LlamaInspector data;
   final Village village;
   final VoidCallback onClose;
   final VoidCallback onTalk;
   final List<Llama> cast;
+
+  /// Scrolls the panel from outside (the cinematic render shows what the
+  /// llama knows, below the fold).
+  final ScrollController? scroll;
 
   @override
   Widget build(BuildContext context) {
@@ -471,6 +483,7 @@ class Inspector extends StatelessWidget {
             ),
             Expanded(
               child: ListView(
+                controller: scroll,
                 padding: const EdgeInsets.fromLTRB(14, 10, 14, 14),
                 children: [
                   KoText(

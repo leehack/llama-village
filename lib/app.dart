@@ -16,12 +16,14 @@ import 'ambient/animal_sounds.dart';
 import 'audio/soloud_out.dart';
 import 'audio/soundscape.dart';
 import 'autoplay.dart';
+import 'cinematic.dart';
 import 'cutscene/overlay.dart';
 import 'frame_throttle.dart';
 import 'game/bot.dart';
 import 'game/director.dart';
 import 'game/mem_probe.dart';
 import 'game/save_store.dart';
+import 'game/session_play.dart';
 import 'game/story_camera.dart';
 import 'game/week_autoplay.dart';
 import 'l10n/app_localizations.dart';
@@ -37,6 +39,8 @@ import 'sim/epilogue.dart';
 import 'sim/geo.dart';
 import 'sim/influence.dart';
 import 'sim/lang.dart';
+import 'sim/model.dart';
+import 'sim/session.dart';
 import 'sim/snapshot.dart';
 import 'sim/storybook.dart';
 import 'sim/village.dart';
@@ -195,6 +199,29 @@ class VillageHomeState extends State<VillageHome> {
   Future<VillageModels>? _loading;
   Autoplay? _autoplay;
   WeekAutoplay? _week;
+
+  /// The recording being made (VILLAGE_RECORD) or played back
+  /// (VILLAGE_PLAYBACK), and what drives that game.
+  SessionRecorder? recorder;
+  SessionReplay? replay;
+  SessionDriver? session;
+  CinematicCapture? cinematic;
+  Timer? _replayPump;
+  double _savedRecordingAt = 0;
+
+  /// Fixed sim steps taken in the current game.
+  int ticks = 0;
+
+  /// An offline cinematic render owns the frame loop.
+  bool get cinematicActive => cinematic != null;
+
+  /// The cinematic render changed what its shot shows.
+  void cinematicChanged() {
+    if (mounted) setState(() {});
+  }
+
+  set audioTap(void Function(String name, double volume, double speed, double pan)? tap) => _audio.onPlay = tap;
+  set loopTap(void Function(String name, double volume)? tap) => _audio.onLoop = tap;
   late final MemProbe? _mem = test.memLogSeconds == null ? null : MemProbe(this, test.memLogSeconds!);
 
   /// Audio voices alive, for the memory log.
@@ -250,6 +277,22 @@ class VillageHomeState extends State<VillageHome> {
   // ------------------------------------------------------------ boot
 
   Future<void> _boot() async {
+    if (test.playbackPath != null) {
+      try {
+        replay = readSession(test.playbackPath!)..log = test.log;
+      } catch (e) {
+        setState(() {
+          phase = Phase.failed;
+          error = 'cannot read session ${test.playbackPath}: $e';
+        });
+        return;
+      }
+      _replayPump = Timer.periodic(const Duration(milliseconds: 8), (_) {
+        if (village == null && !cinematicActive) unawaited(replay!.pump());
+      });
+    } else if (test.recordPath != null) {
+      recorder = SessionRecorder(meta: {});
+    }
     _applySettings();
     settings.addListener(_applySettings);
     unawaited(
@@ -285,6 +328,8 @@ class VillageHomeState extends State<VillageHome> {
       phaseTime = 0;
     });
     test.log('MENU shown');
+    if (test.fixedStep) session = SessionDriver(this);
+    if (test.cinematicPath != null && replay != null) cinematic = CinematicCapture(this, test.cinematicPath!)..start();
     if (test.autoplay) _autoplay = Autoplay(this)..start();
     if (test.weekScript) _week = WeekAutoplay(this)..start();
     final tour = RenderTour.requested;
@@ -293,6 +338,12 @@ class VillageHomeState extends State<VillageHome> {
 
   void _loadModels() {
     final cfg = config = ModelConfig.resolve();
+    final r = replay;
+    if (r != null) {
+      final label = modelLabel = '${r.meta['models'] ?? 'canned'} (replay)';
+      modelStatus = (l) => l.statusReady(label);
+      return;
+    }
     if (test.canned) {
       modelStatus = (l) => l.statusCanned;
       return;
@@ -362,6 +413,10 @@ class VillageHomeState extends State<VillageHome> {
     });
   }
 
+  void _applySettingsToGame() {
+    if (replay == null) village?.textPace = settings.textSpeed.pace;
+  }
+
   void _applySettings() {
     _throttle.fps = settings.fps;
     stage
@@ -372,23 +427,49 @@ class VillageHomeState extends State<VillageHome> {
       ..musicVolume = settings.musicVolume
       ..sfxVolume = settings.sfxVolume;
     _audio.muted = settings.muted;
-    village?.textPace = settings.textSpeed.pace;
+    _applySettingsToGame();
   }
 
   // ------------------------------------------------------------ games
 
   Village _newVillage(int seed) {
     final m = models;
-    final pace = test.msPerMinute ?? 500;
-    final v = m != null
-        ? Village(chat: m, embed: m, laya: m.hasLaya ? m : null, seed: seed, msPerMinute: pace)
-        : Village(
-            chat: CannedChat(delay: const Duration(milliseconds: 250)),
-            embed: HashEmbed(),
-            seed: seed,
-            msPerMinute: pace,
-          );
+    final r = replay, rec = recorder;
+    final pace = (r?.meta['msPerMinute'] as int?) ?? test.msPerMinute ?? 500;
+    // Bubbles in a recorded or replayed game count as shown when they are
+    // said, not when a frame draws them, so the sim never waits on frames.
+    final ack = test.fixedStep;
+    final Village v;
+    if (r != null) {
+      v = Village(chat: r, embed: r, laya: r.hasTopics ? r : null, seed: seed, msPerMinute: pace, autoAck: true);
+      r.attach(v);
+    } else {
+      final ChatModel chat = m ?? CannedChat(delay: const Duration(milliseconds: 250));
+      final EmbedModel embed = m ?? HashEmbed();
+      final laya = m != null && m.hasLaya ? m : null;
+      v = Village(
+        chat: rec?.chat(chat) ?? chat,
+        embed: rec?.embed(embed) ?? embed,
+        laya: laya == null ? null : rec?.topics(laya) ?? laya,
+        seed: seed,
+        msPerMinute: pace,
+        autoAck: ack,
+      );
+      rec?.attach(v);
+    }
     return v..lang = lang;
+  }
+
+  /// Writes the recording so far (VILLAGE_RECORD); a no-op otherwise.
+  Future<void> saveRecording() async {
+    final rec = recorder, path = test.recordPath;
+    if (rec == null || path == null) return;
+    try {
+      await writeSession(rec, path);
+      test.log('SESSION saved ${rec.calls} calls to $path');
+    } catch (e) {
+      test.log('SESSION save failed: $e');
+    }
   }
 
   /// Waits for a model load in progress, so a game does not start on canned
@@ -409,13 +490,27 @@ class VillageHomeState extends State<VillageHome> {
     sound.click();
     await _awaitModels();
     if (!mounted || _shutdown != null) return;
-    modelLabel = models?.description;
-    final v = _newVillage(test.seed ?? DateTime.now().millisecondsSinceEpoch);
+    modelLabel = replay != null ? modelLabel : models?.description;
+    final seed = (replay?.meta['seed'] as int?) ?? test.seed ?? DateTime.now().millisecondsSinceEpoch;
+    final v = _newVillage(seed);
+    recorder?.meta.addAll({
+      'seed': seed,
+      'msPerMinute': v.msPerMinute,
+      'jumpDay': test.jumpDay,
+      'timeScale': test.timeScale ?? settings.defaultSpeed.toDouble(),
+      'textPace': settings.textSpeed.pace,
+      'lang': lang.name,
+      'bot': test.bot,
+      'botThinkMs': test.botThinkMs ?? (test.capture ? 1500 : 0),
+      'models': models?.description,
+      'laya': models?.hasLaya ?? false,
+      'recordedAt': DateTime.now().toUtc().toIso8601String(),
+    });
     setState(() => busy = (l) => l.busyPlanning);
     final watch = Stopwatch()..start();
     await v.begin();
     test.log('PLANS ready in ${watch.elapsedMilliseconds} ms');
-    final jump = test.jumpDay;
+    final jump = (replay?.meta['jumpDay'] as int?) ?? test.jumpDay;
     if (jump != null && jump > 1) {
       setState(() => busy = (l) => l.busySkipping(jump));
       await v.jumpTo(jump);
@@ -463,13 +558,16 @@ class VillageHomeState extends State<VillageHome> {
   }
 
   void _enterGame(Village v) {
+    final r = replay;
     v
-      ..timeScale = test.timeScale ?? settings.defaultSpeed.toDouble()
-      ..textPace = settings.textSpeed.pace
+      ..timeScale = (r?.meta['timeScale'] as num?)?.toDouble() ?? test.timeScale ?? settings.defaultSpeed.toDouble()
+      ..textPace = (r?.meta['textPace'] as num?)?.toDouble() ?? settings.textSpeed.pace
       ..paused = false;
+    ticks = 0;
     test.generating = () => v.chat.queue.busy;
     test.running = () => [?v.chat.queue.runningType, ?v.embed.queue.runningType].join('+');
-    final preset = botPresetFrom(test.bot);
+    final preset = botPresetFrom(replay?.meta['bot'] as String? ?? test.bot);
+    final think = (replay?.meta['botThinkMs'] as num?)?.toDouble() ?? test.botThinkMs ?? (test.capture ? 1500 : 0);
     final camera = _camera = StoryCamera(stage: stage, boundary: _sceneShotKey, log: test.log);
     v.events.listeners.add((e) => camera.onEvent(v, e));
     book = null;
@@ -491,7 +589,7 @@ class VillageHomeState extends State<VillageHome> {
               onEnding: _startStory,
               strings: () => L10n.of(context),
             );
-      bot = preset == null ? null : (PlayerBot(preset)..thinkMs = test.capture ? 1500 : 0);
+      bot = preset == null ? null : (PlayerBot(preset)..thinkMs = think);
       phase = Phase.playing;
       page = MenuPage.none;
       pauseMenu = false;
@@ -707,6 +805,9 @@ class VillageHomeState extends State<VillageHome> {
 
   Future<void> _doShutdown() async {
     final watch = Stopwatch()..start();
+    _replayPump?.cancel();
+    await saveRecording();
+    if (replay != null) test.log('REPLAY at exit: ${replay!.summary}');
     try {
       await _keepBook().timeout(const Duration(seconds: 5));
     } catch (_) {
@@ -743,8 +844,8 @@ class VillageHomeState extends State<VillageHome> {
   /// VILLAGE_KEEP_TICKING: a locked screen or a sleeping display sends no
   /// vsync, so a soak run steps the game and pumps frames itself meanwhile.
   void _tickWithoutVsync() {
-    if (_sinceVsync.elapsedMilliseconds < 250 || _shutdown != null) return;
-    _tick(0.05);
+    if (_sinceVsync.elapsedMilliseconds < 250 || _shutdown != null || cinematicActive) return;
+    _tick(test.fixedStep ? fixedDt : 0.05);
     SchedulerBinding.instance.scheduleWarmUpFrame();
   }
 
@@ -760,10 +861,23 @@ class VillageHomeState extends State<VillageHome> {
 
   void _onFrame(Duration timeStamp) {
     _sinceVsync.reset();
+    // An offline render steps the game itself, frame by frame.
+    if (cinematic?.running ?? false) return;
     final dt = _throttle.onVsync(timeStamp);
     _nextFrame = Timer(dt == null ? Duration.zero : _throttle.untilNextRequest(timeStamp), _requestFrame);
     if (dt == null) return;
-    _tick(dt);
+    _tick(test.fixedStep ? fixedDt : dt);
+    _repaintScene();
+    final r = replay;
+    if (r != null && village != null) unawaited(r.pump());
+  }
+
+  /// The sim step of a recorded or replayed game.
+  static const double fixedDt = 1 / 60;
+
+  /// One fixed step and a repaint, for the offline render.
+  void stepFixed() {
+    _tick(fixedDt);
     _repaintScene();
   }
 
@@ -810,6 +924,13 @@ class VillageHomeState extends State<VillageHome> {
       _camera?.tick(game, step, player: director?.player);
       if (inCutscene != _wasCutscene) setState(() => _wasCutscene = inCutscene);
       if (!inCutscene && !pauseMenu) bot?.tick(game);
+      ticks++;
+      recorder?.checkpoint(game);
+      replay?.verify(game);
+      if (recorder != null && _wall - _savedRecordingAt > 60) {
+        _savedRecordingAt = _wall;
+        unawaited(saveRecording());
+      }
     } else if (game == null) {
       attract!.advance(step * 1000);
       if (attract!.now.minute >= 18 * 60 && busy == null) unawaited(_startAttract());
@@ -831,6 +952,7 @@ class VillageHomeState extends State<VillageHome> {
     test.frame(dt);
     _autoplay?.tick(dt);
     _week?.tick(dt);
+    session?.tick(dt);
     _mem?.tick(dt);
     _quitTest();
     _tour?.tick(dt);
@@ -884,6 +1006,7 @@ class VillageHomeState extends State<VillageHome> {
   }
 
   void _steer(Village v) {
+    if (test.fixedStep) return;
     final keys = HardwareKeyboard.instance.logicalKeysPressed;
     var f = 0.0, r = 0.0;
     if (keys.contains(LogicalKeyboardKey.keyW) || keys.contains(LogicalKeyboardKey.arrowUp)) f += 1;
@@ -997,6 +1120,7 @@ class VillageHomeState extends State<VillageHome> {
   }
 
   void _click(Offset at, {required bool secondary}) {
+    if (test.fixedStep) return;
     final v = village;
     if (v == null || phase != Phase.playing || inCutscene || pauseMenu) return;
     final hit = stage.pickLlama(at, _size);
@@ -1014,6 +1138,7 @@ class VillageHomeState extends State<VillageHome> {
   }
 
   void _onPress(LogicalKeyboardKey k) {
+    if (test.fixedStep) return;
     final escape = k == LogicalKeyboardKey.escape;
     if (reading != null) {
       if (escape) closeStory();
@@ -1127,7 +1252,7 @@ class VillageHomeState extends State<VillageHome> {
                       error: phase == Phase.failed && error != null ? L10n.of(context).sceneFailed(error!) : null,
                       onQuit: phase == Phase.failed ? quit : null,
                     ),
-                  if (toast != null)
+                  if (toast != null && !cinematicActive)
                     Positioned(
                       top: 24,
                       left: 0,
@@ -1188,7 +1313,7 @@ class VillageHomeState extends State<VillageHome> {
     },
     onPointerMove: (e) {
       final start = _downAt;
-      if (start == null || phase != Phase.playing || inCutscene) return;
+      if (start == null || phase != Phase.playing || inCutscene || test.fixedStep) return;
       if (!_dragging && (e.localPosition - start).distance > 5) _dragging = true;
       if (!_dragging) return;
       final pan = _downButtons & kSecondaryMouseButton != 0 || HardwareKeyboard.instance.isShiftPressed;
@@ -1205,10 +1330,12 @@ class VillageHomeState extends State<VillageHome> {
       _dragging = false;
     },
     onPointerSignal: (e) {
-      if (e is PointerScrollEvent && phase == Phase.playing) stage.rig.zoom(math.pow(1.0015, e.scrollDelta.dy).toDouble());
+      if (e is PointerScrollEvent && phase == Phase.playing && !test.fixedStep) {
+        stage.rig.zoom(math.pow(1.0015, e.scrollDelta.dy).toDouble());
+      }
     },
     onPointerPanZoomUpdate: (e) {
-      if (phase != Phase.playing) return;
+      if (phase != Phase.playing || test.fixedStep) return;
       stage.rig.pan(e.panDelta.dx, e.panDelta.dy);
       if (e.scale != 1) stage.rig.zoom(1 / math.pow(e.scale, 0.08).toDouble());
     },
@@ -1228,7 +1355,9 @@ class VillageHomeState extends State<VillageHome> {
 
   List<Widget> _overlay(Village v) {
     final d = director;
+    final cine = cinematic?.hud;
     if (d != null && d.player != null) {
+      if (cine != null && !cine.contains('cutscene')) return const [];
       return [
         ValueListenableBuilder<int>(
           valueListenable: frame,
@@ -1243,11 +1372,15 @@ class VillageHomeState extends State<VillageHome> {
               textScale: settings.textSize.scale,
               highContrast: settings.highContrast,
               wall: _wall,
+              clean: cine != null,
+              letterbox: cine == null || cine.contains('letterbox'),
+              subtitles: cine == null || cine.contains('subtitles'),
             );
           },
         ),
       ];
     }
+    if (cine != null) return _cinematicOverlay(v, cine);
     return [
       ValueListenableBuilder<int>(
         valueListenable: frame,
@@ -1375,6 +1508,63 @@ class VillageHomeState extends State<VillageHome> {
                     unawaited(quit());
                   },
                 ),
+        ),
+    ];
+  }
+}
+
+extension on VillageHomeState {
+  /// What a cinematic shot shows over the 3D view: the bubbles, Dash's
+  /// options and the inspector, laid out clear of a vertical frame's top
+  /// and bottom 14% (where a phone's own UI sits); never the HUD or log.
+  List<Widget> _cinematicOverlay(Village v, Set<String> hud) {
+    final tall = _size.height > _size.width;
+    final safe = tall ? _size.height * 0.14 : 18.0;
+    return [
+      if (hud.contains('bubbles'))
+        ValueListenableBuilder<int>(
+          valueListenable: frame,
+          builder: (context, _, _) => BubbleLayer(
+            village: v,
+            stage: stage,
+            size: _size,
+            wall: _wall,
+            textScale: settings.textSize.scale,
+            highContrast: settings.highContrast,
+          ),
+        ),
+      if (hud.contains('inspector') && stage.selected != null)
+        Positioned(
+          top: safe,
+          right: tall ? (_size.width - 360) / 2 : 18,
+          bottom: safe,
+          child: ValueListenableBuilder<int>(
+            valueListenable: slow,
+            builder: (context, _, _) => Inspector(
+              data: v.inspect(stage.selected!),
+              village: v,
+              cast: v.cast,
+              onClose: () {},
+              onTalk: () {},
+              scroll: cinematic?.inspectorScroll,
+            ),
+          ),
+        ),
+      if (hud.contains('options'))
+        Positioned(
+          left: 12,
+          right: 12,
+          bottom: safe,
+          child: Center(
+            child: ValueListenableBuilder<int>(
+              valueListenable: frame,
+              builder: (context, _, _) {
+                final visit = v.dash.visit;
+                if (visit == null) return const SizedBox.shrink();
+                return OptionsPanel(visit: visit, onChoose: (_) {}, onMore: () {}, onLeave: () {});
+              },
+            ),
+          ),
         ),
     ];
   }

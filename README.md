@@ -608,6 +608,41 @@ the golden hour and the storm, with the model generating and idle, then
 each model call's latency and how many frames came late while each kind
 of job ran (`PERF_STALLS`). See `lib/render_tour.dart`.
 
+### Recording, replay and the cinematic render
+
+`VILLAGE_RECORD=<session.json>` plays a new game on the live models
+(usually with `VILLAGE_BOT`, `VILLAGE_SEED` and `VILLAGE_BOT_THINK_MS`)
+and records it: every model call with its prompt, its full output and the
+text it streamed, when it was asked for and when it landed on the
+village's pause-aware clock, the embeddings, Laya's topic choices, the
+seed and settings, the sim's events and an hourly checkpoint of its
+state (clock, generator position, lines, facts known). The game steps
+the sim exactly 1/60 s a frame, ignores the mouse and keyboard, plays
+the week through to the gallery and quits.
+`VILLAGE_PLAYBACK=<session.json>` plays the same week again with no model
+loaded: each call gets the output recorded for it, landing at the same
+point between steps, so every line on screen is the one the models wrote
+(`lib/sim/session.dart`). It logs whether each checkpoint matched and
+any prompt that differs from the recording (`REPLAY` lines).
+
+`VILLAGE_CINEMATIC=<shots.json>` (with `VILLAGE_PLAYBACK` and
+`VILLAGE_WINDOW=1024x576`, or `540x960` for a vertical frame) renders a
+replay offline: between shots it runs ahead, and during a shot it saves
+every 1/60 s step as a PNG, with its own eased camera (an orbit, dolly,
+crane or follow around llamas, Dash, an animal or a point), only the
+overlays the shot asks for (bubbles, Dash's options, the inspector, the
+cutscene captions) and a log of the effects the soundscape played, for
+the soundtrack. The shot list is described in `lib/cinematic.dart`.
+
+```
+VILLAGE_RECORD=/tmp/week.json VILLAGE_SEED=20261001 VILLAGE_BOT=harmony \
+  VILLAGE_BOT_THINK_MS=2400 VILLAGE_FPS=60 VILLAGE_LANG=en VILLAGE_CAPTURE=1 \
+  build/macos/Build/Products/Release/LlamaVillage.app/Contents/MacOS/LlamaVillage
+VILLAGE_PLAYBACK=/tmp/week.json VILLAGE_CINEMATIC=shots.json VILLAGE_WINDOW=1024x576 \
+  VILLAGE_FPS=60 VILLAGE_LANG=en VILLAGE_CAPTURE=1 \
+  build/macos/Build/Products/Release/LlamaVillage.app/Contents/MacOS/LlamaVillage
+```
+
 ## Layout
 
 - `lib/sim/` is the pure-Dart simulation, with no Flutter or llamadart

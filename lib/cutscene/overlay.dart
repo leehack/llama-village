@@ -25,6 +25,9 @@ class CutsceneOverlay extends StatelessWidget {
     this.textScale = 1,
     this.highContrast = false,
     this.wall = 0,
+    this.clean = false,
+    this.letterbox = true,
+    this.subtitles = true,
   });
 
   final CutscenePlayer player;
@@ -35,11 +38,20 @@ class CutsceneOverlay extends StatelessWidget {
   final bool highContrast;
   final double wall;
 
+  /// Leaves out the skip hint, for a cinematic render.
+  final bool clean;
+
+  /// Draws the letterbox bars.
+  final bool letterbox;
+
+  /// Shows the subtitle cues.
+  final bool subtitles;
+
   static final Expando<_DreamSpacing> _spacing = Expando();
 
   @override
   Widget build(BuildContext context) {
-    final bar = size.height * 0.11 * player.letterbox;
+    final bar = letterbox ? size.height * 0.11 * player.letterbox : 0.0;
     final dots = '.' * (1 + (wall * 3).floor() % 3);
     final spacing = _spacing[player] ??= _DreamSpacing();
     final children = <Widget>[];
@@ -51,6 +63,7 @@ class CutsceneOverlay extends StatelessWidget {
       final text = cue.text ?? dots;
       switch (cue.kind) {
         case TextKind.subtitle:
+          if (!subtitles) continue;
           children.add(
             Positioned(
               left: 40,
@@ -133,14 +146,15 @@ class CutsceneOverlay extends StatelessWidget {
           if (leaders.isNotEmpty) Positioned.fill(child: CustomPaint(painter: LeaderLines(leaders))),
           ..._notes(bar),
           ...children,
-          Positioned(
-            right: 20,
-            bottom: bar > 30 ? bar / 2 - 9 : 14,
-            child: KoText(
-              player.waiting ? '${l.llamasThinking}$dots   ·   ${l.skipHint}' : l.skipHint,
-              style: const TextStyle(fontSize: 12, color: Colors.white54, fontWeight: FontWeight.w600),
+          if (!clean)
+            Positioned(
+              right: 20,
+              bottom: bar > 30 ? bar / 2 - 9 : 14,
+              child: KoText(
+                player.waiting ? '${l.llamasThinking}$dots   ·   ${l.skipHint}' : l.skipHint,
+                style: const TextStyle(fontSize: 12, color: Colors.white54, fontWeight: FontWeight.w600),
+              ),
             ),
-          ),
         ],
       ),
     );
