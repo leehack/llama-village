@@ -109,7 +109,9 @@ The game never waits on a model:
   epilogue is written live by a local model from what that llama knows.
 - **Cutscenes**: the festival announcement, each night (sunset, hut
   lights going out, the moon, dream bubbles, a "Day N" card), the
-  festival with a sung line per singer, and the ending.
+  festival as a staged show (each singer steps up to centre stage and
+  sings a line to the crowd under rising notes, and the winner steps into
+  a spotlight for the Golden Bell), and the ending.
 - **Title screen, saves and gallery**: a drone flyover of the village
   behind the menu; an autosave every morning plus three manual slots,
   picked from a list with a picture of each save, its day, time and
@@ -142,6 +144,16 @@ about 1.5 m/s at 1×), so crossing the village takes up to an hour and a
 half of game time and they set off early for the rehearsal and the
 festival. They gallop only when they hurry: in the storm, or when walking
 would make them late.
+
+The festival is a show on the hilltop stage. The singers wait in a line
+at the back of the stage and in turn step forward to centre stage, face
+the crowd and sing a line written for them, swaying with notes rising
+from their heads (if Mo's nerves give out he sways and faints, and gets
+up again); the other llamas watch from an arc in front of the stage,
+turn to each singer and cheer each song. After the judging the winner
+steps into a warm spotlight and the Golden Bell appears over them. The
+sky drifts into the golden hour as the show goes on, and the ending
+keeps the stage as it was while dusk falls.
 
 When every llama is asleep (or at 22:00) a night cutscene plays: the sun
 sets, hut lights go out one by one, the moon crosses, each llama's evening
@@ -393,7 +405,13 @@ Music and effects are synthesized by `tool/audio/gen_audio.py` (additive
 synthesis, shaped noise and an FFT reverb; nothing is sampled or
 downloaded) and committed as Ogg Opus files in `assets/audio/`. A cozy
 day loop and a softer night loop crossfade with the time of day, and a
-rain loop fades in with the storm. Effects: Dash's wing flaps and arrival
+rain loop fades in with the storm. The festival has its own loop of the
+day tune, quicker and brighter (a fiddle lead, an accordion oom-pah,
+claps and a tambourine), and the ending a slow theme of the same tune on
+a music box over strings. Each crossfades on its cutscene's clock: the
+festival loop comes in with the festival's title, and the ending theme
+as the ending's sky goes to dusk, staying through the epilogue and the
+results. Effects: Dash's wing flaps and arrival
 chirp, footsteps of nearby walking llamas, a murmur as each speech bubble
 appears (pitched per llama), a bubble pop, a UI click, a sparkle when a
 fact Dash spread is learned, birds by day and crickets at night, and
@@ -529,7 +547,9 @@ are inert unless their environment variables are set (`VILLAGE_CAPTURE`,
 `VILLAGE_AUTOPLAY=week` runs the Festival Week script instead
 (`lib/game/week_autoplay.dart`): the title screen, gallery, credits and
 settings, a new game, the pause menu and a manual save, the first night
-skip (later ones are skipped), the inspector, the festival, the ending,
+skip (later ones are skipped), the inspector, the festival (a singer
+stepping up, each song, the crowd, a faint, the winner in the
+spotlight), the ending,
 the epilogue, the results, the storybook (the cover, a page turning, two
 pages and the ending), the gallery again and the save picker, with a PNG
 at each stop.
