@@ -756,7 +756,7 @@ class VillageHomeState extends State<VillageHome> {
   void _onFrame(Duration timeStamp) {
     _sinceVsync.reset();
     final dt = _throttle.onVsync(timeStamp);
-    _nextFrame = Timer(dt == null ? Duration.zero : _throttle.untilNextRequest, _requestFrame);
+    _nextFrame = Timer(dt == null ? Duration.zero : _throttle.untilNextRequest(timeStamp), _requestFrame);
     if (dt == null) return;
     _tick(dt);
     _repaintScene();

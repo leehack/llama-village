@@ -67,10 +67,34 @@ void main() {
     for (final hz in [60, 120]) {
       for (final cap in [30, 60, 120]) {
         if (cap > hz) continue;
-        final wait = FrameThrottle(cap).untilNextRequest.inMicroseconds / 1e6;
+        final t = FrameThrottle(cap)..onVsync(Duration.zero);
+        final wait = t.untilNextRequest(Duration.zero).inMicroseconds / 1e6;
         expect(wait, lessThan(1 / cap - 0.004), reason: '$cap fps on $hz Hz');
         expect(wait, greaterThan(1 / cap - 1 / hz), reason: '$cap fps on $hz Hz');
       }
     }
+  });
+
+  Duration ms(double v) => Duration(microseconds: (v * 1000).round());
+
+  test('a frame a vsync late is followed by one back on the cadence, not one a full interval later', () {
+    final t = FrameThrottle(60);
+    t.onVsync(Duration.zero);
+    expect(t.onVsync(ms(16.667)), isNotNull);
+    // The tick at 33.3 ms never came: the frame lands on the next vsync...
+    expect(t.onVsync(ms(41.667)), closeTo(0.025, 1e-6));
+    // ...and the one after is back on the 60 Hz cadence.
+    expect(t.onVsync(ms(50)), closeTo(0.008333, 1e-6));
+    expect(t.untilNextRequest(ms(50)).inMicroseconds, closeTo(10667, 2));
+    expect(t.onVsync(ms(58.333)), isNull);
+    expect(t.onVsync(ms(66.667)), isNotNull);
+  });
+
+  test('after a long hitch the cadence starts again instead of rendering a burst', () {
+    final t = FrameThrottle(60);
+    t.onVsync(Duration.zero);
+    expect(t.onVsync(ms(100)), closeTo(0.1, 1e-6));
+    expect(t.onVsync(ms(108.333)), isNull);
+    expect(t.onVsync(ms(116.667)), isNotNull);
   });
 }

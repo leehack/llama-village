@@ -113,8 +113,11 @@ class VillageModels implements ChatModel, EmbedModel, TopicChooser {
     try {
       onProgress?.call('dialogue', 0.05);
       // Small prompt micro-batches keep each GPU submission short, so the
-      // renderer's frames slip in between them instead of waiting.
-      final chat = await open(config.chat!, contextSize: 4096, microBatch: 128);
+      // renderer's frames slip in between them instead of waiting: frames
+      // that came late while the model generated were mostly behind prompt
+      // micro-batches (about 35 ms of GPU each at 128 tokens, 14 ms at 32).
+      // Below 32 a micro-batch costs no less and prompts read slower.
+      final chat = await open(config.chat!, contextSize: 4096, microBatch: 32);
       onProgress?.call('embedding', 0.55);
       final embed = await open(config.embed!, contextSize: 2048, parallel: 8);
       LlamaEngine? laya;
